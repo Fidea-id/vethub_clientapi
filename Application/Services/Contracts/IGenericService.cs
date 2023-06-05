@@ -15,6 +15,7 @@ namespace Application.Services.Contracts
         Task<TResponse> CreateAsync(T entity, string dbName);
         //Read
         Task<IEnumerable<TResponse>> ReadAllAsync(string dbName);
+        Task<IEnumerable<T>> GetEntitiesByFilter(Dictionary<string, object> filters, string dbName);
         Task<IEnumerable<TResponse>> ReadAllActiveAsync(string dbName);
         Task<T> ReadByIdAsync(int id, string dbName);
         Task<TResponse> ReadByIdResponseAsync(int id, string dbName);

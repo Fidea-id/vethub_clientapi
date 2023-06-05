@@ -19,6 +19,8 @@ namespace Infrastructure
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IGenerateTableRepository, GenerateTableRepository>();
             services.AddScoped<IServicesRepository, ServicesRepository>();
+            services.AddScoped<IOwnersRepository, OwnersRepository>();
+            services.AddScoped<IPatientsRepository, PatientsRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();

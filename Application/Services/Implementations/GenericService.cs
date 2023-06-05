@@ -158,6 +158,12 @@ namespace Application.Services.Implementations
             }
         }
 
+        public async Task<IEnumerable<T>> GetEntitiesByFilter(Dictionary<string, object> filters, string dbName)
+        {
+            // You can add additional business logic or validation here
+            return await _repository.GetByFilter(dbName, filters);
+        }
+
         public async Task<T> ReadByIdAsync(int id, string dbName)
         {
             try

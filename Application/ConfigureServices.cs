@@ -16,6 +16,8 @@ namespace Application
 
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IMasterService, MasterService>();
+            services.AddScoped<IPatientsService, PatientsService>();
+            services.AddScoped<IOwnersService, OwnersService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

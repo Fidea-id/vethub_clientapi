@@ -1,9 +1,11 @@
 ﻿using Dapper;
 using Domain.Interfaces;
 using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Query;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -28,6 +30,27 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryAsync<T>($"SELECT * FROM {_tableName}");
+        }
+
+        public async Task<IEnumerable<T>> GetByFilter(string dbName, Dictionary<string, object> filters)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            // Build the WHERE clause based on the filters
+            var whereClause = "";
+            var parameters = new DynamicParameters();
+            foreach (var filter in filters)
+            {
+                var paramName = $"@{filter.Key}";
+                whereClause += $"{filter.Key} = {paramName} AND ";
+                parameters.Add(paramName, filter.Value);
+            }
+            // Remove the trailing "AND " from the where clause
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                whereClause = "WHERE " + whereClause.TrimEnd("AND ".ToCharArray());
+            }
+            var query = $"SELECT * FROM {_tableName} {whereClause}";
+            return await _db.QueryAsync<T>(query, parameters);
         }
 
         public async Task Add(string dbName, T entity)

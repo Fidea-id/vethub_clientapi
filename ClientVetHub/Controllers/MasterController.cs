@@ -15,7 +15,7 @@ namespace ClientVetHub.Controllers
             _masterService = masterService;
         }
 
-        [HttpGet("GenerateInitDB")]
+        [HttpGet("GenerateInitDB/{dbName}")]
         public async Task<IActionResult> GenerateInitDB(string dbName)
         {
             await _masterService.GenerateTables(dbName);
