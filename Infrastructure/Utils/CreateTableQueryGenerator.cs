@@ -9,19 +9,26 @@ namespace Infrastructure.Utils
             var tableName = modelType.Name;
             var properties = modelType.GetProperties();
 
-            var sb = new StringBuilder();
-            sb.AppendLine($"CREATE TABLE {tableName} (");
+            var queryBuilder = new StringBuilder();
+            queryBuilder.Append($"CREATE TABLE {tableName} (");
 
-            foreach (var property in properties)
+            for (int i = 0; i < properties.Length; i++)
             {
-                var columnName = property.Name;
-                var columnType = GetSqlType(property.PropertyType);
-                sb.AppendLine($"{columnName} {columnType},");
+                var property = properties[i];
+                var propertyName = property.Name;
+                var sqlType = GetSqlType(property.PropertyType);
+
+                queryBuilder.Append($"{propertyName} {sqlType}");
+
+                // Add a comma separator for all lines except the last one
+                if (i < properties.Length - 1)
+                {
+                    queryBuilder.Append(", ");
+                }
             }
 
-            sb.AppendLine(");");
-
-            return sb.ToString();
+            queryBuilder.Append(");");
+            return queryBuilder.ToString();
         }
 
         private static string GetSqlType(Type propertyType)
