@@ -12,20 +12,19 @@ using System.Linq.Expressions;
 
 namespace Application.Services.Implementations
 {
-    public class ProfileService : IProfileService
+    public class ProfileService : GenericService<Profile, Profile>, IProfileService
     {
-        private readonly IUnitOfWork _uow;
         private readonly IEmailSender _emailsender;
-        public ProfileService(IUnitOfWork masterUOW, IEmailSender emailsender)
+        public ProfileService(IUnitOfWork unitOfWork, IGenericRepository<Profile> repository, IEmailSender emailsender)
+        : base(unitOfWork, repository)
         {
-            _uow = masterUOW;
             _emailsender = emailsender;
         }
 
         public async Task<UserProfileResponse> GetUserProfileByIdAsync(string dbName, int id)
         {
-            var user = await _uow.ProfileRepository.GetById(dbName, id);
-            var users = await _uow.ServicesRepository.GetAll(dbName);
+            var user = await _unitOfWork.ProfileRepository.GetById(dbName, id);
+            var users = await _unitOfWork.ServicesRepository.GetAll(dbName);
             var result = Mapping.Mapper.Map<UserProfileResponse>(user);
             return result;
         }

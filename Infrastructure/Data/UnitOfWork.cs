@@ -61,6 +61,5 @@ namespace Infrastructure.Data
                 return _ServicesRepository;
             }
         }
-
     }
 }

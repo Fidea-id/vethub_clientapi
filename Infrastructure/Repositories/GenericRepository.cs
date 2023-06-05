@@ -65,5 +65,11 @@ namespace Infrastructure.Repositories
         {
             return entity.GetType().GetProperties().Select(property => property.Name);
         }
+
+        public async Task<IEnumerable<T>> GetAllActive(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryAsync<T>($"SELECT * FROM {_tableName} where IsActive = true");
+        }
     }
 }

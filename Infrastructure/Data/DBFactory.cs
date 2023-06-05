@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System;
 using System.Data;
@@ -7,7 +8,7 @@ namespace Infrastructure.Data
 {
     public interface IDBFactory
     {
-        IDbConnection GetDbConnection(string dbName);
+        IDbConnection GetDbConnection(string dbName, bool isNew = false);
         Dictionary<string, IDbConnection> GetConnectionCache();
     }
 
@@ -25,7 +26,7 @@ namespace Infrastructure.Data
         {
             return _connectionCache;
         }
-        public IDbConnection GetDbConnection(string dbName)
+        public IDbConnection GetDbConnection(string dbName, bool isNew = false)
         {
             if (_connectionCache.TryGetValue(dbName, out var existingConnection))
             {
@@ -49,18 +50,33 @@ namespace Infrastructure.Data
 
             var newConnection = new MySqlConnection(connectionString);
 
+            //check is new
+            if (isNew)
+            {
+                // Check if the database exists, if not, create it
+                if (!DatabaseExists(dbName, newConnection))
+                {
+                    CreateDatabase(dbName, newConnection);
+                }
+            }
+
             // Add the new connection to the cache
             _connectionCache[dbName] = newConnection;
 
             return newConnection;
         }
-    }
 
-    public enum DBType
-    {
-        Mysql,
-        Mssql
-    }
+        private bool DatabaseExists(string dbName, IDbConnection connection)
+        {
+            string query = $"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{dbName}';";
+            return connection.ExecuteScalar<string>(query) != null;
+        }
 
+        private void CreateDatabase(string dbName, IDbConnection connection)
+        {
+            string createDbQuery = $"CREATE DATABASE `{dbName}`;";
+            connection.Execute(createDbQuery);
+        }
+    }
 }
 

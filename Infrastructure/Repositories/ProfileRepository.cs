@@ -8,7 +8,7 @@ using System.Data;
 
 namespace Infrastructure.Repositories
 {
-    public class ProfileRepository : GenericRepository<Services>, IServicesRepository
+    public class ProfileRepository : GenericRepository<Services>, IProfileRepository
     {
         public ProfileRepository(IDBFactory context) : base(context)
         {
