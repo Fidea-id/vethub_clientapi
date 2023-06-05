@@ -10,7 +10,7 @@ namespace Infrastructure.Utils
             var properties = modelType.GetProperties();
 
             var queryBuilder = new StringBuilder();
-            queryBuilder.Append($"CREATE TABLE {tableName} (");
+            queryBuilder.Append($"CREATE TABLE IF NOT EXISTS {tableName} (");
 
             for (int i = 0; i < properties.Length; i++)
             {

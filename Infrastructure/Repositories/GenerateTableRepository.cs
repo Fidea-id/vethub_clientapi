@@ -26,6 +26,9 @@ namespace Infrastructure.Repositories
             var models = new List<Type>
             {
                 typeof(Profile),
+                typeof(Services),
+                typeof(Owners),
+                typeof(Patients),
                 // Add more model types here
             };
             foreach (var modelType in models)
