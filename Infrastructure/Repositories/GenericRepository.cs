@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Domain.Interfaces;
 using Infrastructure.Data;
+using Infrastructure.Utils;
 using Microsoft.EntityFrameworkCore.Query;
 using System;
 using System.Collections.Generic;
@@ -13,8 +14,8 @@ namespace Infrastructure.Repositories
 {
     public class GenericRepository<T>: IGenericRepository<T> where T : class
     {
-        private readonly IDBFactory _dbFactory;
-        private readonly string _tableName;
+        protected readonly IDBFactory _dbFactory;
+        protected readonly string _tableName;
         public GenericRepository(IDBFactory dbFactory)
         {
             _dbFactory = dbFactory;
@@ -57,7 +58,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = GetPropertyNames(entity);
+            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
             var columnNames = string.Join(", ", propertyNames);
             var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
 
@@ -66,11 +67,28 @@ namespace Infrastructure.Repositories
             await _db.ExecuteAsync(query, entity);
         }
 
+        public async Task AddRange(string dbName, IEnumerable<T> entity)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var query = "";
+            foreach(var item in entity)
+            {
+                var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
+                var columnNames = string.Join(", ", propertyNames);
+                var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
+
+                var subquery = $"INSERT INTO {_tableName} ({columnNames}) VALUES ({valuePlaceholders}) ";
+                query += subquery;
+            }
+
+            await _db.ExecuteAsync(query, entity);
+        }
+
         public async Task Update(string dbName, T entity)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = GetPropertyNames(entity);
+            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
             var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
             var query = $"UPDATE {_tableName} SET {setClause} WHERE Id = @Id";
@@ -82,11 +100,6 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             await _db.ExecuteAsync($"DELETE FROM {_tableName} WHERE Id = @Id", new { Id = id });
-        }
-
-        private static IEnumerable<string> GetPropertyNames(T entity)
-        {
-            return entity.GetType().GetProperties().Select(property => property.Name);
         }
 
         public async Task<IEnumerable<T>> GetAllActive(string dbName)

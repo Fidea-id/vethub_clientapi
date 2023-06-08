@@ -13,6 +13,7 @@ namespace Domain.Interfaces
         Task<IEnumerable<T>> GetByFilter(string dbName, Dictionary<string, object> filters);
         Task<IEnumerable<T>> GetAllActive(string dbName);
         Task Add(string dbName, T entity);
+        Task AddRange(string dbName, IEnumerable<T> entity);
         Task Update(string dbName, T entity);
         Task Delete(string dbName, int id);
     }

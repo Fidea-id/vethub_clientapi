@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities.Models
 {
-    internal class ProductBundle
+    public class ProductCategories: BaseEntity
     {
+        public string Name { get; set; }
     }
 }

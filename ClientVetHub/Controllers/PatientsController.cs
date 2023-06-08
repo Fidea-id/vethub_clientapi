@@ -13,27 +13,42 @@ namespace ClientVetHub.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly IPatientsService _patientsService;
+        private readonly string _dbName;
         public PatientsController(IHttpContextAccessor httpContextAccessor, IPatientsService patientsService)
         {
             _patientsService = patientsService;
+            // Retrieve the dbName from the JWT token
+            _dbName = User.FindFirstValue("Entity");
         }
 
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            // Retrieve the dbName from the JWT token
-            string dbName = User.FindFirstValue("Entity");
-            var data = await _patientsService.ReadAllActiveAsync(dbName);
-            return Ok(data);
+            try
+            {
+                var data = await _patientsService.ReadAllActiveAsync(_dbName);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors and return an appropriate response
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            // Retrieve the dbName from the JWT token
-            string dbName = User.FindFirstValue("Entity");
-            var data = await _patientsService.ReadByIdAsync(id, dbName);
-            return Ok(data);
+            try
+            {
+                var data = await _patientsService.ReadByIdAsync(id, _dbName);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors and return an appropriate response
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpGet("filter")]
@@ -41,43 +56,59 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                // Retrieve the dbName from the JWT token
-                string dbName = User.FindFirstValue("Entity");
-                var entities = await _patientsService.GetEntitiesByFilter(filters, dbName);
+                var entities = await _patientsService.GetEntitiesByFilter(filters, _dbName);
                 return Ok(entities);
             }
             catch (Exception ex)
             {
                 // Handle any errors and return an appropriate response
-                return StatusCode(500, "An error occurred.");
+                return StatusCode(500, ex.Message);
             }
         }
 
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Patients request)
         {
-            // Retrieve the dbName from the JWT token
-            string dbName = User.FindFirstValue("Entity");
-            var create = await _patientsService.CreateAsync(request, dbName);
-            return Ok(create);
+            try
+            {
+                var create = await _patientsService.CreateAsync(request, _dbName);
+                return Ok(create);
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors and return an appropriate response
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] Patients value)
         {
-            // Retrieve the dbName from the JWT token
-            string dbName = User.FindFirstValue("Entity");
-            await _patientsService.UpdateAsync(id, value, dbName);
-            return Ok(value);
+            try
+            {
+                await _patientsService.UpdateAsync(id, value, _dbName);
+                return Ok(value);
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors and return an appropriate response
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            // Retrieve the dbName from the JWT token
-            string dbName = User.FindFirstValue("Entity");
-            await _patientsService.DeleteAsync(id, dbName);
-            return Ok(default(Patients));
+            try
+            {
+                await _patientsService.DeleteAsync(id, _dbName);
+                return Ok(default(Patients));
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors and return an appropriate response
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

@@ -18,8 +18,29 @@ namespace ClientVetHub.Controllers
         [HttpGet("GenerateInitDB/{dbName}")]
         public async Task<IActionResult> GenerateInitDB(string dbName)
         {
-            await _masterService.GenerateTables(dbName);
-            return Ok();
+            try
+            {
+                await _masterService.GenerateTables(dbName);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("GenerateInitDBField/{dbName}")]
+        public async Task<IActionResult> GenerateInitDBField(string dbName, Dictionary<string, object> dataJson)
+        {
+            try
+            {
+                await _masterService.GenerateTableField(dbName, dataJson);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

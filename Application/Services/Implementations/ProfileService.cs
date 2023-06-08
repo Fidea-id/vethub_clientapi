@@ -2,7 +2,6 @@
 using Application.Utils;
 using Domain.Entities.Emails;
 using Domain.Entities.Models;
-using Domain.Entities.Requests;
 using Domain.Entities.Responses;
 using Domain.Interfaces;
 using Domain.Utils;
@@ -24,7 +23,6 @@ namespace Application.Services.Implementations
         public async Task<UserProfileResponse> GetUserProfileByIdAsync(string dbName, int id)
         {
             var user = await _unitOfWork.ProfileRepository.GetById(dbName, id);
-            var users = await _unitOfWork.ServicesRepository.GetAll(dbName);
             var result = Mapping.Mapper.Map<UserProfileResponse>(user);
             return result;
         }

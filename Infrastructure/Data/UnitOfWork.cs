@@ -61,5 +61,44 @@ namespace Infrastructure.Data
                 return _ServicesRepository;
             }
         }
+
+        private IOwnersRepository _OwnersRepository;
+        public IOwnersRepository OwnersRepository
+        {
+            get
+            {
+                if (_OwnersRepository == null)
+                {
+                    _OwnersRepository = new OwnersRepository(_dbFactory);
+                }
+                return _OwnersRepository;
+            }
+        }
+
+        private IPatientsRepository _PatientsRepository;
+        public IPatientsRepository PatientsRepository
+        {
+            get
+            {
+                if (_PatientsRepository == null)
+                {
+                    _PatientsRepository = new PatientsRepository(_dbFactory);
+                }
+                return _PatientsRepository;
+            }
+        }
+        
+        private IProductsRepository _ProductsRepository;
+        public IProductsRepository ProductsRepository
+        {
+            get
+            {
+                if (_ProductsRepository == null)
+                {
+                    _ProductsRepository = new ProductsRepository(_dbFactory);
+                }
+                return _ProductsRepository;
+            }
+        }
     }
 }
