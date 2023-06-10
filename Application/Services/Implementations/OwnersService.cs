@@ -1,17 +1,14 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.FIlters;
 using Domain.Entities.Models;
+using Domain.Entities.Requests;
 using Domain.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services.Implementations
 {
-    public class OwnersService : GenericService<Owners, Owners>, IOwnersService
+    public class OwnersService : GenericService<Owners, OwnersRequest, Owners, OwnersFilter>, IOwnersService
     {
-        public OwnersService(IUnitOfWork unitOfWork, IGenericRepository<Owners> repository)
+        public OwnersService(IUnitOfWork unitOfWork, IGenericRepository<Owners, OwnersFilter> repository)
         : base(unitOfWork, repository)
         { }
     }

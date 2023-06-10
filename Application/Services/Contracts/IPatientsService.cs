@@ -2,7 +2,7 @@
 
 namespace Application.Services.Contracts
 {
-    public interface IPatientsService: IGenericService<Patients, Patients>
+    public interface IPatientsService : IGenericService<Patients, Patients, Patients, PatientsFilter>
     {
     }
 }

@@ -2,7 +2,6 @@
 using Infrastructure.Data;
 using Infrastructure.Email;
 using Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Mail;
@@ -15,7 +14,7 @@ namespace Infrastructure
         {
             services.AddTransient<IDBFactory, DBFactory>();
             //Repository
-            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IGenerateTableRepository, GenerateTableRepository>();
             services.AddScoped<IServicesRepository, ServicesRepository>();

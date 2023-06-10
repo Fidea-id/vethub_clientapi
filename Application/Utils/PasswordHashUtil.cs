@@ -1,7 +1,4 @@
-﻿using Domain.Entities.Models;
-using Microsoft.AspNetCore.Identity;
-
-namespace Application.Utils
+﻿namespace Application.Utils
 {
     public static class PasswordHashUtil
     {

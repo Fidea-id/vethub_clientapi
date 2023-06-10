@@ -1,10 +1,6 @@
-﻿using Domain.Entities;
-using Domain.Entities.Models;
-using Domain.Interfaces;
+﻿using Domain.Interfaces;
 using Infrastructure.Repositories;
-using System.Collections;
 using System.Data;
-using System.Data.Common;
 
 namespace Infrastructure.Data
 {
@@ -12,7 +8,6 @@ namespace Infrastructure.Data
     {
         private readonly IDBFactory _dbFactory;
         private readonly Dictionary<string, IDbConnection> _connectionCache;
-
         public UnitOfWork(IDBFactory dBFactory)
         {
             _dbFactory = dBFactory;
@@ -87,7 +82,7 @@ namespace Infrastructure.Data
                 return _PatientsRepository;
             }
         }
-        
+
         private IProductsRepository _ProductsRepository;
         public IProductsRepository ProductsRepository
         {

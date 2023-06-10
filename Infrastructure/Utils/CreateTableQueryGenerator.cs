@@ -87,10 +87,20 @@ namespace Infrastructure.Utils
 
             return "UNKNOWN";
         }
-
-        public static IEnumerable<string> GetPropertyNames<T>(T entity)
+        public static IEnumerable<(string Name, string Value)> GetPropertyNames<T>(T entity)
         {
-            return entity.GetType().GetProperties().Select(property => property.Name);
+            return entity.GetType().GetProperties().Select(property =>
+            {
+                if (property.PropertyType == typeof(DateTime))
+                {
+                    var datetimeValue = (DateTime)property.GetValue(entity);
+                    return (property.Name, datetimeValue.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                else
+                {
+                    return (property.Name, property.GetValue(entity).ToString());
+                }
+            });
         }
         public static string GenerateInsertQuery(string tableName, object record)
         {

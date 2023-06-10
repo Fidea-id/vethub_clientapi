@@ -1,13 +1,8 @@
 ﻿using Domain.Entities.Responses;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Domain.Interfaces
 {
-    public interface IProductsRepository: IGenericRepository<Products>
+    public interface IProductsRepository : IGenericRepository<Products, ProductsFilter>
     {
         Task AddProductDiscounts(ProductDiscounts discount, string dbName);
         Task AddProductCategories(ProductCategories categories, string dbName);

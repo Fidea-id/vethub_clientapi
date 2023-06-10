@@ -1,6 +1,6 @@
-﻿using Domain.Entities.DTOs;
+﻿using Domain.Entities;
+using Domain.Entities.DTOs;
 using Newtonsoft.Json;
-using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -22,7 +22,7 @@ namespace Domain.Utils
             }
             return 0;
         }
-        
+
         public static string GenerateUniqueFileName(string fileName)
         {
             // Get the file extension
@@ -50,13 +50,21 @@ namespace Domain.Utils
                 }
             }
         }
-        public static void SetIsActive<T>(T data, bool isActive) where T : class
+        public static void SetIsActive<T>(T data, bool isActive) where T : BaseEntity
         {
             Type type = typeof(T);
             PropertyInfo lastUpdateByProperty = type.GetProperty("IsActive");
             if (lastUpdateByProperty != null)
             {
                 lastUpdateByProperty.SetValue(data, isActive);
+            }
+        }
+        public static void SetDateBaseEntity<T>(T data, bool isUpdate =false)where T : BaseEntity
+        {
+            data.UpdatedAt = DateTime.Now;
+            if (!isUpdate)
+            {
+                data.CreatedAt = DateTime.Now;
             }
         }
         public static void SetOppositeActive<T>(T data) where T : class

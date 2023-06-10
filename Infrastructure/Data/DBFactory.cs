@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
-using System;
 using System.Data;
 
 namespace Infrastructure.Data

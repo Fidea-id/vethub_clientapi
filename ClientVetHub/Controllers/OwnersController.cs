@@ -1,9 +1,12 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.FIlters;
 using Domain.Entities.Models;
+using Domain.Entities.Requests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Xml.Linq;
 
 namespace ClientVetHub.Controllers
 {
@@ -13,12 +16,9 @@ namespace ClientVetHub.Controllers
     public class OwnersController : ControllerBase
     {
         private readonly IOwnersService _ownersService;
-        private readonly string _dbName;
-        public OwnersController(IHttpContextAccessor httpContextAccessor, IOwnersService ownersService)
+        public OwnersController(IOwnersService ownersService)
         {
             _ownersService = ownersService;
-            // Retrieve the dbName from the JWT token
-            _dbName = User.FindFirstValue("Entity");
         }
 
         [HttpGet]
@@ -26,12 +26,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var data = await _ownersService.ReadAllActiveAsync(_dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _ownersService.ReadAllActiveAsync(dbName);
                 return Ok(data);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -41,27 +41,27 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var data = await _ownersService.ReadByIdAsync(id, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _ownersService.ReadByIdAsync(id, dbName);
                 return Ok(data);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
 
         [HttpGet("filter")]
-        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] Dictionary<string, object> filters)
+        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] OwnersFilter filters)
         {
             try
             {
-                var entities = await _ownersService.GetEntitiesByFilter(filters, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _ownersService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -71,27 +71,27 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var create = await _ownersService.CreateAsync(request, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _ownersService.CreateAsync(request, dbName);
                 return Ok(create);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Owners value)
+        public async Task<IActionResult> Put(int id, [FromBody] OwnersRequest value)
         {
             try
             {
-                await _ownersService.UpdateAsync(id, value, _dbName);
-                return Ok(value);
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _ownersService.UpdateAsync(id, value, dbName);
+                return Ok(newData);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -101,12 +101,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                await _ownersService.DeleteAsync(id, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                await _ownersService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }

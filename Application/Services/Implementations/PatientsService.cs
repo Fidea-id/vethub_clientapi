@@ -1,18 +1,13 @@
 ﻿using Application.Services.Contracts;
 using Domain.Entities.Models;
 using Domain.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services.Implementations
 {
-    public class PatientsService : GenericService<Patients, Patients>, IPatientsService
+    public class PatientsService : GenericService<Patients, Patients, Patients, PatientsFilter>, IPatientsService
     {
-        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients> repository)
+        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository)
         : base(unitOfWork, repository)
-        {}
+        { }
     }
 }

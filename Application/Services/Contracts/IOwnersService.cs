@@ -1,13 +1,10 @@
-﻿using Domain.Entities.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Domain.Entities.FIlters;
+using Domain.Entities.Models;
+using Domain.Entities.Requests;
 
 namespace Application.Services.Contracts
 {
-    public interface IOwnersService : IGenericService<Owners, Owners>
+    public interface IOwnersService : IGenericService<Owners, OwnersRequest, Owners, OwnersFilter>
     {
     }
 }

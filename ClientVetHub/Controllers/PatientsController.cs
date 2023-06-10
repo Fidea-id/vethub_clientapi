@@ -13,12 +13,9 @@ namespace ClientVetHub.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly IPatientsService _patientsService;
-        private readonly string _dbName;
-        public PatientsController(IHttpContextAccessor httpContextAccessor, IPatientsService patientsService)
+        public PatientsController(IPatientsService patientsService)
         {
             _patientsService = patientsService;
-            // Retrieve the dbName from the JWT token
-            _dbName = User.FindFirstValue("Entity");
         }
 
         [HttpGet]
@@ -26,12 +23,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var data = await _patientsService.ReadAllActiveAsync(_dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _patientsService.ReadAllActiveAsync(dbName);
                 return Ok(data);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -41,27 +38,27 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var data = await _patientsService.ReadByIdAsync(id, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _patientsService.ReadByIdAsync(id, dbName);
                 return Ok(data);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
 
         [HttpGet("filter")]
-        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] Dictionary<string, object> filters)
+        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] PatientsFilter filters)
         {
             try
             {
-                var entities = await _patientsService.GetEntitiesByFilter(filters, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _patientsService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -71,12 +68,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var create = await _patientsService.CreateAsync(request, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _patientsService.CreateAsync(request, dbName);
                 return Ok(create);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -86,12 +83,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                await _patientsService.UpdateAsync(id, value, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                await _patientsService.UpdateAsync(id, value, dbName);
                 return Ok(value);
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }
@@ -101,12 +98,12 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                await _patientsService.DeleteAsync(id, _dbName);
+                var dbName = User.FindFirstValue("Entity");
+                await _patientsService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
             catch (Exception ex)
             {
-                // Handle any errors and return an appropriate response
                 return StatusCode(500, ex.Message);
             }
         }

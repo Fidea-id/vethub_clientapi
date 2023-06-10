@@ -1,9 +1,8 @@
-﻿using Domain.Entities.DTOs;
-using System;
+﻿using Domain.Entities.FIlters;
 
 namespace Domain.Interfaces
 {
-    public interface IProfileRepository: IGenericRepository<Services>
+    public interface IProfileRepository : IGenericRepository<Services, ServicesFilter>
     {
     }
 }

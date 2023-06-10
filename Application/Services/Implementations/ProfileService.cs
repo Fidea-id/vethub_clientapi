@@ -1,20 +1,18 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities.Emails;
+using Domain.Entities.FIlters;
 using Domain.Entities.Models;
 using Domain.Entities.Responses;
 using Domain.Interfaces;
-using Domain.Utils;
 using FluentEmail.Core.Models;
-using Microsoft.AspNetCore.Identity;
-using System.Linq.Expressions;
 
 namespace Application.Services.Implementations
 {
-    public class ProfileService : GenericService<Profile, Profile>, IProfileService
+    public class ProfileService : GenericService<Profile, Profile, Profile, ProfileFilter>, IProfileService
     {
         private readonly IEmailSender _emailsender;
-        public ProfileService(IUnitOfWork unitOfWork, IGenericRepository<Profile> repository, IEmailSender emailsender)
+        public ProfileService(IUnitOfWork unitOfWork, IGenericRepository<Profile, ProfileFilter> repository, IEmailSender emailsender)
         : base(unitOfWork, repository)
         {
             _emailsender = emailsender;

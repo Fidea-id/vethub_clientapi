@@ -3,15 +3,6 @@ using Domain.Entities.Models;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Utils;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Infrastructure.Repositories
 {
@@ -34,7 +25,7 @@ namespace Infrastructure.Repositories
                 typeof(Services),
                 typeof(Owners),
                 typeof(Patients),
-                typeof(Products),
+                typeof(ProductsFilter),
                 typeof(ProductStocks),
                 typeof(ProductBundles),
                 typeof(ProductDiscounts),

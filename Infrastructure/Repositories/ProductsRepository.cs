@@ -7,7 +7,7 @@ using Infrastructure.Utils;
 
 namespace Infrastructure.Repositories
 {
-    public class ProductsRepository : GenericRepository<Products>, IProductsRepository
+    public class ProductsRepository : GenericRepository<Products, ProductsFilter>, IProductsRepository
     {
         protected readonly string _tableDiscountName;
         protected readonly string _tableBundleName;
@@ -22,7 +22,7 @@ namespace Infrastructure.Repositories
         public async Task AddProductBundles(ProductBundles bundles, string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            
+
             var propertyNames = CreateTableQueryGenerator.GetPropertyNames(bundles);
             var columnNames = string.Join(", ", propertyNames);
             var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));

@@ -12,7 +12,7 @@ namespace Application
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddScoped(typeof(IGenericService<,>), typeof(GenericService<,>));
+            services.AddScoped(typeof(IGenericService<,,,>), typeof(GenericService<,,,>));
 
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IMasterService, MasterService>();

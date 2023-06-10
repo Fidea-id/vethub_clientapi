@@ -16,8 +16,4 @@
   <ItemGroup>
     <None Remove="Entities\DTOs\" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Entities\Requests\" />
-  </ItemGroup>
 </Project>

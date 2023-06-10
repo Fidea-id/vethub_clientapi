@@ -9,7 +9,7 @@ namespace Application.Utils
     public static class JwtUtil
     {
         public static string Issuer = "VetHubAPIAuthentication";
-        public static string Audience = "VetHubAPIClient";
+        public static string Audience = "VetHubAPI";
         public static string Key = "wD7q7RPi9OjQAGP16Bi49hwiUmE2fpUW";
 
         public static string SetSessionToken(Profile profile)
