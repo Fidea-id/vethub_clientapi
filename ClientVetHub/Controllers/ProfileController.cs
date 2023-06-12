@@ -1,6 +1,7 @@
 ﻿using Application.Services.Contracts;
-using Domain.Entities.FIlters;
+using Domain.Entities.Filters;
 using Domain.Entities.Models;
+using Domain.Entities.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -27,7 +28,7 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get([FromQuery] ProfileFilter filters)
         {
             var dbName = User.FindFirstValue("Entity");
             var data = await _profileService.ReadAllActiveAsync(dbName);
@@ -42,21 +43,21 @@ namespace ClientVetHub.Controllers
             return Ok(data);
         }
 
-        [HttpGet("filter")]
-        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] ProfileFilter filters)
+        [AllowAnonymous]
+        [HttpPost("public/{entity}")]
+        public async Task<IActionResult> PublicPost(string entity, [FromBody] Profile request)
         {
             try
             {
-                var dbName = User.FindFirstValue("Entity");
-                var entities = await _profileService.GetEntitiesByFilter(filters, dbName);
-                return Ok(entities);
+                var dbName = entity;
+                var create = await _profileService.CreateAsync(request, dbName);
+                return Ok(create);
             }
             catch (Exception)
             {
                 return StatusCode(500, "An error occurred.");
             }
         }
-
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Profile request)
         {
@@ -73,7 +74,7 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Profile value)
+        public async Task<IActionResult> Put(int id, [FromBody] ProfileRequest value)
         {
             try
             {

@@ -1,5 +1,7 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.Filters;
 using Domain.Entities.Models;
+using Domain.Entities.Requests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,13 +21,13 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get([FromQuery] PatientsFilter filters)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var data = await _patientsService.ReadAllActiveAsync(dbName);
-                return Ok(data);
+                var entities = await _patientsService.GetEntitiesByFilter(filters, dbName);
+                return Ok(entities);
             }
             catch (Exception ex)
             {
@@ -41,21 +43,6 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _patientsService.ReadByIdAsync(id, dbName);
                 return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet("filter")]
-        public async Task<IActionResult> GetEntitiesByFilter([FromQuery] PatientsFilter filters)
-        {
-            try
-            {
-                var dbName = User.FindFirstValue("Entity");
-                var entities = await _patientsService.GetEntitiesByFilter(filters, dbName);
-                return Ok(entities);
             }
             catch (Exception ex)
             {
@@ -79,7 +66,7 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Patients value)
+        public async Task<IActionResult> Put(int id, [FromBody] PatientsRequest value)
         {
             try
             {

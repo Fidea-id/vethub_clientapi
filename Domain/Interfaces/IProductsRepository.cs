@@ -1,4 +1,6 @@
-﻿using Domain.Entities.Responses;
+﻿using Domain.Entities.Filters;
+using Domain.Entities.Models;
+using Domain.Entities.Responses;
 
 namespace Domain.Interfaces
 {

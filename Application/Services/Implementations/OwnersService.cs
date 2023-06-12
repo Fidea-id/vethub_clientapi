@@ -1,5 +1,5 @@
 ﻿using Application.Services.Contracts;
-using Domain.Entities.FIlters;
+using Domain.Entities.Filters;
 using Domain.Entities.Models;
 using Domain.Entities.Requests;
 using Domain.Interfaces;

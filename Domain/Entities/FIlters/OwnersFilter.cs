@@ -1,4 +1,4 @@
-﻿namespace Domain.Entities.FIlters
+﻿namespace Domain.Entities.Filters
 {
     public class OwnersFilter : BaseEntityFilter
     {

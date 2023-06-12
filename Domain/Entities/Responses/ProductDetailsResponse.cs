@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities.Responses
+﻿using Domain.Entities.Models;
+
+namespace Domain.Entities.Responses
 {
     public class ProductDetailsResponse
     {

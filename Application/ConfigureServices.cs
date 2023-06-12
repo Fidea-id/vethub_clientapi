@@ -14,10 +14,13 @@ namespace Application
         {
             services.AddScoped(typeof(IGenericService<,,,>), typeof(GenericService<,,,>));
 
-            services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<IClinicsService, ClinicsService>();
             services.AddScoped<IMasterService, MasterService>();
-            services.AddScoped<IPatientsService, PatientsService>();
             services.AddScoped<IOwnersService, OwnersService>();
+            services.AddScoped<IPatientsService, PatientsService>();
+            services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<IProductsService, ProductsService>();
+            services.AddScoped<IServicesService, ServicesService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

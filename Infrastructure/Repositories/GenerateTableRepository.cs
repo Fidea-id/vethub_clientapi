@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Domain.Entities.Filters;
 using Domain.Entities.Models;
 using Domain.Interfaces;
 using Infrastructure.Data;
@@ -25,7 +26,7 @@ namespace Infrastructure.Repositories
                 typeof(Services),
                 typeof(Owners),
                 typeof(Patients),
-                typeof(ProductsFilter),
+                typeof(Products),
                 typeof(ProductStocks),
                 typeof(ProductBundles),
                 typeof(ProductDiscounts),

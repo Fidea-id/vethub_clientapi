@@ -1,4 +1,4 @@
-﻿using Domain.Entities.FIlters;
+﻿using Domain.Entities.Filters;
 using Domain.Entities.Models;
 using Domain.Interfaces;
 using Infrastructure.Data;

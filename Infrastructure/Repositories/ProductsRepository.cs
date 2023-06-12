@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Domain.Entities.Filters;
 using Domain.Entities.Models;
 using Domain.Entities.Responses;
 using Domain.Interfaces;
@@ -221,6 +222,16 @@ namespace Infrastructure.Repositories
             var query = $"UPDATE {_tableCategoryName} SET {setClause} WHERE Id = @Id";
 
             await _db.ExecuteAsync(query, categories);
+        }
+
+        public Task<IEnumerable<Products>> GetByFilter(string dbName, ProductsFilter filters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> CountWithFilter(string dbName, ProductsFilter filter)
+        {
+            throw new NotImplementedException();
         }
     }
 }

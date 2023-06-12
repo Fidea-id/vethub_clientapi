@@ -6,28 +6,27 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Xml.Linq;
 
 namespace ClientVetHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class OwnersController : ControllerBase
+    public class ProductsController : ControllerBase
     {
-        private readonly IOwnersService _ownersService;
-        public OwnersController(IOwnersService ownersService)
+        private readonly IProductsService _productsService;
+        public ProductsController(IProductsService productsService)
         {
-            _ownersService = ownersService;
+            _productsService = productsService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] OwnersFilter filters)
+        public async Task<IActionResult> Get([FromQuery] ProductsFilter filters)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _ownersService.GetEntitiesByFilter(filters, dbName);
+                var entities = await _productsService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
             catch (Exception ex)
@@ -42,7 +41,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var data = await _ownersService.ReadByIdAsync(id, dbName);
+                var data = await _productsService.ReadByIdAsync(id, dbName);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -52,12 +51,12 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Owners request)
+        public async Task<IActionResult> Post([FromBody] Products request)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _ownersService.CreateAsync(request, dbName);
+                var create = await _productsService.CreateAsync(request, dbName);
                 return Ok(create);
             }
             catch (Exception ex)
@@ -67,13 +66,13 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] OwnersRequest value)
+        public async Task<IActionResult> Put(int id, [FromBody] ProductsRequest value)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var newData = await _ownersService.UpdateAsync(id, value, dbName);
-                return Ok(newData);
+                await _productsService.UpdateAsync(id, value, dbName);
+                return Ok(value);
             }
             catch (Exception ex)
             {
@@ -87,8 +86,8 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _ownersService.DeleteAsync(id, dbName);
-                return Ok(default(Patients));
+                await _productsService.DeleteAsync(id, dbName);
+                return Ok(default(Products));
             }
             catch (Exception ex)
             {

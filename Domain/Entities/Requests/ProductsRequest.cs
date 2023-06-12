@@ -1,6 +1,12 @@
-﻿namespace Domain.Entities.Filters
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Domain.Entities.Requests
 {
-    public class ProductsFilter : BaseEntityFilter
+    public class ProductsRequest
     {
         public string? Name { get; set; }
         public string? Description { get; set; }

@@ -15,12 +15,13 @@ namespace Infrastructure
             services.AddTransient<IDBFactory, DBFactory>();
             //Repository
             services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
-            services.AddScoped<IProfileRepository, ProfileRepository>();
+            services.AddScoped<IClinicsRepository, ClinicsRepository>();
             services.AddScoped<IGenerateTableRepository, GenerateTableRepository>();
-            services.AddScoped<IServicesRepository, ServicesRepository>();
             services.AddScoped<IOwnersRepository, OwnersRepository>();
             services.AddScoped<IPatientsRepository, PatientsRepository>();
             services.AddScoped<IProductsRepository, ProductsRepository>();
+            services.AddScoped<IProfileRepository, ProfileRepository>();
+            services.AddScoped<IServicesRepository, ServicesRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();
