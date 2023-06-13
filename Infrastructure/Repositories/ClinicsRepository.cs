@@ -1,12 +1,7 @@
-﻿using Domain.Entities.Filters;
-using Domain.Entities.Models;
+﻿using Domain.Entities.Filters.Clients;
+using Domain.Entities.Models.Clients;
 using Domain.Interfaces;
 using Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {

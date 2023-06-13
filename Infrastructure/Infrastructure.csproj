@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\..\VetHubAPI\Domain\Domain.csproj" />
   </ItemGroup>
 
 </Project>

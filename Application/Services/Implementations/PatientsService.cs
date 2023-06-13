@@ -1,8 +1,9 @@
 ﻿using Application.Services.Contracts;
-using Domain.Entities.Filters;
-using Domain.Entities.Models;
+using Domain.Entities.Filters.Clients;
+using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests;
 using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 
 namespace Application.Services.Implementations
 {

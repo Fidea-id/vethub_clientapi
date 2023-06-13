@@ -2,6 +2,7 @@
 using Application.Utils;
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;

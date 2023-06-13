@@ -1,11 +1,12 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities.Emails;
-using Domain.Entities.Filters;
-using Domain.Entities.Models;
+using Domain.Entities.Filters.Clients;
+using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests;
 using Domain.Entities.Responses;
 using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 using FluentEmail.Core.Models;
 
 namespace Application.Services.Implementations

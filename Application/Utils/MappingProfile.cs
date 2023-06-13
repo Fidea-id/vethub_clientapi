@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Domain.Entities.Models;
+using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests;
 using Domain.Entities.Responses;
 
@@ -27,7 +27,7 @@ namespace Application.Utils
         public MappingProfile()
         {
             //model to response
-            CreateMap<Domain.Entities.Models.Profile, UserProfileResponse>();
+            CreateMap<Domain.Entities.Models.Clients.Profile, UserProfileResponse>();
 
             //request to model
             CreateMap<OwnersRequest, Owners>();

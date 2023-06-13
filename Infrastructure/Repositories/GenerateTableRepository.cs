@@ -1,6 +1,5 @@
 ﻿using Dapper;
-using Domain.Entities.Filters;
-using Domain.Entities.Models;
+using Domain.Entities.Models.Clients;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Utils;

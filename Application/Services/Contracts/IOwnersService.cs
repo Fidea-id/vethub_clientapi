@@ -1,5 +1,5 @@
-﻿using Domain.Entities.Filters;
-using Domain.Entities.Models;
+﻿using Domain.Entities.Filters.Clients;
+using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests;
 
 namespace Application.Services.Contracts
