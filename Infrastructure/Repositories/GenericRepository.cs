@@ -44,8 +44,8 @@ namespace Infrastructure.Repositories
 
             foreach (var property in filterProperties)
             {
-                var value = property.GetValue(filters);
-                if (value != null && property.Name != "SortProp" && property.Name != "SortMode")
+                var value = property.GetValue(filters); 
+                if (value != null && property.Name != "SortProp" && property.Name != "SortMode" && property.Name != "Skip" && property.Name != "Take")
                 {
                     var paramName = $"@{property.Name}";
                     var propertyType = property.PropertyType;
@@ -81,7 +81,18 @@ namespace Infrastructure.Repositories
                 var sortMode = string.IsNullOrEmpty(filters.SortMode) ? "ASC" : filters.SortMode.ToUpper();
                 sortClause = $"ORDER BY {filters.SortProp} {sortMode}";
             }
-            var query = $"SELECT * FROM {_tableName} {whereClause} {sortClause}";
+
+            var limitClause = "";
+            if (filters.Skip.HasValue && filters.Take.HasValue)
+            {
+                limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
+            }
+            else if (filters.Take.HasValue)
+            {
+                limitClause = $"LIMIT {filters.Take.Value}";
+            }
+
+            var query = $"SELECT * FROM {_tableName} {whereClause} {sortClause} {limitClause}";
             return await _db.QueryAsync<T>(query, parameters);
         }
 
