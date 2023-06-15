@@ -2,7 +2,7 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests;
-using Domain.Interfaces;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 
 namespace Application.Services.Implementations
@@ -12,5 +12,10 @@ namespace Application.Services.Implementations
         public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository)
         : base(unitOfWork, repository)
         { }
+
+        public async Task<IEnumerable<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName)
+        {
+            return await _unitOfWork.PatientsRepository.GetPatientsList(dbName, filter);
+        }
     }
 }

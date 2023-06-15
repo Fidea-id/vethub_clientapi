@@ -2,7 +2,7 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses;
-using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 
@@ -24,7 +24,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(bundles);
+            var propertyNames = QueryGenerator.GetPropertyNames(bundles);
             var columnNames = string.Join(", ", propertyNames);
             var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
 
@@ -37,7 +37,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(discount);
+            var propertyNames = QueryGenerator.GetPropertyNames(discount);
             var columnNames = string.Join(", ", propertyNames);
             var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
 
@@ -62,7 +62,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(bundles);
+            var propertyNames = QueryGenerator.GetPropertyNames(bundles);
             var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
             var query = $"UPDATE {_tableBundleName} SET {setClause} WHERE Id = @Id";
@@ -74,7 +74,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(discount);
+            var propertyNames = QueryGenerator.GetPropertyNames(discount);
             var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
             var query = $"UPDATE {_tableDiscountName} SET {setClause} WHERE Id = @Id";
@@ -203,7 +203,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(categories);
+            var propertyNames = QueryGenerator.GetPropertyNames(categories);
             var columnNames = string.Join(", ", propertyNames);
             var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
 
@@ -216,7 +216,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(categories);
+            var propertyNames = QueryGenerator.GetPropertyNames(categories);
             var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
             var query = $"UPDATE {_tableCategoryName} SET {setClause} WHERE Id = @Id";

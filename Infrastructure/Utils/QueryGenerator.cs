@@ -1,12 +1,88 @@
-﻿using Domain.Entities;
+﻿using Dapper;
+using Domain.Entities;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Reflection;
 using System.Text;
 
 namespace Infrastructure.Utils
 {
-    public static class CreateTableQueryGenerator
+    public static class QueryGenerator
     {
+        public static Tuple<string, DynamicParameters> GenerateFilterQuery<TFilter>(TFilter filters, string mainTableName, string joinQuery = null, List<string> selectColumns = null) where TFilter : BaseEntityFilter
+        {
+            // Build the WHERE clause based on the filters
+            var whereClause = "";
+            var parameters = new DynamicParameters();
+
+            // Get the properties of the filter object
+            var filterProperties = typeof(TFilter).GetProperties();
+
+            foreach (var property in filterProperties)
+            {
+                var value = property.GetValue(filters);
+                if (value != null && property.Name != "SortProp" && property.Name != "SortMode" && property.Name != "Skip" && property.Name != "Take")
+                {
+                    var paramName = $"@{property.Name}";
+                    var propertyType = property.PropertyType;
+
+                    if (propertyType == typeof(int) || propertyType == typeof(bool))
+                    {
+                        whereClause += $"{property.Name} = {paramName} AND ";
+                        parameters.Add(paramName, value);
+                    }
+                    else if (propertyType == typeof(DateTime))
+                    {
+                        whereClause += $"{property.Name} = {paramName} AND ";
+                        parameters.Add(paramName, value, DbType.DateTime);
+                    }
+                    else
+                    {
+                        whereClause += $"{property.Name} LIKE {paramName} AND ";
+                        parameters.Add(paramName, $"%{value}%"); // Using wildcard '%' for exact matching
+                    }
+                }
+            }
+
+            // Remove the trailing "AND " from the where clause
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                whereClause = "WHERE " + whereClause.TrimEnd("AND ".ToCharArray());
+            }
+
+            // Handle sorting
+            var sortClause = "";
+            if (!string.IsNullOrEmpty(filters.SortProp))
+            {
+                var sortMode = string.IsNullOrEmpty(filters.SortMode) ? "ASC" : filters.SortMode.ToUpper();
+                sortClause = $"ORDER BY {filters.SortProp} {sortMode}";
+            }
+
+            var limitClause = "";
+            if (filters.Skip.HasValue && filters.Take.HasValue)
+            {
+                limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
+            }
+            else if (filters.Take.HasValue)
+            {
+                limitClause = $"LIMIT {filters.Take.Value}";
+            }
+
+            // Construct the SELECT clause
+            var selectClause = "SELECT ";
+            if (selectColumns != null && selectColumns.Any())
+            {
+                selectClause += string.Join(", ", selectColumns);
+            }
+            else
+            {
+                selectClause += "*";
+            }
+
+            var query = $"{selectClause} FROM {mainTableName} {joinQuery} {whereClause} {sortClause} {limitClause}";
+
+            return new Tuple<string, DynamicParameters>(query, parameters);
+        }
         public static string GenerateCreateTableQuery(Type modelType)
         {
             var tableName = modelType.Name;

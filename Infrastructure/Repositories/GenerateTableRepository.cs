@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities.Models.Clients;
-using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 
@@ -34,7 +34,7 @@ namespace Infrastructure.Repositories
             };
             foreach (var modelType in models)
             {
-                string createTableQuery = CreateTableQueryGenerator.GenerateCreateTableQuery(modelType);
+                string createTableQuery = QueryGenerator.GenerateCreateTableQuery(modelType);
                 batchQueries.Add(createTableQuery);
             }
             string batchQuery = string.Join(" ", batchQueries);
@@ -57,7 +57,7 @@ namespace Infrastructure.Repositories
                     foreach (var record in dataList)
                     {
                         // JsonConvert Deserialize to TableName Object class
-                        string insertQuery = CreateTableQueryGenerator.GenerateInsertQuery(tableName, record);
+                        string insertQuery = QueryGenerator.GenerateInsertQuery(tableName, record);
                         batchQueries.Add(insertQuery);
                     }
                 }
@@ -65,7 +65,7 @@ namespace Infrastructure.Repositories
                 {
                     // Generate INSERT statement for a single record
                     // JsonConvert Deserialize to TableName Object class
-                    string insertQuery = CreateTableQueryGenerator.GenerateInsertQuery(tableName, data);
+                    string insertQuery = QueryGenerator.GenerateInsertQuery(tableName, data);
                     batchQueries.Add(insertQuery);
                 }
             }

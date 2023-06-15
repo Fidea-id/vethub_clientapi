@@ -1,5 +1,5 @@
 ﻿using Application.Services.Contracts;
-using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 
 namespace Application.Services.Implementations
 {

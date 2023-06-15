@@ -94,5 +94,21 @@ namespace ClientVetHub.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("list")]
+        public async Task<IActionResult> GetList([FromQuery] PatientsFilter filters)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _patientsService.ReadPatientsList(filters, dbName);
+                return Ok(entities);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
     }
 }

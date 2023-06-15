@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
-using Domain.Interfaces;
+using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 using System.Data;
@@ -36,71 +36,15 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<T>> GetByFilter(string dbName, TFilter filters)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            // Build the WHERE clause based on the filters
-            var whereClause = "";
-            var parameters = new DynamicParameters();
-            // Get the properties of the filter object
-            var filterProperties = typeof(TFilter).GetProperties();
-
-            foreach (var property in filterProperties)
-            {
-                var value = property.GetValue(filters); 
-                if (value != null && property.Name != "SortProp" && property.Name != "SortMode" && property.Name != "Skip" && property.Name != "Take")
-                {
-                    var paramName = $"@{property.Name}";
-                    var propertyType = property.PropertyType;
-
-                    if (propertyType == typeof(int) || propertyType == typeof(bool))
-                    {
-                        whereClause += $"{property.Name} = {paramName} AND ";
-                        parameters.Add(paramName, value);
-                    }
-                    else if (propertyType == typeof(DateTime))
-                    {
-                        whereClause += $"{property.Name} = {paramName} AND ";
-                        parameters.Add(paramName, value, DbType.DateTime);
-                    }
-                    else
-                    {
-                        whereClause += $"{property.Name} LIKE {paramName} AND ";
-                        parameters.Add(paramName, $"%{value}%"); // Using wildcard '%' for exact matching
-                    }
-                }
-            }
-
-            // Remove the trailing "AND " from the where clause
-            if (!string.IsNullOrEmpty(whereClause))
-            {
-                whereClause = "WHERE " + whereClause.TrimEnd("AND ".ToCharArray());
-            }
-
-            // Handle sorting
-            var sortClause = "";
-            if (!string.IsNullOrEmpty(filters.SortProp))
-            {
-                var sortMode = string.IsNullOrEmpty(filters.SortMode) ? "ASC" : filters.SortMode.ToUpper();
-                sortClause = $"ORDER BY {filters.SortProp} {sortMode}";
-            }
-
-            var limitClause = "";
-            if (filters.Skip.HasValue && filters.Take.HasValue)
-            {
-                limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
-            }
-            else if (filters.Take.HasValue)
-            {
-                limitClause = $"LIMIT {filters.Take.Value}";
-            }
-
-            var query = $"SELECT * FROM {_tableName} {whereClause} {sortClause} {limitClause}";
-            return await _db.QueryAsync<T>(query, parameters);
+            var filterQuery = QueryGenerator.GenerateFilterQuery(filters, _tableName);
+            return await _db.QueryAsync<T>(filterQuery.Item1, filterQuery.Item2);
         }
 
         public async Task<int> Add(string dbName, T entity)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
+            var propertyNames = QueryGenerator.GetPropertyNames(entity);
 
             var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
             var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
@@ -115,7 +59,7 @@ namespace Infrastructure.Repositories
             var query = "";
             foreach (var item in entity)
             {
-                var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
+                var propertyNames = QueryGenerator.GetPropertyNames(entity);
                 var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
                 var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
 
@@ -130,7 +74,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            var propertyNames = CreateTableQueryGenerator.GetPropertyNames(entity);
+            var propertyNames = QueryGenerator.GetPropertyNames(entity);
             var setClause = string.Join(", ", propertyNames.Select(name => $"{name.Name} = @{name.Name}"));
 
             var query = $"UPDATE {_tableName} SET {setClause} WHERE Id = @Id";
@@ -145,7 +89,7 @@ namespace Infrastructure.Repositories
 
                 foreach (var item in entity)
                 {
-                    var propertyNames = CreateTableQueryGenerator.GetPropertyNames(item);
+                    var propertyNames = QueryGenerator.GetPropertyNames(item);
                     var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
                     var subquery = $"UPDATE {_tableName} SET {setClause} WHERE Id = @Id ";
@@ -170,7 +114,7 @@ namespace Infrastructure.Repositories
 
                 foreach (var item in entity)
                 {
-                    var propertyNames = CreateTableQueryGenerator.GetPropertyNames(item);
+                    var propertyNames = QueryGenerator.GetPropertyNames(item);
                     var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
                     var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id ";
