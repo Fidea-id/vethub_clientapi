@@ -95,7 +95,7 @@ namespace ClientVetHub.Controllers
             }
         }
 
-        [HttpGet("list")]
+        [HttpGet("List")]
         public async Task<IActionResult> GetList([FromQuery] PatientsFilter filters)
         {
             try
@@ -109,6 +109,5 @@ namespace ClientVetHub.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-
     }
 }
