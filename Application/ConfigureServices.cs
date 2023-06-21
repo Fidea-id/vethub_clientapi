@@ -14,7 +14,6 @@ namespace Application
         {
             services.AddScoped(typeof(IGenericService<,,,>), typeof(GenericService<,,,>));
 
-            services.AddScoped<IClinicsService, ClinicsService>();
             services.AddScoped<IMasterService, MasterService>();
             services.AddScoped<IOwnersService, OwnersService>();
             services.AddScoped<IPatientsService, PatientsService>();

@@ -16,7 +16,6 @@ namespace Infrastructure
             services.AddTransient<IDBFactory, DBFactory>();
             //Repository
             services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
-            services.AddScoped<IClinicsRepository, ClinicsRepository>();
             services.AddScoped<IGenerateTableRepository, GenerateTableRepository>();
             services.AddScoped<IOwnersRepository, OwnersRepository>();
             services.AddScoped<IPatientsRepository, PatientsRepository>();
