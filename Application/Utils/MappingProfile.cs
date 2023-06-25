@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Requests;
+using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
 
 namespace Application.Utils
@@ -31,6 +31,8 @@ namespace Application.Utils
 
             //request to model
             CreateMap<OwnersRequest, Owners>();
+            CreateMap<OwnersAddRequest, Owners>();
+            CreateMap<PetsAddRequest, Patients>();
 
             //DTO to request
 

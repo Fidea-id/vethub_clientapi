@@ -4,6 +4,7 @@ using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 using System.Data;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Infrastructure.Repositories
 {
@@ -56,18 +57,15 @@ namespace Infrastructure.Repositories
         public async Task AddRange(string dbName, IEnumerable<T> entity)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            var query = "";
             foreach (var item in entity)
             {
-                var propertyNames = QueryGenerator.GetPropertyNames(entity);
+                var propertyNames = QueryGenerator.GetPropertyNames(item);
                 var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
                 var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
 
                 var subquery = $"INSERT INTO {_tableName} ({columnNames}) VALUES ({parameterNames}) ";
-                query += subquery;
+                await _db.ExecuteAsync(subquery, item);
             }
-
-            await _db.ExecuteAsync(query, entity);
         }
 
         public async Task Update(string dbName, T entity)
@@ -153,6 +151,19 @@ namespace Infrastructure.Repositories
                 var query = $"SELECT COUNT(*) FROM {_tableName} {whereClause}";
                 return await _db.ExecuteScalarAsync<int>(query, parameters);
             }
+        }
+
+        public async Task<IEnumerable<T>> WhereQuery(string dbName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryAsync<T>($"SELECT * FROM {_tableName} WHERE {query}");
+        }
+        public async Task<bool> AnyQuery(string dbName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            string querys = $"SELECT COUNT(*) FROM {_tableName} WHERE {query}";
+            var result = await _db.ExecuteScalarAsync<int>(querys);
+            return result > 0;
         }
     }
 }

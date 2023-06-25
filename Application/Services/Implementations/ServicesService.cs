@@ -1,6 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Domain.Entities.Filters.Clients;
-using Domain.Entities.Requests;
+using Domain.Entities.Requests.Clients;
 using Domain.Interfaces.Clients;
 
 namespace Application.Services.Implementations

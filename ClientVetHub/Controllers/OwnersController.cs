@@ -1,7 +1,7 @@
 ﻿using Application.Services.Contracts;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Requests;
+using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,17 +51,17 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Owners request)
+        public async Task<IActionResult> Post([FromBody] OwnersPetsRequest request)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _ownersService.CreateAsync(request, dbName);
+                var create = await _ownersService.CreateOwnersPetsAsync(request, dbName);
                 return Ok(create);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex);
+                throw;
             }
         }
 
@@ -76,7 +76,7 @@ namespace ClientVetHub.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex);
+                return StatusCode(500, ex.Message);
             }
         }
 
@@ -91,7 +91,7 @@ namespace ClientVetHub.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex);
+                return StatusCode(500, ex.Message);
             }
         }
     }

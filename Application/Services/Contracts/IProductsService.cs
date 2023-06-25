@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Requests;
+using Domain.Entities.Requests.Clients;
 
 namespace Application.Services.Contracts
 {

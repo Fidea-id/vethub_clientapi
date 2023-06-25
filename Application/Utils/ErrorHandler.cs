@@ -3,40 +3,43 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using System.Text.Json;
 
 namespace Application.Utils
 {
     public static class ErrorHandler
     {
-        public static void UseCustomErrors(this IApplicationBuilder app, IHostEnvironment environment)
+        public static void UseCustomExceptionHandler(this IApplicationBuilder app)
         {
-            app.Use(WriteProductionResponse);
-        }
-
-        private static Task WriteProductionResponse(HttpContext httpContext, Func<Task> next)
-            => WriteResponse(httpContext, includeDetails: true);
-
-        private static async Task WriteResponse(HttpContext httpContext, bool includeDetails)
-        {
-            // Try and retrieve the error from the ExceptionHandler middleware
-            var exceptionDetails = httpContext.Features.Get<IExceptionHandlerFeature>();
-            var ex = exceptionDetails?.Error;
-
-            if (ex != null)
+            app.UseExceptionHandler(errorApp =>
             {
-                httpContext.Response.ContentType = "application/problem+json";
-
-                var globalErrorResponse = new BaseAPIErrorResponse
+                errorApp.Run(async context =>
                 {
-                    Title = "Internal Server Error",
-                    Message = ex.Message.Replace("exception:", "").Replace("One or more errors occurred. (", "").Replace(")", ""),
-                    StatusCode = 500
-                };
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json";
 
-                var stream = httpContext.Response.Body;
-                await JsonSerializer.SerializeAsync(stream, globalErrorResponse);
-            }
+                    var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+                    var exception = exceptionHandlerPathFeature.Error;
+
+                    var errors = new List<ErrorResponse>();
+                    var error = new ErrorResponse()
+                    {
+                        Field = exception.Source,
+                        Message = exception.Message.Replace("exception:", "").Replace("One or more errors occurred. (", "").Replace(")", ""),
+                        Detail = exception.InnerException
+                    };
+                    errors.Add(error);
+
+                    var errorResponse = new ErrorResponseModel()
+                    {
+                        StatusCode = 500,
+                        Errors = errors
+                    };
+
+                    await context.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));
+                });
+            });
         }
     }
 }

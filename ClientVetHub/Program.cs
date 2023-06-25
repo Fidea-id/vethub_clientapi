@@ -30,7 +30,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 //}
 
-app.UseExceptionHandler(err => err.UseCustomErrors(app.Environment));
+app.UseCustomExceptionHandler();
 
 app.UseHttpsRedirection();
 
