@@ -61,7 +61,7 @@ namespace Infrastructure.Data
                 else
                 {
                     // Production connection string
-                    tempConnectionString = $"Server=localhost;port=3306;Database=VethubMaster;userid=adminmaster;password=SAl@k2lu87CO6oNOfApuB1nu21YOca;Allow User Variables=true";
+                    tempConnectionString = $"Server=localhost;port=3306;Database=vethubmaster;userid=adminmaster;password=SAl@k2lu87CO6oNOfApuB1nu21YOca;Allow User Variables=true";
                 }
                 using (var tempConnection = new MySqlConnection(tempConnectionString))
                 {
