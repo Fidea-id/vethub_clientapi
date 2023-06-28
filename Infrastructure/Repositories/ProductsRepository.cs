@@ -153,6 +153,7 @@ namespace Infrastructure.Repositories
                 p.Description,
                 ps.Stock,
                 ps.Volume,
+                p.Price,
                 pc.Name AS Category,
                 IF(COUNT(pb.BundleId) > 0, 1, 0) AS IsBundle
                 IF(COUNT(pd.DiscountId) > 0, 1, 0) AS HasDiscount

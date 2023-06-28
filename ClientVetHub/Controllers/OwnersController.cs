@@ -29,9 +29,9 @@ namespace ClientVetHub.Controllers
                 var entities = await _ownersService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex);
+                throw;
             }
         }
 
@@ -44,9 +44,9 @@ namespace ClientVetHub.Controllers
                 var data = await _ownersService.ReadByIdAsync(id, dbName);
                 return Ok(data);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex);
+                throw;
             }
         }
 
@@ -74,9 +74,9 @@ namespace ClientVetHub.Controllers
                 var newData = await _ownersService.UpdateAsync(id, value, dbName);
                 return Ok(newData);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -89,9 +89,9 @@ namespace ClientVetHub.Controllers
                 await _ownersService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
     }

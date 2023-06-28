@@ -21,9 +21,9 @@ namespace ClientVetHub.Controllers
                 await _masterService.GenerateTables(dbName);
                 return Ok();
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex);
+                throw;
             }
         }
 
@@ -35,9 +35,9 @@ namespace ClientVetHub.Controllers
                 await _masterService.GenerateTableField(dbName, dataJson);
                 return Ok();
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex);
+                throw;
             }
         }
     }

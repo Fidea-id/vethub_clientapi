@@ -7,6 +7,7 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
 using Domain.Interfaces;
 using Domain.Interfaces.Clients;
+using Domain.Utils;
 using FluentEmail.Core.Models;
 
 namespace Application.Services.Implementations
@@ -20,10 +21,26 @@ namespace Application.Services.Implementations
             _emailsender = emailsender;
         }
 
-        public async Task<UserProfileResponse> GetUserProfileByIdAsync(string dbName, int id)
+        public async Task<UserProfileResponse> GetUserProfileByGlobalIdAsync(string dbName, int id)
         {
-            var user = await _unitOfWork.ProfileRepository.GetById(dbName, id);
+            var user = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, id);
             var result = Mapping.Mapper.Map<UserProfileResponse>(user);
+            return result;
+        }
+
+        public async Task<UserProfileResponse> UpdateUserProfileByGlobalIdAsync(string dbName, ProfileRequest request, int id)
+        {
+
+            //trim all string
+            FormatUtil.TrimObjectProperties(request);
+            //var entity = Mapping.Mapper.Map<Profile>(request); // cek dulu
+
+            var checkedEntity = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, id);
+            FormatUtil.ConvertUpdateObject<ProfileRequest, Profile>(request, checkedEntity);
+            FormatUtil.SetDateBaseEntity<Profile>(checkedEntity, true);
+            await _repository.Update(dbName, checkedEntity);
+
+            var result = Mapping.Mapper.Map<UserProfileResponse>(checkedEntity);
             return result;
         }
 

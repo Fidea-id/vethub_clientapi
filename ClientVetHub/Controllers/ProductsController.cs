@@ -29,9 +29,9 @@ namespace ClientVetHub.Controllers
                 var entities = await _productsService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -44,9 +44,9 @@ namespace ClientVetHub.Controllers
                 var data = await _productsService.ReadByIdAsync(id, dbName);
                 return Ok(data);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -59,9 +59,9 @@ namespace ClientVetHub.Controllers
                 var create = await _productsService.CreateAsync(request, dbName);
                 return Ok(create);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -74,9 +74,9 @@ namespace ClientVetHub.Controllers
                 await _productsService.UpdateAsync(id, value, dbName);
                 return Ok(value);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -89,9 +89,9 @@ namespace ClientVetHub.Controllers
                 await _productsService.DeleteAsync(id, dbName);
                 return Ok(default(Products));
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
     }

@@ -12,6 +12,11 @@ namespace Application.Services.Implementations
             _generateTableRepository = generateTableRepository;
         }
 
+        public Task CheckTableColumn(string dbName, Dictionary<string, object> fields)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task GenerateTableField(string dbName, Dictionary<string, object> fields)
         {
             try

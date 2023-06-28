@@ -23,7 +23,7 @@ namespace ClientVetHub.Controllers
         public async Task<IActionResult> GetUser(int id)
         {
             var dbName = User.FindFirstValue("Entity");
-            var user = await _profileService.GetUserProfileByIdAsync(dbName, id);
+            var user = await _profileService.GetUserProfileByGlobalIdAsync(dbName, id);
             return Ok(user);
         }
 
@@ -53,9 +53,9 @@ namespace ClientVetHub.Controllers
                 var create = await _profileService.CreateAsync(request, dbName);
                 return Ok(create);
             }
-            catch (Exception)
+            catch
             {
-                return StatusCode(500, "An error occurred.");
+                throw;
             }
         }
         [HttpPost]
@@ -67,9 +67,9 @@ namespace ClientVetHub.Controllers
                 var create = await _profileService.CreateAsync(request, dbName);
                 return Ok(create);
             }
-            catch (Exception)
+            catch
             {
-                return StatusCode(500, "An error occurred.");
+                throw;
             }
         }
 
@@ -79,12 +79,12 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _profileService.UpdateAsync(id, value, dbName);
-                return Ok(value);
+                var response = await _profileService.UpdateUserProfileByGlobalIdAsync(dbName, value, id);
+                return Ok(response);
             }
-            catch (Exception)
+            catch
             {
-                return StatusCode(500, "An error occurred.");
+                throw;
             }
         }
 
@@ -97,9 +97,9 @@ namespace ClientVetHub.Controllers
                 await _profileService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
-            catch (Exception)
+            catch
             {
-                return StatusCode(500, "An error occurred.");
+                throw;
             }
         }
     }

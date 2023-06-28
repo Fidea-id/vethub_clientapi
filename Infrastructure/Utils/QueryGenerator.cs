@@ -109,6 +109,13 @@ namespace Infrastructure.Utils
                     continue;
                 }
                 var sqlType = GetSqlType(property.PropertyType);
+                // Set Max Length
+                var maxLengthAttribute = property.GetCustomAttribute<MaxLengthAttribute>();
+                if (maxLengthAttribute != null)
+                {
+                    sqlType = $"{sqlType}({maxLengthAttribute.Length})";
+                }
+
                 queryBuilder.Append($"{propertyName} {sqlType}");
                 // Add a comma separator for all lines except the last one
                 if (i < properties.Length - 1)
@@ -167,14 +174,19 @@ namespace Infrastructure.Utils
         {
             return entity.GetType().GetProperties().Select(property =>
             {
-                if (property.PropertyType == typeof(DateTime))
+                var propertyValue = property.GetValue(entity);
+                if (propertyValue == null)
                 {
-                    var datetimeValue = (DateTime)property.GetValue(entity);
+                    return (property.Name, null);
+                }
+                else if (property.PropertyType == typeof(DateTime))
+                {
+                    var datetimeValue = (DateTime)propertyValue;
                     return (property.Name, datetimeValue.ToString("yyyy-MM-dd HH:mm:ss"));
                 }
                 else
                 {
-                    return (property.Name, property.GetValue(entity).ToString());
+                    return (property.Name, propertyValue.ToString());
                 }
             });
         }

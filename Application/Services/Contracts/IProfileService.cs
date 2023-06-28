@@ -7,7 +7,8 @@ namespace Application.Services.Contracts
 {
     public interface IProfileService : IGenericService<Profile, ProfileRequest, Profile, ProfileFilter>
     {
-        public Task<UserProfileResponse> GetUserProfileByIdAsync(string dbName, int id);
+        public Task<UserProfileResponse> GetUserProfileByGlobalIdAsync(string dbName, int id);
+        Task<UserProfileResponse> UpdateUserProfileByGlobalIdAsync(string dbName, ProfileRequest request, int id);
         public Task TestSendEmail();
     }
 }
