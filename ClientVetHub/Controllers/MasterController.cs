@@ -14,11 +14,11 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet("GenerateInitDB/{dbName}")]
-        public async Task<IActionResult> GenerateInitDB(string dbName)
+        public async Task<IActionResult> GenerateInitDB(string dbName, int? version = null)
         {
             try
             {
-                await _masterService.GenerateTables(dbName);
+                await _masterService.GenerateTables(dbName, version);
                 return Ok();
             }
             catch

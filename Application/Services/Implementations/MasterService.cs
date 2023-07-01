@@ -12,26 +12,10 @@ namespace Application.Services.Implementations
             _generateTableRepository = generateTableRepository;
         }
 
-        public Task CheckTableColumn(string dbName, Dictionary<string, object> fields)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task GenerateTableField(string dbName, Dictionary<string, object> fields)
         {
             try
             {
-                //var fieldss = new Dictionary<string, object>
-                //{
-                //    {
-                //        "ProductCategories", new List<ProductCategories>
-                //        {
-                //            new ProductCategories { Name = "Food" },
-                //            new ProductCategories { Name = "Drink" },
-                //            new ProductCategories { Name = "Accessories" }
-                //        }
-                //    }
-                //};
                 await _generateTableRepository.GenerateTableField(dbName, fields);
             }
             catch (Exception ex)
@@ -40,11 +24,18 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task GenerateTables(string dbName)
+        public async Task GenerateTables(string dbName, int? version = null)
         {
             try
             {
-                await _generateTableRepository.GenerateAllTable(dbName);
+                if(version.HasValue)
+                {
+                    await _generateTableRepository.UpdateTable(dbName, version.Value);
+                }
+                else
+                {
+                    await _generateTableRepository.GenerateAllTable(dbName);
+                }
             }
             catch (Exception ex)
             {
