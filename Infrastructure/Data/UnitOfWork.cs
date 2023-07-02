@@ -95,5 +95,17 @@ namespace Infrastructure.Data
                 return _ProductsRepository;
             }
         }
+        private IAppointmentRepository _AppointmentRepository;
+        public IAppointmentRepository AppointmentRepository
+        {
+            get
+            {
+                if (_AppointmentRepository == null)
+                {
+                    _AppointmentRepository = new AppointmentRepository(_dbFactory);
+                }
+                return _AppointmentRepository;
+            }
+        }
     }
 }

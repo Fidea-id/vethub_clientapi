@@ -22,6 +22,7 @@ namespace Infrastructure
             services.AddScoped<IProductsRepository, ProductsRepository>();
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IServicesRepository, ServicesRepository>();
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();
