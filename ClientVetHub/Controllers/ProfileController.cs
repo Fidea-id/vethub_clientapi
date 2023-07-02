@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -58,13 +59,16 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Profile request)
+        [HttpPost("{id}")]
+        public async Task<IActionResult> Post(int id, [FromBody] ProfileRequest request)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _profileService.CreateAsync(request, dbName);
+                var profile = Mapping.Mapper.Map<Profile>(request);
+                profile.Entity = dbName;
+                profile.GlobalId = id;
+                var create = await _profileService.CreateAsync(profile, dbName);
                 return Ok(create);
             }
             catch
