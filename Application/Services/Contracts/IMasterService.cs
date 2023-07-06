@@ -3,6 +3,6 @@
     public interface IMasterService
     {
         Task GenerateTables(string dbName, int? version = null);
-        Task GenerateTableField(string dbName, Dictionary<string, object> fields);
+        Task GenerateTableField(string dbName, string fields);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
@@ -231,6 +232,16 @@ namespace Infrastructure.Repositories
         }
 
         public Task<int> CountWithFilter(string dbName, ProductsFilter filter)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddProductCategoriesRequest(IEnumerable<ProductsCategoriesRequest> categories, string dbName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddProductCategoriesRange(IEnumerable<ProductCategories> categories, string dbName)
         {
             throw new NotImplementedException();
         }

@@ -3,6 +3,7 @@ using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
+using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Text;
 
@@ -33,6 +34,8 @@ namespace Infrastructure.Repositories
                 typeof(ProductBundles),
                 typeof(ProductDiscounts),
                 typeof(ProductCategories),
+                typeof(Appointments),
+                typeof(AppointmentsStatus),
                 // Add more model types here
             };
             foreach (var modelType in models)
@@ -44,7 +47,7 @@ namespace Infrastructure.Repositories
             await _db.ExecuteAsync(batchQuery);
         }
 
-        public async Task GenerateTableField(string dbName, Dictionary<string, object> fields)
+        public async Task GenerateTableField(string dbName, JObject fields)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
@@ -55,7 +58,7 @@ namespace Infrastructure.Repositories
                 string tableName = entry.Key;
                 var data = entry.Value;
 
-                if (data is IEnumerable<object> dataList)
+                if (data is JArray dataList)
                 {
                     // Generate INSERT statements for multiple records
                     foreach (var record in dataList)

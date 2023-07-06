@@ -233,5 +233,26 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+
+        public async Task<TResponse> CreateRequestAsync(TRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<T>(request);
+                FormatUtil.SetIsActive<T>(entity, true);
+                FormatUtil.SetDateBaseEntity<T>(entity);
+
+                var newId = await _repository.Add(dbName, entity);
+                entity.Id = newId;
+                return Mapping.Mapper.Map<TResponse>(entity);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"{typeof(T).Name}Service.CreateAsync";
+                throw;
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
+using Newtonsoft.Json.Linq;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Reflection;
@@ -190,35 +191,20 @@ namespace Infrastructure.Utils
                 }
             });
         }
-        public static string GenerateInsertQuery(string tableName, object record)
+        public static string GenerateInsertQuery(string tableName, JToken record)
         {
-            var properties = record.GetType().GetProperties().Where(p => p.Name != "Id"); // Exclude the Id property
             var queryBuilder = new StringBuilder();
             queryBuilder.Append($"INSERT INTO {tableName} (");
-            for (int i = 0; i < properties.Count(); i++)
+
+            if (record is JObject obj)
             {
-                var property = properties.ElementAt(i);
-                var propertyName = property.Name;
-                // Exclude properties that are not objects or collections
-                if (property.PropertyType.IsClass && property.PropertyType != typeof(string) && !property.PropertyType.IsArray)
-                {
-                    var subProperties = property.PropertyType.GetProperties();
+                var properties = obj.Properties().Where(p => p.Name != "Id"); // Exclude the Id property
 
-                    foreach (var subProperty in subProperties)
-                    {
-                        var subPropertyName = subProperty.Name;
-                        queryBuilder.Append(subPropertyName);
-
-                        // Add a comma separator for all lines except the last one
-                        if (i < properties.Count() - 1 || subPropertyName != subProperties.Last().Name)
-                        {
-                            queryBuilder.Append(", ");
-                        }
-                    }
-                }
-                else
+                for (int i = 0; i < properties.Count(); i++)
                 {
-                    queryBuilder.Append(propertyName);
+                    var property = properties.ElementAt(i);
+
+                    queryBuilder.Append(property.Name);
 
                     // Add a comma separator for all lines except the last one
                     if (i < properties.Count() - 1)
@@ -226,46 +212,14 @@ namespace Infrastructure.Utils
                         queryBuilder.Append(", ");
                     }
                 }
-            }
-            queryBuilder.Append(") VALUES (");
-            for (int i = 0; i < properties.Count(); i++)
-            {
-                var property = properties.ElementAt(i);
-                var propertyValue = property.GetValue(record);
 
-                // Check if the property belongs to BaseEntity and set default values
-                if (property.DeclaringType == typeof(BaseEntity))
+                queryBuilder.Append(") VALUES (");
+
+                for (int i = 0; i < properties.Count(); i++)
                 {
-                    if (property.Name == "IsActive")
-                    {
-                        propertyValue = 1; // Set IsActive to true
-                    }
-                    else if (property.Name == "CreatedAt" || property.Name == "UpdatedAt")
-                    {
-                        propertyValue = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); // Format the datetime value
-                    }
-                }
+                    var property = properties.ElementAt(i);
+                    var propertyValue = property.Value;
 
-                // Exclude properties that are not objects or collections
-                if (property.PropertyType.IsClass && property.PropertyType != typeof(string) && !property.PropertyType.IsArray)
-                {
-                    var subProperties = property.PropertyType.GetProperties();
-
-                    foreach (var subProperty in subProperties)
-                    {
-                        var subPropertyValue = subProperty.GetValue(propertyValue);
-
-                        queryBuilder.Append($"'{subPropertyValue}'");
-
-                        // Add a comma separator for all lines except the last one
-                        if (i < properties.Count() - 1 || subProperty != subProperties.Last())
-                        {
-                            queryBuilder.Append(", ");
-                        }
-                    }
-                }
-                else
-                {
                     queryBuilder.Append($"'{propertyValue}'");
 
                     // Add a comma separator for all lines except the last one
@@ -275,6 +229,43 @@ namespace Infrastructure.Utils
                     }
                 }
             }
+            else if (record is JArray array)
+            {
+                var records = array.Children<JObject>();
+
+                if (records.Any())
+                {
+                    var properties = records.First().Properties().Where(p => p.Name != "Id"); // Exclude the Id property
+
+                    foreach (var objRecord in records)
+                    {
+                        queryBuilder.Append($"(");
+
+                        for (int i = 0; i < properties.Count(); i++)
+                        {
+                            var property = properties.ElementAt(i);
+                            var propertyValue = objRecord[property.Name];
+
+                            queryBuilder.Append($"'{propertyValue}'");
+
+                            // Add a comma separator for all lines except the last one
+                            if (i < properties.Count() - 1)
+                            {
+                                queryBuilder.Append(", ");
+                            }
+                        }
+
+                        queryBuilder.Append($")");
+
+                        // Add a comma separator for all lines except the last one
+                        if (objRecord != records.Last())
+                        {
+                            queryBuilder.Append(", ");
+                        }
+                    }
+                }
+            }
+
             queryBuilder.Append(");");
             return queryBuilder.ToString();
         }

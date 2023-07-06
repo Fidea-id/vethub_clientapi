@@ -28,7 +28,7 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPost("GenerateInitDBField/{dbName}")]
-        public async Task<IActionResult> GenerateInitDBField(string dbName, Dictionary<string, object> dataJson)
+        public async Task<IActionResult> GenerateInitDBField(string dbName, string dataJson)
         {
             try
             {
