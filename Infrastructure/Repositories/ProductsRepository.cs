@@ -6,6 +6,7 @@ using Domain.Entities.Responses;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
+using static Dapper.SqlMapper;
 
 namespace Infrastructure.Repositories
 {
@@ -236,14 +237,19 @@ namespace Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public Task AddProductCategoriesRequest(IEnumerable<ProductsCategoriesRequest> categories, string dbName)
+        public async Task AddProductCategoriesRange(IEnumerable<ProductCategories> categories, string dbName)
         {
-            throw new NotImplementedException();
-        }
+            var _db = _dbFactory.GetDbConnection(dbName);
 
-        public Task AddProductCategoriesRange(IEnumerable<ProductCategories> categories, string dbName)
-        {
-            throw new NotImplementedException();
+            foreach (var item in categories)
+            {
+                var propertyNames = QueryGenerator.GetPropertyNames(item);
+                var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
+                var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
+
+                var subquery = $"INSERT INTO {_tableCategoryName} ({columnNames}) VALUES ({parameterNames}) ";
+                await _db.ExecuteAsync(subquery, item);
+            }
         }
     }
 }

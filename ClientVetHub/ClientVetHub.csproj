@@ -11,6 +11,7 @@
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' " />
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' " />
   <ItemGroup>
+    <Content Remove="InitData.json" />
     <Content Remove="wwwroot\Template\Email\TestTemplate.cshtml" />
   </ItemGroup>
 
@@ -39,6 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="InitData.json" />
     <None Include="wwwroot\Template\Email\TestTemplate.cshtml" />
   </ItemGroup>
 

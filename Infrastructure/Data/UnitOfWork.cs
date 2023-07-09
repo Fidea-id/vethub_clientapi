@@ -107,5 +107,19 @@ namespace Infrastructure.Data
                 return _AppointmentRepository;
             }
         }
+
+        public IGenerateTableRepository _GenerateTableRepository;
+
+        public IGenerateTableRepository GenerateTableRepository
+        {
+            get
+            {
+                if (_GenerateTableRepository == null)
+                {
+                    _GenerateTableRepository = new GenerateTableRepository(_dbFactory);
+                }
+                return _GenerateTableRepository;
+            }
+        }
     }
 }

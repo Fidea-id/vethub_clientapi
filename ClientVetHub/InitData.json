@@ -1,0 +1,47 @@
+{
+  "ProductCategories": [
+    {
+      "Name": "Food"
+    },
+    {
+      "Name": "Medicine"
+    }
+  ],
+  "AppointmentsStatus": [
+    {
+      "Name": "Bookings",
+      "Description": "Booking appointment",
+      "Weight": 1
+    },
+    {
+      "Name": "Advent",
+      "Description": "Client coming to clinics",
+      "Weight": 2
+    },
+    {
+      "Name": "Start",
+      "Description": "Start the appointment",
+      "Weight": 3
+    },
+    {
+      "Name": "Pharmacy",
+      "Description": "Appointment done, still waiting pharmacy",
+      "Weight": 4
+    },
+    {
+      "Name": "Payment",
+      "Description": "Appointment waiting to pay",
+      "Weight": 5
+    },
+    {
+      "Name": "Done",
+      "Description": "Appointsment all complete",
+      "Weight": 6
+    },
+    {
+      "Name": "Unknown",
+      "Description": "Unknown status. Take look at note",
+      "Weight": 99
+    }
+  ]
+}

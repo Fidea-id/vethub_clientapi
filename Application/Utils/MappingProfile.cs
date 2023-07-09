@@ -35,6 +35,8 @@ namespace Application.Utils
             CreateMap<PetsAddRequest, Patients>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<AppointmentsRequest, Appointments>();
+            CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
+            CreateMap<ProductsCategoriesRequest, ProductCategories>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 
             //DTO to request

@@ -16,6 +16,17 @@ namespace Infrastructure.Repositories
         {
             _dbFactory = dbFactory;
         }
+
+        public async Task<bool> CheckInitSchema(string dbName, string init)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName, true);
+            var query = $"SELECT Version FROM SchemaVersion Where Note = '{init}'";
+
+            var result = await _db.QueryFirstOrDefaultAsync<string>(query);
+            bool dataExists = !string.IsNullOrEmpty(result); // Check if result is not null or empty
+            return dataExists;
+        }
+
         public async Task GenerateAllTable(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName, true);
@@ -79,6 +90,14 @@ namespace Infrastructure.Repositories
 
             string batchQuery = string.Join(" ", batchQueries);
             await _db.ExecuteAsync(batchQuery);
+        }
+
+        public async Task SetInitSchema(string dbName, string init)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName, true);
+            var query = "INSERT INTO SchemaVersion (Version, Note) VALUES (@Version, @Note)";
+            var parameters = new { Version = "1.0", Note = init };
+            await _db.ExecuteAsync(query, parameters);
         }
 
         public async Task UpdateTable(string dbName, int expectedVersion)
