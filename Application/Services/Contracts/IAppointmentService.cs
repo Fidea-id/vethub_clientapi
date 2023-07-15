@@ -11,5 +11,6 @@ namespace Application.Services.Contracts
 {
     public interface IAppointmentService : IGenericService<Appointments, AppointmentsRequest, Appointments, AppointmentsFilter>
     {
+        Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName);
     }
 }

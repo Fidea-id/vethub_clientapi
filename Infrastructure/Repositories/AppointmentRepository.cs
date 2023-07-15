@@ -36,5 +36,11 @@ namespace Infrastructure.Repositories
                 await _db.ExecuteAsync(subquery, item);
             }
         }
+
+        public async Task<IEnumerable<AppointmentsStatus>> GetAllStatus(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryAsync<AppointmentsStatus>($"SELECT * FROM AppointmentsStatus");
+        }
     }
 }

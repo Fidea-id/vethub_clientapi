@@ -54,6 +54,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Status")]
+        public async Task<IActionResult> GetStatus()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _appointmentService.GetStatus(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {

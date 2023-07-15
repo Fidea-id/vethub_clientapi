@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="InitData.json" />
+    <None Include="wwwroot\DataInsert\InitData.json" />
     <None Include="wwwroot\Template\Email\TestTemplate.cshtml" />
   </ItemGroup>
 

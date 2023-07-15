@@ -23,7 +23,7 @@ namespace Application.Services.Implementations
         {
             try
             {
-                var filePath = $"{Directory.GetCurrentDirectory()}\\InitData.json";
+                var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
                 if (File.Exists(filePath))
                 {
                     // Read the contents of the file

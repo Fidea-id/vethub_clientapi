@@ -51,12 +51,12 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Services request)
+        public async Task<IActionResult> Post([FromBody] ServicesRequest request)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _servicesService.CreateAsync(request, dbName);
+                var create = await _servicesService.CreateRequestAsync(request, dbName);
                 return Ok(create);
             }
             catch

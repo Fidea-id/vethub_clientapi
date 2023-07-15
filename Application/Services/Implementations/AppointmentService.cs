@@ -16,5 +16,11 @@ namespace Application.Services.Implementations
         public AppointmentService(IUnitOfWork unitOfWork, IGenericRepository<Appointments, AppointmentsFilter> repository)
         : base(unitOfWork, repository)
         { }
+
+        public async Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName)
+        {
+            var data = await _unitOfWork.AppointmentRepository.GetAllStatus(dbName);
+            return data;
+        }
     }
 }
