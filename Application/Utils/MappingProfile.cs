@@ -33,6 +33,7 @@ namespace Application.Utils
             CreateMap<OwnersRequest, Owners>();
             CreateMap<OwnersAddRequest, Owners>();
             CreateMap<PetsAddRequest, Patients>();
+            CreateMap<PatientsRequest, Patients>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<AppointmentsRequest, Appointments>();
             CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
