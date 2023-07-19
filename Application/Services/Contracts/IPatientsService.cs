@@ -8,5 +8,6 @@ namespace Application.Services.Contracts
     public interface IPatientsService : IGenericService<Patients, PatientsRequest, Patients, PatientsFilter>
     {
         Task<IEnumerable<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName);
+        Task<IEnumerable<Patients>> ReadByOwnerIdAsync(int id, string dbName);
     }
 }

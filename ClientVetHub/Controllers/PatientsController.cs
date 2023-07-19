@@ -49,6 +49,22 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        
+
+        [HttpGet("Owner/{id}")]
+        public async Task<IActionResult> GetByOwner(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _patientsService.ReadByOwnerIdAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Patients request)

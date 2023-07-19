@@ -13,6 +13,11 @@ namespace Application.Services.Implementations
         : base(unitOfWork, repository)
         { }
 
+        public async Task<IEnumerable<Patients>> ReadByOwnerIdAsync(int id, string dbName)
+        {
+            return await _unitOfWork.PatientsRepository.GetPatientsByOwner(dbName, id);
+        }
+
         public async Task<IEnumerable<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName)
         {
             return await _unitOfWork.PatientsRepository.GetPatientsList(dbName, filter);

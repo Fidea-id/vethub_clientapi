@@ -15,6 +15,12 @@ namespace Infrastructure.Repositories
         {
         }
 
+        public async Task<IEnumerable<Patients>> GetPatientsByOwner(string dbName, int id)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryAsync<Patients>($"SELECT * FROM Patients where IsActive = true AND OwnersId = {id}");
+        }
+
         public async Task<IEnumerable<PatientsListResponse>> GetPatientsList(string dbName, PatientsFilter filter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
