@@ -54,7 +54,7 @@ namespace Application.Services.Implementations
                                         FormatUtil.SetDateBaseEntity<ProductCategories>(itm);
                                     }
 
-                                    await _unitOfWork.ProductsRepository.AddProductCategoriesRange(map, dbName);
+                                    await _unitOfWork.ProductCategoriesRepository.AddRange(dbName, map);
                                 }
                                 else if (kvp.Key == "AppointmentsStatus")
                                 {

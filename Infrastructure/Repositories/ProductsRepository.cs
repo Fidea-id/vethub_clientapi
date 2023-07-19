@@ -12,76 +12,8 @@ namespace Infrastructure.Repositories
 {
     public class ProductsRepository : GenericRepository<Products, ProductsFilter>, IProductsRepository
     {
-        protected readonly string _tableDiscountName;
-        protected readonly string _tableBundleName;
-        protected readonly string _tableCategoryName;
         public ProductsRepository(IDBFactory context) : base(context)
         {
-            _tableDiscountName = typeof(ProductDiscounts).Name;
-            _tableBundleName = typeof(ProductBundles).Name;
-            _tableCategoryName = typeof(ProductCategories).Name;
-        }
-
-        public async Task AddProductBundles(ProductBundles bundles, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(bundles);
-            var columnNames = string.Join(", ", propertyNames);
-            var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
-
-            var query = $"INSERT INTO {_tableBundleName} ({columnNames}) VALUES ({valuePlaceholders})";
-
-            await _db.ExecuteAsync(query, bundles);
-        }
-
-        public async Task AddProductDiscounts(ProductDiscounts discount, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(discount);
-            var columnNames = string.Join(", ", propertyNames);
-            var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
-
-            var query = $"INSERT INTO {_tableDiscountName} ({columnNames}) VALUES ({valuePlaceholders})";
-
-            await _db.ExecuteAsync(query, discount);
-        }
-
-        public async Task DeleteProductBundles(int id, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            await _db.ExecuteAsync($"DELETE FROM {_tableBundleName} WHERE Id = @Id", new { Id = id });
-        }
-
-        public async Task DeleteProductDiscounts(int id, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            await _db.ExecuteAsync($"DELETE FROM {_tableDiscountName} WHERE Id = @Id", new { Id = id });
-        }
-
-        public async Task UpdateProductBundles(int id, ProductBundles bundles, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(bundles);
-            var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
-
-            var query = $"UPDATE {_tableBundleName} SET {setClause} WHERE Id = @Id";
-
-            await _db.ExecuteAsync(query, bundles);
-        }
-
-        public async Task UpdateProductDiscounts(int id, ProductDiscounts discount, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(discount);
-            var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
-
-            var query = $"UPDATE {_tableDiscountName} SET {setClause} WHERE Id = @Id";
-
-            await _db.ExecuteAsync(query, discount);
         }
 
         public async Task<ProductDetailsResponse> GetProductDetails(int id, string dbName)
@@ -144,7 +76,6 @@ namespace Infrastructure.Repositories
             }
             return result;
         }
-
         public async Task<IEnumerable<ProductDetailsResponse>> GetListProductDetails(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
@@ -200,56 +131,6 @@ namespace Infrastructure.Repositories
                 }
             }
             return productList;
-        }
-
-        public async Task AddProductCategories(ProductCategories categories, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(categories);
-            var columnNames = string.Join(", ", propertyNames);
-            var valuePlaceholders = string.Join(", ", propertyNames.Select(name => "@" + name));
-
-            var query = $"INSERT INTO {_tableCategoryName} ({columnNames}) VALUES ({valuePlaceholders})";
-
-            await _db.ExecuteAsync(query, categories);
-        }
-
-        public async Task UpdateProductCategories(int id, ProductCategories categories, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var propertyNames = QueryGenerator.GetPropertyNames(categories);
-            var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
-
-            var query = $"UPDATE {_tableCategoryName} SET {setClause} WHERE Id = @Id";
-
-            await _db.ExecuteAsync(query, categories);
-        }
-
-        public Task<IEnumerable<Products>> GetByFilter(string dbName, ProductsFilter filters)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> CountWithFilter(string dbName, ProductsFilter filter)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task AddProductCategoriesRange(IEnumerable<ProductCategories> categories, string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            foreach (var item in categories)
-            {
-                var propertyNames = QueryGenerator.GetPropertyNames(item);
-                var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
-                var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
-
-                var subquery = $"INSERT INTO {_tableCategoryName} ({columnNames}) VALUES ({parameterNames}) ";
-                await _db.ExecuteAsync(subquery, item);
-            }
         }
     }
 }

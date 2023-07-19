@@ -20,6 +20,9 @@ namespace Infrastructure
             services.AddScoped<IOwnersRepository, OwnersRepository>();
             services.AddScoped<IPatientsRepository, PatientsRepository>();
             services.AddScoped<IProductsRepository, ProductsRepository>();
+            services.AddScoped<IProductBundlesRepository, ProductBundlesRepository>();
+            services.AddScoped<IProductCategoriesRepository, ProductCategoriesRepository>();
+            services.AddScoped<IProductDiscountsRepository, ProductDiscountsRepository>();
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IServicesRepository, ServicesRepository>();
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();

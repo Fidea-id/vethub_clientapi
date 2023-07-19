@@ -29,6 +29,8 @@ namespace Application.Utils
             //model to response
             CreateMap<Domain.Entities.Models.Clients.Profile, UserProfileResponse>();
 
+            //model to request
+
             //request to model
             CreateMap<OwnersRequest, Owners>();
             CreateMap<OwnersAddRequest, Owners>();
@@ -38,6 +40,8 @@ namespace Application.Utils
             CreateMap<AppointmentsRequest, Appointments>();
             CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
             CreateMap<ProductsCategoriesRequest, ProductCategories>();
+            CreateMap<ProductsBundlesRequest, ProductBundles>();
+            CreateMap<ProductsDiscountsRequest, ProductDiscounts>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 
             //DTO to request

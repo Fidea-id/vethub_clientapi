@@ -6,5 +6,10 @@ namespace Application.Services.Contracts
 {
     public interface IProductsService : IGenericService<Products, ProductsRequest, Products, ProductsFilter>
     {
+        Task<IEnumerable<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName);
+        Task<ProductCategories> GetProductCategoryByIdAsync(int id, string dbName);
+        Task<ProductCategories> AddProductCategoriesAsync(ProductsCategoriesRequest request, string dbName);
+        Task<ProductCategories> UpdateProductCategoriesAsync(int id, ProductsCategoriesRequest request, string dbName);
+        Task DeleteProductCategoriesAsync(int id, string dbName);
     }
 }

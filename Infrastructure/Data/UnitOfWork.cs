@@ -121,5 +121,31 @@ namespace Infrastructure.Data
                 return _GenerateTableRepository;
             }
         }
+
+        private IProductBundlesRepository _ProductBundlesRepository;
+        public IProductBundlesRepository ProductBundlesRepository
+        {
+            get
+            {
+                if (_ProductBundlesRepository == null)
+                {
+                    _ProductBundlesRepository = new ProductBundlesRepository(_dbFactory);
+                }
+                return _ProductBundlesRepository;
+            }
+        }
+
+        private IProductCategoriesRepository _ProductCategoriesRepository;
+        public IProductCategoriesRepository ProductCategoriesRepository
+        {
+            get
+            {
+                if (_ProductCategoriesRepository == null)
+                {
+                    _ProductCategoriesRepository = new ProductCategoriesRepository(_dbFactory);
+                }
+                return _ProductCategoriesRepository;
+            }
+        }
     }
 }

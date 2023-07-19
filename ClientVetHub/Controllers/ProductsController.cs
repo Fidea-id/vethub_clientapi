@@ -19,7 +19,7 @@ namespace ClientVetHub.Controllers
         {
             _productsService = productsService;
         }
-
+        #region Product
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] ProductsFilter filters)
         {
@@ -94,5 +94,83 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        #endregion
+
+        #region Product Category
+        [HttpGet("Category")]
+        public async Task<IActionResult> GetCategory([FromQuery] ProductCategoriesFilter filters)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _productsService.GetProductCategoriesAsync(filters, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Category/{id}")]
+        public async Task<IActionResult> GetCategory(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _productsService.GetProductCategoryByIdAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("Category")]
+        public async Task<IActionResult> PostCategory([FromBody] ProductsCategoriesRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _productsService.AddProductCategoriesAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Category/{id}")]
+        public async Task<IActionResult> PutCategory(int id, [FromBody] ProductsCategoriesRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _productsService.UpdateProductCategoriesAsync(id, value, dbName);
+                return Ok(value);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("Category/{id}")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _productsService.DeleteAsync(id, dbName);
+                return Ok(default(Products));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
     }
 }
