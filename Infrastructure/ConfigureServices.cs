@@ -26,6 +26,8 @@ namespace Infrastructure
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IServicesRepository, ServicesRepository>();
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IAnimalRepository, AnimalRepository>();
+            services.AddScoped<IBreedRepository, BreedRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();

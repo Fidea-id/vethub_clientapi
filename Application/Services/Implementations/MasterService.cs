@@ -87,7 +87,7 @@ namespace Application.Services.Implementations
         {
             try
             {
-                if(version.HasValue)
+                if (version.HasValue)
                 {
                     await _generateTableRepository.UpdateTable(dbName, version.Value);
                 }

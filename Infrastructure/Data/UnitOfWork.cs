@@ -147,5 +147,31 @@ namespace Infrastructure.Data
                 return _ProductCategoriesRepository;
             }
         }
+
+        private IAnimalRepository _AnimalRepository;
+        public IAnimalRepository AnimalRepository
+        {
+            get
+            {
+                if (_AnimalRepository == null)
+                {
+                    _AnimalRepository = new AnimalRepository(_dbFactory);
+                }
+                return _AnimalRepository;
+            }
+        }
+
+        private IBreedRepository _BreedRepository;
+        public IBreedRepository BreedRepository
+        {
+            get
+            {
+                if (_BreedRepository == null)
+                {
+                    _BreedRepository = new BreedRepository(_dbFactory);
+                }
+                return _BreedRepository;
+            }
+        }
     }
 }

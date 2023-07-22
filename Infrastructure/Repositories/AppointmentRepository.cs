@@ -1,16 +1,10 @@
 ﻿using Dapper;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {

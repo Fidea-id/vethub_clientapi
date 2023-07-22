@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using System.Text.Json;
 
 namespace Application.Utils
 {

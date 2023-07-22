@@ -30,7 +30,7 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Owners>(ownerAdd, true);
                 FormatUtil.SetDateBaseEntity<Owners>(ownerAdd);
                 var ownerId = await _repository.Add(dbName, ownerAdd);
-            
+
                 //create patients range
                 foreach (var pet in petsAdd)
                 {
@@ -45,7 +45,7 @@ namespace Application.Services.Implementations
                 ownerAdd.Id = ownerId;
                 return ownerAdd;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ex.Source = "OwnersService.CreateOwnersPetsAsync";
                 throw;

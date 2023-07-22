@@ -1,5 +1,4 @@
 ﻿using Application.Services.Contracts;
-using Application.Services.Implementations;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;

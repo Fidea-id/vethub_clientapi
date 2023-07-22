@@ -4,7 +4,6 @@ using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 using System.Data;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Infrastructure.Repositories
 {
