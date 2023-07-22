@@ -91,7 +91,9 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _appointmentService.CreateRequestAsync(request, dbName);
-                return Ok(create);
+                //map to detail
+                var data = await _appointmentService.GetDetailAppointment(create.Id, dbName);
+                return Ok(data);
             }
             catch
             {
@@ -122,6 +124,36 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 await _appointmentService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Detail")]
+        public async Task<IActionResult> GetDetail()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _appointmentService.GetDetailAppointmentList(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Detail/{id}")]
+        public async Task<IActionResult> GetDetail(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _appointmentService.GetDetailAppointment(id, dbName);
+                return Ok(data);
             }
             catch
             {
