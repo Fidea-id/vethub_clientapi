@@ -38,6 +38,8 @@ namespace Infrastructure.Repositories
                 typeof(SchemaVersion),
                 typeof(Profile),
                 typeof(Services),
+                typeof(Animals),
+                typeof(Breeds),
                 typeof(Owners),
                 typeof(Patients),
                 typeof(Products),
