@@ -32,6 +32,8 @@ namespace Application.Utils
             //model to request
 
             //request to model
+            CreateMap<AnimalsRequest, Animals>();
+            CreateMap<BreedsRequest, Breeds>();
             CreateMap<OwnersRequest, Owners>();
             CreateMap<OwnersAddRequest, Owners>();
             CreateMap<PetsAddRequest, Patients>();

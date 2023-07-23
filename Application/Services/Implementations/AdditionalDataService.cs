@@ -1,5 +1,8 @@
 ﻿using Application.Services.Contracts;
+using Application.Utils;
+using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Requests.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 
@@ -15,12 +18,13 @@ namespace Application.Services.Implementations
         }
 
         #region Animals
-        public async Task<Animals> CreateAnimalAsync(Animals entity, string dbName)
+        public async Task<Animals> CreateAnimalAsync(AnimalsRequest request, string dbName)
         {
             try
             {
                 //trim all string
-                FormatUtil.TrimObjectProperties(entity);
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Animals>(request);
                 FormatUtil.SetIsActive<Animals>(entity, true);
                 FormatUtil.SetDateBaseEntity<Animals>(entity);
 
@@ -34,11 +38,11 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<Animals>> ReadAnimalAllAsync(string dbName)
+        public async Task<IEnumerable<Animals>> ReadAnimalAllAsync(NameBaseEntityFilter filter, string dbName)
         {
             try
             {
-                var data = await _uow.AnimalRepository.GetAll(dbName);
+                var data = await _uow.AnimalRepository.GetByFilter(dbName, filter);
                 return data;
             }
             catch (Exception ex)
@@ -60,12 +64,13 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<Animals> UpdateAnimalAsync(int id, Animals entity, string dbName)
+        public async Task<Animals> UpdateAnimalAsync(int id, AnimalsRequest request, string dbName)
         {
             try
             {
                 //trim all string
-                FormatUtil.TrimObjectProperties(entity);
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Animals>(request); // cek dulu
                 FormatUtil.SetDateBaseEntity<Animals>(entity, true);
 
                 Animals checkedEntity = await _uow.AnimalRepository.GetById(dbName, id);
@@ -100,12 +105,13 @@ namespace Application.Services.Implementations
 
         #region Breed
 
-        public async Task<Breeds> CreateBreedAsync(Breeds entity, string dbName)
+        public async Task<Breeds> CreateBreedAsync(BreedsRequest request, string dbName)
         {
             try
             {
                 //trim all string
-                FormatUtil.TrimObjectProperties(entity);
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Breeds>(request);
                 FormatUtil.SetIsActive<Breeds>(entity, true);
                 FormatUtil.SetDateBaseEntity<Breeds>(entity);
 
@@ -119,11 +125,11 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<Breeds>> ReadBreedAllAsync(string dbName)
+        public async Task<IEnumerable<Breeds>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName)
         {
             try
             {
-                var data = await _uow.BreedRepository.GetAll(dbName);
+                var data = await _uow.BreedRepository.GetByFilter(dbName, filter);
                 return data;
             }
             catch (Exception ex)
@@ -149,12 +155,13 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<Breeds> UpdateBreedAsync(int id, Breeds entity, string dbName)
+        public async Task<Breeds> UpdateBreedAsync(int id, BreedsRequest request, string dbName)
         {
             try
             {
                 //trim all string
-                FormatUtil.TrimObjectProperties(entity);
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Breeds>(request); // cek dulu
                 FormatUtil.SetDateBaseEntity<Breeds>(entity, true);
 
                 Breeds checkedEntity = await _uow.BreedRepository.GetById(dbName, id);
