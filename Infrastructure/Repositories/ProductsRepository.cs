@@ -2,6 +2,7 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using static Dapper.SqlMapper;
@@ -22,22 +23,22 @@ namespace Infrastructure.Repositories
                 p.Id,
                 p.Name,
                 p.Description,
-                ps.Stock,
+                COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
                 pc.Name AS Category,
-                IF(COUNT(pb.BundleId) > 0, 1, 0) AS IsBundle,
-                IF(COUNT(pd.DiscountId) > 0, 1, 0) AS HasDiscount
+	             p.IsBundle,
+	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
-                {dbName}.Products p
-                INNER JOIN {dbName}.ProductStocks ps ON p.Id = ps.ProductId
-                INNER JOIN {dbName}.ProductCategories pc ON p.CategoryId = pc.Id
-                LEFT JOIN {dbName}.ProductBundles pb ON p.Id = pb.ProductId
-                LEFT JOIN {dbName}.ProductDiscounts pd ON p.Id = pd.ProductId
+                Products p
+                JOIN ProductCategories pc ON p.CategoryId = pc.Id
+                LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
+                LEFT JOIN ProductBundles pb ON p.Id = pb.ProductId
+                LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
+	            p.IsActive = TRUE And
                 p.Id = @ProductId
             GROUP BY
-                p.Id"
-            ;
+                p.Id";
             var result = await _db.QueryFirstOrDefaultAsync<ProductDetailsResponse>(query, new { ProductId = id });
             if (result == null)
                 return null;
@@ -46,15 +47,28 @@ namespace Infrastructure.Repositories
             {
                 const string bundlesQuery = @"
                 SELECT
-                    pb.BundleId AS Id,
-                    pb.BundledProductId AS ProductId,
-                    pb.Quantity
+                    pb.Id AS BundleId,
+                    p_bundle.Name AS BundleName,
+                    p_bundle.Price AS BundlePrice,
+                    ps_bundle.Stock AS BundleStock,
+                    pb.Quantity AS ItemQuantity,
+                    p_item.Id AS ItemId,
+                    p_item.Name AS ItemName,
+                    p_item.Price AS ItemPrice,
+                    ps_item.Stock AS ItemStock
                 FROM
-                    {dbName}.ProductBundles pb
+                    ProductBundles pb
+                JOIN
+                    Products p_bundle ON pb.BundleId = p_bundle.Id
+                JOIN
+                    Products p_item ON pb.ItemId = p_item.Id
+                LEFT JOIN
+                    ProductStocks ps_bundle ON pb.BundleId = ps_bundle.ProductId
+                LEFT JOIN
+                    ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                 WHERE
-                    pb.ProductId = @ProductId"
-                ;
-                result.Bundles = await _db.QueryAsync<ProductBundles>(bundlesQuery, new { ProductId = id });
+                    pb.BundleId = @ProductId";
+                result.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = id });
             }
 
             if (result.HasDiscount)
@@ -66,7 +80,7 @@ namespace Infrastructure.Repositories
                     pd.DiscountValue,
                     pd.DiscountType
                 FROM
-                    {dbName}.ProductDiscounts pd
+                    ProductDiscounts pd
                 WHERE
                     pd.ProductId = @ProductId"
                 ;
@@ -82,17 +96,19 @@ namespace Infrastructure.Repositories
                 p.Id,
                 p.Name,
                 p.Description,
-                ps.Stock,
+                COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
-                p.Price,
                 pc.Name AS Category,
-                IF(COUNT(pb.BundleId) > 0, 1, 0) AS IsBundle
-                IF(COUNT(pd.DiscountId) > 0, 1, 0) AS HasDiscount
+	             p.IsBundle,
+	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
-                {dbName}.Products p
-                INNER JOIN {dbName}.ProductStocks ps ON p.Id = ps.ProductId
-                INNER JOIN {dbName}.ProductCategories pc ON p.CategoryId = pc.Id
-                LEFT JOIN {dbName}.ProductBundles pb ON p.Id = pb.ProductId
+                Products p
+                JOIN ProductCategories pc ON p.CategoryId = pc.Id
+                LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
+                LEFT JOIN ProductBundles pb ON p.Id = pb.ProductId
+                LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
+            WHERE
+	            p.IsActive = TRUE
             GROUP BY
                 p.Id";
             var results = await _db.QueryAsync<ProductDetailsResponse>(query);
@@ -104,14 +120,28 @@ namespace Infrastructure.Repositories
                 {
                     const string bundlesQuery = @"
                     SELECT
-                        pb.BundleId AS Id,
-                        pb.BundledProductId AS ProductId,
-                        pb.Quantity
+                        pb.Id AS BundleId,
+                        p_bundle.Name AS BundleName,
+                        p_bundle.Price AS BundlePrice,
+                        ps_bundle.Stock AS BundleStock,
+                        pb.Quantity AS ItemQuantity,
+                        p_item.Id AS ItemId,
+                        p_item.Name AS ItemName,
+                        p_item.Price AS ItemPrice,
+                        ps_item.Stock AS ItemStock
                     FROM
-                        {dbName}.ProductBundles pb
+                        ProductBundles pb
+                    JOIN
+                        Products p_bundle ON pb.BundleId = p_bundle.Id
+                    JOIN
+                        Products p_item ON pb.ItemId = p_item.Id
+                    LEFT JOIN
+                        ProductStocks ps_bundle ON pb.BundleId = ps_bundle.ProductId
+                    LEFT JOIN
+                        ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                     WHERE
-                        pb.ProductId = @ProductId";
-                    product.Bundles = await _db.QueryAsync<ProductBundles>(bundlesQuery, new { ProductId = product.Id });
+                        pb.BundleId = @ProductId";
+                    product.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = product.Id });
                 }
                 if (product.HasDiscount)
                 {
@@ -122,7 +152,7 @@ namespace Infrastructure.Repositories
                         pd.DiscountValue,
                         pd.DiscountType
                     FROM
-                        {dbName}.ProductDiscounts pd
+                        ProductDiscounts pd
                     WHERE
                         pd.ProductId = @ProductId";
                     product.Discounts = await _db.QueryAsync<ProductDiscounts>(discountsQuery, new { ProductId = product.Id });

@@ -3,6 +3,7 @@ using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 
@@ -67,6 +68,20 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(ProductCategories).Name}Service.GetProductCategoryByIdAsync";
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName)
+        {
+            try
+            {
+                var data = await _unitOfWork.ProductsRepository.GetListProductDetails(dbName);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"{typeof(ProductCategories).Name}Service.GetProductDetailsAsync";
                 throw;
             }
         }

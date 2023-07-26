@@ -19,10 +19,28 @@ namespace Infrastructure.Utils
             // Get the properties of the filter object
             var filterProperties = typeof(TFilter).GetProperties();
 
+            // Handle searching
+            if (!string.IsNullOrEmpty(filters.Search))
+            {
+                var searchValue = $"%{filters.Search}%";
+                var stringProperties = typeof(TFilter).GetProperties()
+                             .Where(p => p.PropertyType == typeof(string) && p.DeclaringType == typeof(TFilter));
+
+                whereClause += "(";
+
+                foreach (var property in stringProperties)
+                {
+                    whereClause += $"{property.Name} LIKE @SearchValue OR ";
+                    parameters.Add("@SearchValue", searchValue);
+                }
+
+                whereClause = whereClause.TrimEnd("OR ".ToCharArray()) + ")";
+            }
+
             foreach (var property in filterProperties)
             {
                 var value = property.GetValue(filters);
-                if (value != null && property.Name != "SortProp" && property.Name != "SortMode" && property.Name != "Skip" && property.Name != "Take")
+                if (value != null && property.Name != "SortProp" && property.Name != "SortMode" && property.Name != "Skip" && property.Name != "Take" && property.Name != "Search")
                 {
                     var paramName = $"@{property.Name}";
                     var propertyType = property.PropertyType;
