@@ -96,6 +96,38 @@ namespace ClientVetHub.Controllers
         }
         #endregion
 
+        #region ProductDetail
+        [HttpGet("Detail")]
+        public async Task<IActionResult> GetProductDetail()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _productsService.GetProductDetailsAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Detail/{id}")]
+        public async Task<IActionResult> GetProductDetail(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _productsService.GetProductDetailAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
+
         #region Product Category
         [HttpGet("Category")]
         public async Task<IActionResult> GetCategory([FromQuery] ProductCategoriesFilter filters)

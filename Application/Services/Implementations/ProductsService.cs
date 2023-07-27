@@ -72,20 +72,6 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName)
-        {
-            try
-            {
-                var data = await _unitOfWork.ProductsRepository.GetListProductDetails(dbName);
-                return data;
-            }
-            catch (Exception ex)
-            {
-                ex.Source = $"{typeof(ProductCategories).Name}Service.GetProductDetailsAsync";
-                throw;
-            }
-        }
-
         public async Task<ProductCategories> UpdateProductCategoriesAsync(int id, ProductsCategoriesRequest request, string dbName)
         {
             try
@@ -104,6 +90,33 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(ProductCategories).Name}Service.UpdateProductCategoriesAsync";
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName)
+        {
+            try
+            {
+                var data = await _unitOfWork.ProductsRepository.GetListProductDetails(dbName);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"{typeof(ProductCategories).Name}Service.GetProductDetailsAsync";
+                throw;
+            }
+        }
+        public async Task<ProductDetailsResponse> GetProductDetailAsync(int id, string dbName)
+        {
+            try
+            {
+                var data = await _unitOfWork.ProductsRepository.GetProductDetails(id, dbName);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"{typeof(ProductCategories).Name}Service.GetProductDetailAsync";
                 throw;
             }
         }

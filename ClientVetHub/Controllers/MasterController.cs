@@ -1,5 +1,9 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.Responses;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ClientVetHub.Controllers
 {
@@ -19,7 +23,22 @@ namespace ClientVetHub.Controllers
             try
             {
                 await _masterService.GenerateTables(dbName, version);
-                return Ok();
+                return Ok("Success");
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("CheckSchemeDB")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> CheckSchemeDB()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _masterService.GenerateTables(dbName);
+                return Ok(new BaseAPIResponse(200, "Success"));
             }
             catch
             {
@@ -33,7 +52,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 await _masterService.GenerateTableField(dbName);
-                return Ok();
+                return Ok(new BaseAPIResponse(200, "Success"));
             }
             catch
             {

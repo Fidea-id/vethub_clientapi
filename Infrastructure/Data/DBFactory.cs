@@ -1,7 +1,9 @@
 ﻿using Dapper;
+using DevExpress.Xpo.DB;
 using Infrastructure.Utils;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
+using System;
 using System.Data;
 
 namespace Infrastructure.Data
@@ -9,6 +11,7 @@ namespace Infrastructure.Data
     public interface IDBFactory
     {
         IDbConnection GetDbConnection(string dbName, bool isNew = false);
+        string GetConnectionString(string dbName);
         Dictionary<string, IDbConnection> GetConnectionCache();
     }
 
@@ -85,6 +88,23 @@ namespace Infrastructure.Data
         {
             string createDbQuery = $"CREATE DATABASE `{dbName}`;";
             connection.Execute(createDbQuery);
+        }
+
+        public string GetConnectionString(string dbName)
+        {
+            var environment = _configuration.GetSection("MyAppSettings")["Environment"];
+            var tempConnectionString = "";
+            if (environment == "LOCAL")
+            {
+                // Local connection string
+                tempConnectionString = MySqlConnectionProvider.GetConnectionString("localhost", "root", "", dbName);
+            }
+            else
+            {
+                // Production connection string
+                tempConnectionString = MySqlConnectionProvider.GetConnectionString("localhost", "adminmaster", "SAl@k2lu87CO6oNOfApuB1nu21YOca", dbName);
+            }
+            return tempConnectionString;
         }
     }
 }

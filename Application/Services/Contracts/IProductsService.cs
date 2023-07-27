@@ -9,6 +9,7 @@ namespace Application.Services.Contracts
     {
         //detail all
         Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName);
+        Task<ProductDetailsResponse> GetProductDetailAsync(int id, string dbName);
         
         Task<IEnumerable<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName);
         Task<ProductCategories> GetProductCategoryByIdAsync(int id, string dbName);

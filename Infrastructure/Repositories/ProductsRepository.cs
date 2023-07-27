@@ -25,14 +25,16 @@ namespace Infrastructure.Repositories
                 p.Description,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
+                p.CategoryId,
                 pc.Name AS Category,
+                p.Price,
 	             p.IsBundle,
 	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
                 Products p
                 JOIN ProductCategories pc ON p.CategoryId = pc.Id
                 LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
-                LEFT JOIN ProductBundles pb ON p.Id = pb.ProductId
+                LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
 	            p.IsActive = TRUE And
@@ -75,16 +77,23 @@ namespace Infrastructure.Repositories
             {
                 const string discountsQuery = @"
                 SELECT
-                    pd.DiscountId AS Id,
+                    pd.Id,
                     pd.ProductId,
                     pd.DiscountValue,
-                    pd.DiscountType
+                    pd.DiscountType,
+                    p.Price,
+                    CASE
+                    WHEN pd.DiscountType = 'Amount' THEN p.Price - pd.DiscountValue
+                    WHEN pd.DiscountType = 'Percentage' THEN p.Price - (p.Price * pd.DiscountValue / 100)
+                    ELSE p.Price
+                    END AS DiscountedPrice
                 FROM
                     ProductDiscounts pd
+                JOIN
+                    Products p ON pd.ProductId = p.Id
                 WHERE
-                    pd.ProductId = @ProductId"
-                ;
-                result.Discounts = await _db.QueryAsync<ProductDiscounts>(discountsQuery, new { ProductId = id });
+                    pd.ProductId = @ProductId";
+                result.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = id });
             }
             return result;
         }
@@ -98,14 +107,16 @@ namespace Infrastructure.Repositories
                 p.Description,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
+                p.CategoryId,
                 pc.Name AS Category,
+                p.Price,
 	             p.IsBundle,
 	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
                 Products p
                 JOIN ProductCategories pc ON p.CategoryId = pc.Id
                 LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
-                LEFT JOIN ProductBundles pb ON p.Id = pb.ProductId
+                LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
 	            p.IsActive = TRUE
@@ -147,15 +158,23 @@ namespace Infrastructure.Repositories
                 {
                     const string discountsQuery = @"
                     SELECT
-                        pd.DiscountId AS Id,
-                        pd.ProductId,
-                        pd.DiscountValue,
-                        pd.DiscountType
+                      pd.Id,
+                      pd.ProductId,
+                      pd.DiscountValue,
+                      pd.DiscountType,
+                      p.Price,
+                      CASE
+                        WHEN pd.DiscountType = 'Amount' THEN p.Price - pd.DiscountValue
+                        WHEN pd.DiscountType = 'Percentage' THEN p.Price - (p.Price * pd.DiscountValue / 100)
+                        ELSE p.Price
+                      END AS DiscountedPrice
                     FROM
-                        ProductDiscounts pd
+                      ProductDiscounts pd
+                    JOIN
+                      Products p ON pd.ProductId = p.Id
                     WHERE
-                        pd.ProductId = @ProductId";
-                    product.Discounts = await _db.QueryAsync<ProductDiscounts>(discountsQuery, new { ProductId = product.Id });
+                      pd.ProductId = @ProductId";
+                    product.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = product.Id });
                 }
             }
             return productList;
