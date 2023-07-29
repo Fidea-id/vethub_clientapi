@@ -203,6 +203,11 @@ namespace Infrastructure.Utils
                     var datetimeValue = (DateTime)propertyValue;
                     return (property.Name, datetimeValue.ToString("yyyy-MM-dd HH:mm:ss"));
                 }
+                else if (property.PropertyType.IsEnum) // Check if the property type is an enum
+                {
+                    var enumValue = (int)propertyValue; // Cast the enum to int
+                    return (property.Name, enumValue.ToString());
+                }
                 else
                 {
                     return (property.Name, propertyValue.ToString());

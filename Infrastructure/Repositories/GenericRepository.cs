@@ -3,6 +3,7 @@ using Domain.Entities;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
+using Newtonsoft.Json;
 using System.Data;
 
 namespace Infrastructure.Repositories

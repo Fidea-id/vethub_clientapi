@@ -148,6 +148,19 @@ namespace Infrastructure.Data
             }
         }
 
+        private IProductDiscountsRepository _ProductDiscountsRepository;
+        public IProductDiscountsRepository ProductDiscountsRepository
+        {
+            get
+            {
+                if (_ProductDiscountsRepository == null)
+                {
+                    _ProductDiscountsRepository = new ProductDiscountsRepository(_dbFactory);
+                }
+                return _ProductDiscountsRepository;
+            }
+        }
+
         private IAnimalRepository _AnimalRepository;
         public IAnimalRepository AnimalRepository
         {
