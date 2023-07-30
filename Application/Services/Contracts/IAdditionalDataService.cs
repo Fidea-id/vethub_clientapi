@@ -1,6 +1,7 @@
 ﻿using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
 
 namespace Application.Services.Contracts
 {
@@ -14,9 +15,9 @@ namespace Application.Services.Contracts
         Task DeleteAnimalAsync(int id, string dbName);
         //breed
         Task<Breeds> CreateBreedAsync(BreedsRequest entity, string dbName);
-        Task<IEnumerable<Breeds>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName);
-        Task<Breeds> ReadBreedByIdAsync(int id, string dbName);
-        Task<Breeds> ReadBreedByIdAnimalAsync(int idAnimal, string dbName);
+        Task<IEnumerable<BreedAnimalResponse>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName);
+        Task<BreedAnimalResponse> ReadBreedByIdAsync(int id, string dbName);
+        Task<IEnumerable<BreedAnimalResponse>> ReadBreedByIdAnimalAsync(int idAnimal, string dbName);
         Task<Breeds> UpdateBreedAsync(int id, BreedsRequest entity, string dbName);
         Task DeleteBreedAsync(int id, string dbName);
     }

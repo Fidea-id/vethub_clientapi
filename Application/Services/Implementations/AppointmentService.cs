@@ -18,6 +18,11 @@ namespace Application.Services.Implementations
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName);
             return result;
         }
+        public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName)
+        {
+            var result = await _unitOfWork.AppointmentRepository.GetAllDetailListToday(dbName);
+            return result;
+        }
 
         public async Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName)
         {

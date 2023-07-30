@@ -47,17 +47,17 @@ namespace Infrastructure.Utils
 
                     if (propertyType == typeof(int) || propertyType == typeof(bool))
                     {
-                        whereClause += $"{property.Name} = {paramName} AND ";
+                        whereClause += $"{mainTableName}.{property.Name} = {paramName} AND ";
                         parameters.Add(paramName, value);
                     }
                     else if (propertyType == typeof(DateTime))
                     {
-                        whereClause += $"{property.Name} = {paramName} AND ";
+                        whereClause += $"{mainTableName}.{property.Name} = {paramName} AND ";
                         parameters.Add(paramName, value, DbType.DateTime);
                     }
                     else
                     {
-                        whereClause += $"{property.Name} LIKE {paramName} AND ";
+                        whereClause += $"{mainTableName}.{property.Name} LIKE {paramName} AND ";
                         parameters.Add(paramName, $"%{value}%"); // Using wildcard '%' for exact matching
                     }
                 }
@@ -74,7 +74,7 @@ namespace Infrastructure.Utils
             if (!string.IsNullOrEmpty(filters.SortProp))
             {
                 var sortMode = string.IsNullOrEmpty(filters.SortMode) ? "ASC" : filters.SortMode.ToUpper();
-                sortClause = $"ORDER BY {filters.SortProp} {sortMode}";
+                sortClause = $"ORDER BY {mainTableName}.{filters.SortProp} {sortMode}";
             }
 
             var limitClause = "";

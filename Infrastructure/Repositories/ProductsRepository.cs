@@ -79,6 +79,10 @@ namespace Infrastructure.Repositories
                 SELECT
                     pd.Id,
                     pd.ProductId,
+                    p.Name AS ProductName,
+                    pd.StartDate,
+                    pd.EndDate,
+                    pd.IsActive,
                     pd.DiscountValue,
                     pd.DiscountType,
                     p.Price,
@@ -160,6 +164,10 @@ namespace Infrastructure.Repositories
                     SELECT
                       pd.Id,
                       pd.ProductId,
+                      p.Name AS ProductName,
+                    pd.StartDate,
+                    pd.EndDate,
+                    pd.IsActive,
                       pd.DiscountValue,
                       pd.DiscountType,
                       p.Price,

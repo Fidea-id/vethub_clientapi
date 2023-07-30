@@ -212,9 +212,9 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<ProductDiscounts>> GetProductDiscountsAsync(ProductDiscountsFilter filters, string dbName)
+        public async Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountsAsync(ProductDiscountsFilter filters, string dbName)
         {
-            return await _unitOfWork.ProductDiscountsRepository.GetByFilter(dbName, filters);
+            return await _unitOfWork.ProductDiscountsRepository.GetProductDiscountDetail(dbName);
         }
 
         public async Task<ProductDiscounts> GetProductDiscountByIdAsync(int id, string dbName)

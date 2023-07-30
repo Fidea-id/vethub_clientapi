@@ -9,6 +9,7 @@ namespace Application.Services.Contracts
     {
         Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName);
         Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(string dbName);
+        Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName);
         Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName);
     }
 }

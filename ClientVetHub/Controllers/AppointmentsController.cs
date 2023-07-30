@@ -40,11 +40,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var filters = new AppointmentsFilter()
-                {
-                    Date = DateTime.Now,
-                };
-                var entities = await _appointmentService.GetEntitiesByFilter(filters, dbName);
+                var entities = await _appointmentService.GetDetailAppointmentListToday(dbName);
                 return Ok(entities);
             }
             catch

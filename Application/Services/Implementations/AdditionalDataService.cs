@@ -3,6 +3,7 @@ using Application.Utils;
 using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 
@@ -125,11 +126,11 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<Breeds>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName)
+        public async Task<IEnumerable<BreedAnimalResponse>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName)
         {
             try
             {
-                var data = await _uow.BreedRepository.GetByFilter(dbName, filter);
+                var data = await _uow.BreedRepository.GetBreedAnimalList(filter, dbName);
                 return data;
             }
             catch (Exception ex)
@@ -138,15 +139,26 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public Task<Breeds> ReadBreedByIdAnimalAsync(int idAnimal, string dbName)
-        {
-            throw new NotImplementedException();
-        }
-        public async Task<Breeds> ReadBreedByIdAsync(int id, string dbName)
+
+        public async Task<IEnumerable<BreedAnimalResponse>> ReadBreedByIdAnimalAsync(int idAnimal, string dbName)
         {
             try
             {
-                var data = await _uow.BreedRepository.GetById(dbName, id);
+                var data = await _uow.BreedRepository.GetBreedAnimalListByAnimal(idAnimal, dbName);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.ReadByIdAnimalAsync";
+                throw;
+            }
+        }
+
+        public async Task<BreedAnimalResponse> ReadBreedByIdAsync(int id, string dbName)
+        {
+            try
+            {
+                var data = await _uow.BreedRepository.GetBreedAnimal(id, dbName);
                 return data;
             }
             catch (Exception ex)
