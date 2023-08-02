@@ -193,5 +193,82 @@ namespace ClientVetHub.Controllers
             }
         }
         #endregion
+
+        #region Diagnose
+        [HttpGet("Diagnose")]
+        public async Task<IActionResult> GetDiagnose([FromQuery] NameBaseEntityFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _additionalDataService.ReadDiagnoseAllAsync(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Diagnose/{id}")]
+        public async Task<IActionResult> GetDiagnose(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadDiagnoseByIdAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("Diagnose")]
+        public async Task<IActionResult> PostDiagnose([FromBody] DiagnosesRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _additionalDataService.CreateDiagnoseAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Diagnose/{id}")]
+        public async Task<IActionResult> PutDiagnose(int id, [FromBody] DiagnosesRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _additionalDataService.UpdateDiagnoseAsync(id, value, dbName);
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("Diagnose/{id}")]
+        public async Task<IActionResult> DeleteDiagnose(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _additionalDataService.DeleteDiagnoseAsync(id, dbName);
+                return Ok(default(Patients));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
     }
 }

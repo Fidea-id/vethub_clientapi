@@ -186,5 +186,18 @@ namespace Infrastructure.Data
                 return _BreedRepository;
             }
         }
+
+        private IDiagnosesRepository _DiagnoseRepository;
+        public IDiagnosesRepository DiagnoseRepository
+        {
+            get
+            {
+                if (_DiagnoseRepository == null)
+                {
+                    _DiagnoseRepository = new DiagnosesRepository(_dbFactory);
+                }
+                return _DiagnoseRepository;
+            }
+        }
     }
 }

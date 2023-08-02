@@ -43,7 +43,7 @@ namespace Infrastructure.Repositories
                     ProductDiscounts pd
                 JOIN
                     Products p ON pd.ProductId = p.Id";
-             return await _db.QueryAsync<ProductDiscountDetailResponse>(query);
+            return await _db.QueryAsync<ProductDiscountDetailResponse>(query);
         }
     }
 }

@@ -4,6 +4,7 @@ using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
+using Domain.Utils;
 
 namespace Application.Services.Implementations
 {
@@ -13,9 +14,9 @@ namespace Application.Services.Implementations
         : base(unitOfWork, repository)
         { }
 
-        public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(string dbName)
+        public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
         {
-            var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName);
+            var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName, filter);
             return result;
         }
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName)
@@ -34,6 +35,31 @@ namespace Application.Services.Implementations
         {
             var data = await _unitOfWork.AppointmentRepository.GetAllStatus(dbName);
             return data;
+        }
+
+        public async Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName)
+        {
+            var data = await _repository.GetById(dbName, request.Id.Value);
+            var statusId = request.StatusId.Value;
+            if(statusId != data.StatusId + 1)
+            {
+                throw new Exception("Unallowed status change");
+            }
+            data.StatusId = statusId;
+            FormatUtil.SetDateBaseEntity<Appointments>(data, true);
+            await _repository.Update(dbName, data);
+
+            // add appointment activity
+            var newAppointment = new AppointmentsActivity()
+            {
+                AppointmentId = data.Id,
+                CurrentDate = DateTime.Now,
+                CurrentStatusId = statusId,
+                StaffId = request.StaffId.Value,
+                Note = request.Notes
+            };
+
+            await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
         }
     }
 }

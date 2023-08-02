@@ -8,8 +8,10 @@ namespace Application.Services.Contracts
     public interface IAppointmentService : IGenericService<Appointments, AppointmentsRequest, Appointments, AppointmentsFilter>
     {
         Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName);
-        Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(string dbName);
+        Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName);
         Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName);
         Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName);
+
+        Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities;
+using Domain.Entities.DTOs;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.AspNetCore.Http;
@@ -110,7 +111,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<T>> GetEntitiesByFilter(TFilter filters, string dbName)
+        public async Task<DataResultDTO<T>> GetEntitiesByFilter(TFilter filters, string dbName)
         {
             return await _repository.GetByFilter(dbName, filters);
         }
@@ -225,6 +226,7 @@ namespace Application.Services.Implementations
                 T checkedEntity = await _repository.GetById(dbName, id);
                 //convert entity
                 FormatUtil.SetOppositeActive<T>(checkedEntity);
+                FormatUtil.SetDateBaseEntity<T>(checkedEntity, true);
                 await _repository.Update(dbName, checkedEntity);
             }
             catch (Exception ex)

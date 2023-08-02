@@ -96,6 +96,23 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpPost("StatusChange")]
+        public async Task<IActionResult> StatusChange([FromBody] AppointmentsRequestChangeStatus request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _appointmentService.ChangeAppointmentStatus(request, dbName);
+                //map to detail
+                var data = await _appointmentService.GetDetailAppointment(request.Id.Value, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] AppointmentsRequest value)
         {
@@ -127,12 +144,12 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet("Detail")]
-        public async Task<IActionResult> GetDetail()
+        public async Task<IActionResult> GetDetail([FromQuery] AppointmentDetailFilter filter)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _appointmentService.GetDetailAppointmentList(dbName);
+                var entities = await _appointmentService.GetDetailAppointmentList(filter, dbName);
                 return Ok(entities);
             }
             catch

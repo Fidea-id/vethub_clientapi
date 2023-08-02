@@ -23,7 +23,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 await _masterService.GenerateTables(dbName, version);
-                return Ok("Success");
+                return Ok(new BaseAPIResponse(200, "Success"));
             }
             catch
             {
@@ -46,7 +46,7 @@ namespace ClientVetHub.Controllers
             }
         }
 
-        [HttpPost("GenerateInitDBField/{dbName}")]
+        [HttpGet("GenerateInitDBField/{dbName}")]
         public async Task<IActionResult> GenerateInitDBField(string dbName)
         {
             try

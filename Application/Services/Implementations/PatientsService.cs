@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -18,7 +19,7 @@ namespace Application.Services.Implementations
             return await _unitOfWork.PatientsRepository.GetPatientsByOwner(dbName, id);
         }
 
-        public async Task<IEnumerable<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName)
+        public async Task<DataResultDTO<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName)
         {
             return await _unitOfWork.PatientsRepository.GetPatientsList(dbName, filter);
         }

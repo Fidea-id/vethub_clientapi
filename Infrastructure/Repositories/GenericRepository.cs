@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
+using Domain.Entities.DTOs;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
@@ -34,11 +35,24 @@ namespace Infrastructure.Repositories
             return await _db.QueryAsync<T>($"SELECT * FROM {_tableName} where IsActive = true");
         }
 
-        public async Task<IEnumerable<T>> GetByFilter(string dbName, TFilter filters)
+        public async Task<DataResultDTO<T>> GetByFilter(string dbName, TFilter filters)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             var filterQuery = QueryGenerator.GenerateFilterQuery(filters, _tableName);
-            return await _db.QueryAsync<T>(filterQuery.Item1, filterQuery.Item2);
+            var queryString = filterQuery.Item1;
+            var countQuery = QueryGenerator.GenerateSelectOrCountQuery(queryString, true);
+            var countData = await _db.QueryFirstOrDefaultAsync<int>(countQuery, filterQuery.Item2);
+            if (filters.Take.HasValue || filters.Skip.HasValue)
+            {
+                queryString = QueryGenerator.GenerateFilteredLimitQuery(queryString, filters.Skip, filters.Take);
+            }
+            var data = await _db.QueryAsync<T>(queryString, filterQuery.Item2);
+            var result = new DataResultDTO<T>
+            {
+                Data = data,
+                TotalData = countData
+            };
+            return result;
         }
 
         public async Task<int> Add(string dbName, T entity)

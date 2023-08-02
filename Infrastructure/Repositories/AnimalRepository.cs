@@ -5,7 +5,7 @@ using Infrastructure.Data;
 
 namespace Infrastructure.Repositories
 {
-    internal class AnimalRepository : GenericRepository<Animals, NameBaseEntityFilter>, IAnimalRepository
+    public class AnimalRepository : GenericRepository<Animals, NameBaseEntityFilter>, IAnimalRepository
     {
         public AnimalRepository(IDBFactory context) : base(context)
         {

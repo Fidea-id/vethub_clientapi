@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -39,7 +40,7 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<Animals>> ReadAnimalAllAsync(NameBaseEntityFilter filter, string dbName)
+        public async Task<DataResultDTO<Animals>> ReadAnimalAllAsync(NameBaseEntityFilter filter, string dbName)
         {
             try
             {
@@ -105,7 +106,6 @@ namespace Application.Services.Implementations
         #endregion
 
         #region Breed
-
         public async Task<Breeds> CreateBreedAsync(BreedsRequest request, string dbName)
         {
             try
@@ -126,7 +126,7 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<BreedAnimalResponse>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName)
+        public async Task<DataResultDTO<BreedAnimalResponse>> ReadBreedAllAsync(NameBaseEntityFilter filter, string dbName)
         {
             try
             {
@@ -201,6 +201,92 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"Service.DeleteBreedAsync";
+                throw;
+            }
+        }
+        #endregion
+
+        #region Diagnoses
+        public async Task<Diagnoses> CreateDiagnoseAsync(DiagnosesRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Diagnoses>(request);
+                FormatUtil.SetIsActive<Diagnoses>(entity, true);
+                FormatUtil.SetDateBaseEntity<Diagnoses>(entity);
+
+                var newId = await _uow.DiagnoseRepository.Add(dbName, entity);
+                entity.Id = newId;
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.CreateDiagnoseAsync";
+                throw;
+            }
+        }
+        public async Task<DataResultDTO<Diagnoses>> ReadDiagnoseAllAsync(NameBaseEntityFilter filter, string dbName)
+        {
+            try
+            {
+                var data = await _uow.DiagnoseRepository.GetByFilter(dbName, filter);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.ReadAllDiagnoseAsync";
+                throw;
+            }
+        }
+        public async Task<Diagnoses> ReadDiagnoseByIdAsync(int id, string dbName)
+        {
+            try
+            {
+                var data = await _uow.DiagnoseRepository.GetById(dbName, id);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.ReadByIdDiagnoseAsync";
+                throw;
+            }
+        }
+        public async Task<Diagnoses> UpdateDiagnoseAsync(int id, DiagnosesRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Diagnoses>(request); // cek dulu
+                FormatUtil.SetDateBaseEntity<Diagnoses>(entity, true);
+
+                Diagnoses checkedEntity = await _uow.DiagnoseRepository.GetById(dbName, id);
+                FormatUtil.ConvertUpdateObject<Diagnoses, Diagnoses>(entity, checkedEntity);
+                FormatUtil.SetIsActive<Diagnoses>(checkedEntity, true);
+                await _uow.DiagnoseRepository.Update(dbName, checkedEntity);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.UpdateDiagnoseAsync";
+                throw;
+            }
+        }
+        public async Task DeleteDiagnoseAsync(int id, string dbName)
+        {
+            try
+            {
+                //get entity
+                var entity = await _uow.DiagnoseRepository.GetById(dbName, id);
+                if (entity == null) throw new Exception("Entity not found");
+
+                await _uow.DiagnoseRepository.Remove(dbName, id);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"Service.DeleteDiagnoseAsync";
                 throw;
             }
         }

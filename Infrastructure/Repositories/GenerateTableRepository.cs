@@ -54,6 +54,7 @@ namespace Infrastructure.Repositories
                 typeof(ProductDiscountsXPO),
                 typeof(ProductCategoriesXPO),
                 typeof(AppointmentsXPO),
+                typeof(AppointmentsActivityXPO),
                 typeof(AppointmentsStatusXPO),
                 // Add more model types here
             };

@@ -1,10 +1,12 @@
 ﻿using Dapper;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
+using System.Globalization;
 
 namespace Infrastructure.Repositories
 {
@@ -32,10 +34,12 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailList(string dbName)
+        public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailList(string dbName, AppointmentDetailFilter filter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<AppointmentsDetailResponse>($"SELECT a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed," +
+
+            // Start building the SQL query
+            var sqlQuery = $"SELECT a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed," +
                 $" a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate," +
                 $" s.DurationType AS DurationTypeEstimate, " +
                 $"CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR)" +
@@ -44,7 +48,68 @@ namespace Infrastructure.Repositories
                 $"JOIN Patients p ON p.Id = a.PatientsId " +
                 $"JOIN Services s ON s.Id = a.ServiceId " +
                 $"JOIN Profile pr ON pr.Id = a.StaffId " +
-                $"JOIN AppointmentsStatus st ON st.Id = a.StatusId ");
+                $"JOIN AppointmentsStatus st ON st.Id = a.StatusId ";
+
+            // Check if any filter parameters are provided
+            bool isFilterApplied = false;
+            if (filter != null)
+            {
+                var whereClause = new List<string>();
+
+                // Check and add StatusId filter
+                if (filter.StatusId.HasValue)
+                {
+                    whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                    isFilterApplied = true;
+                }
+
+                // Check and add StaffId filter
+                if (filter.StaffId.HasValue)
+                {
+                    whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
+                    isFilterApplied = true;
+                }
+
+                // Check and add Date filter
+                if (!string.IsNullOrEmpty(filter.Date))
+                {
+                    // Parse the date range if it's in the format '[start] - [end]'
+                    if (filter.Date.Contains("-"))
+                    {
+                        var dateRangeParts = filter.Date.Split('-');
+                        if (dateRangeParts.Length == 2)
+                        {
+                            string startDateStr = dateRangeParts[0].Trim();
+                            string endDateStr = dateRangeParts[1].Trim();
+
+                            DateTime startDate, endDate;
+                            if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
+                                DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                            {
+                                whereClause.Add($"a.Date >= '{startDate:yyyy-MM-dd}' AND a.Date <= '{endDate:yyyy-MM-dd}'");
+                                isFilterApplied = true;
+                            }
+                        }
+                    }
+                    else // Single date case
+                    {
+                        if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                        {
+                            whereClause.Add($"a.Date = '{date:yyyy-MM-dd}'");
+                            isFilterApplied = true;
+                        }
+                    }
+                }
+
+                // Combine all where conditions
+                if (whereClause.Count > 0)
+                {
+                    sqlQuery += " WHERE " + string.Join(" AND ", whereClause);
+                }
+            }
+
+            // Execute the SQL query
+            return await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
         }
 
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailListToday(string dbName)
@@ -84,6 +149,19 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryAsync<AppointmentsStatus>($"SELECT * FROM AppointmentsStatus");
+        }
+
+        public async Task<int> AddActivity(AppointmentsActivity entity, string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+
+            var propertyNames = QueryGenerator.GetPropertyNames(entity);
+
+            var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
+            var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
+
+            var query = $"INSERT INTO AppointmentsActivity ({columnNames}) VALUES ({parameterNames}); SELECT LAST_INSERT_ID();";
+            return await _db.ExecuteScalarAsync<int>(query, entity);
         }
     }
 }

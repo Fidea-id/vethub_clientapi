@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -131,7 +132,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName)
+        public async Task<DataResultDTO<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName)
         {
             return await _unitOfWork.ProductCategoriesRepository.GetByFilter(dbName, filters);
         }
@@ -212,7 +213,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountsAsync(ProductDiscountsFilter filters, string dbName)
+        public async Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountsAsync(string dbName)
         {
             return await _unitOfWork.ProductDiscountsRepository.GetProductDiscountDetail(dbName);
         }

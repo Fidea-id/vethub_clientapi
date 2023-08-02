@@ -227,7 +227,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _productsService.DeleteAsync(id, dbName);
+                await _productsService.DeleteProductCategoriesAsync(id, dbName);
                 return Ok(default(Products));
             }
             catch
@@ -239,12 +239,12 @@ namespace ClientVetHub.Controllers
 
         #region Product Discount
         [HttpGet("Discount")]
-        public async Task<IActionResult> GetDiscount([FromQuery] ProductDiscountsFilter filters)
+        public async Task<IActionResult> GetDiscount()//[FromQuery] ProductDiscountsFilter filters
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _productsService.GetProductDiscountsAsync(filters, dbName);
+                var entities = await _productsService.GetProductDiscountsAsync(dbName);
                 return Ok(entities);
             }
             catch
@@ -304,7 +304,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _productsService.DeleteAsync(id, dbName);
+                await _productsService.DeleteProductDiscountsAsync(id, dbName);
                 return Ok(default(Products));
             }
             catch

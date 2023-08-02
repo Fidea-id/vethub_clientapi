@@ -1,8 +1,10 @@
 ﻿using Application.Services.Contracts;
+using Application.Services.Implementations;
 using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -32,7 +34,7 @@ namespace ClientVetHub.Controllers
         public async Task<IActionResult> Get([FromQuery] ProfileFilter filters)
         {
             var dbName = User.FindFirstValue("Entity");
-            var data = await _profileService.ReadAllActiveAsync(dbName);
+            var data = await _profileService.GetEntitiesByFilter(filters, dbName);
             return Ok(data);
         }
 
@@ -83,8 +85,23 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var response = await _profileService.UpdateUserProfileByGlobalIdAsync(dbName, value, id);
+                var response = await _profileService.UpdateAsync(id, value, dbName);
                 return Ok(response);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Deactive/{id}")]
+        public async Task<IActionResult> Deactive(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _profileService.DeactiveAsync(id, dbName);
+                return Ok(new BaseAPIResponse(200, "Success"));
             }
             catch
             {

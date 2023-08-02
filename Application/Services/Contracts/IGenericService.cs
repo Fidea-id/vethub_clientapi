@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Entities.DTOs;
 using Microsoft.AspNetCore.Http;
 
 namespace Application.Services.Contracts
@@ -14,7 +15,7 @@ namespace Application.Services.Contracts
         Task<TResponse> CreateRequestAsync(TRequest entity, string dbName);
         //Read
         Task<IEnumerable<TResponse>> ReadAllAsync(string dbName);
-        Task<IEnumerable<T>> GetEntitiesByFilter(TFilter filters, string dbName);
+        Task<DataResultDTO<T>> GetEntitiesByFilter(TFilter filters, string dbName);
         Task<IEnumerable<TResponse>> ReadAllActiveAsync(string dbName);
         Task<T> ReadByIdAsync(int id, string dbName);
         Task<TResponse> ReadByIdResponseAsync(int id, string dbName);

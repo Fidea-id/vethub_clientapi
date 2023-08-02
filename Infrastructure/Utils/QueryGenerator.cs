@@ -10,6 +10,10 @@ namespace Infrastructure.Utils
 {
     public static class QueryGenerator
     {
+        public static string GenerateSelectOrCountQuery(string selectClause, bool isCount)
+        {
+            return isCount ? $"SELECT COUNT(*) {selectClause.Substring(selectClause.IndexOf("FROM"))}" : selectClause;
+        }
         public static Tuple<string, DynamicParameters> GenerateFilterQuery<TFilter>(TFilter filters, string mainTableName, string joinQuery = null, List<string> selectColumns = null) where TFilter : BaseEntityFilter
         {
             // Build the WHERE clause based on the filters
@@ -77,15 +81,15 @@ namespace Infrastructure.Utils
                 sortClause = $"ORDER BY {mainTableName}.{filters.SortProp} {sortMode}";
             }
 
-            var limitClause = "";
-            if (filters.Skip.HasValue && filters.Take.HasValue)
-            {
-                limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
-            }
-            else if (filters.Take.HasValue)
-            {
-                limitClause = $"LIMIT {filters.Take.Value}";
-            }
+            //var limitClause = "";
+            //if (filters.Skip.HasValue && filters.Take.HasValue)
+            //{
+            //    limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
+            //}
+            //else if (filters.Take.HasValue)
+            //{
+            //    limitClause = $"LIMIT {filters.Take.Value}";
+            //}
 
             // Construct the SELECT clause
             var selectClause = "SELECT ";
@@ -98,10 +102,30 @@ namespace Infrastructure.Utils
                 selectClause += "*";
             }
 
-            var query = $"{selectClause} FROM {mainTableName} {joinQuery} {whereClause} {sortClause} {limitClause}";
+            var query = $"{selectClause} FROM {mainTableName} {joinQuery} {whereClause} {sortClause}";
 
             return new Tuple<string, DynamicParameters>(query, parameters);
         }
+
+        public static string GenerateFilteredLimitQuery(string selectOrCountQuery, int? skip, int? take)
+        {
+            var limitClause = "";
+
+            if (take.HasValue)
+            {
+                if (skip.HasValue)
+                {
+                    limitClause = $"LIMIT {skip.Value}, {take.Value}";
+                }
+                else
+                {
+                    limitClause = $"LIMIT {take.Value}";
+                }
+            }
+
+            return $"{selectOrCountQuery} {limitClause}";
+        }
+
         public static string GenerateCreateTableQuery(Type modelType)
         {
             var tableName = modelType.Name;

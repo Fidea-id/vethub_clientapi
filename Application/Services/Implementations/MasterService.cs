@@ -76,6 +76,10 @@ namespace Application.Services.Implementations
                         }
                     }
                 }
+                else
+                {
+                    throw new Exception($"File not found, {filePath}");
+                }
             }
             catch (Exception ex)
             {
