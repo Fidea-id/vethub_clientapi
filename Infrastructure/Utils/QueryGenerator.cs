@@ -34,7 +34,7 @@ namespace Infrastructure.Utils
 
                 foreach (var property in stringProperties)
                 {
-                    whereClause += $"{property.Name} LIKE @SearchValue OR ";
+                    whereClause += $"{mainTableName}.{property.Name} LIKE @SearchValue OR ";
                     parameters.Add("@SearchValue", searchValue);
                 }
 

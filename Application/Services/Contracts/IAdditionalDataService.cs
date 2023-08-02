@@ -9,9 +9,9 @@ namespace Application.Services.Contracts
     public interface IAdditionalDataService
     {
         //animal
-        Task<Animals> CreateAnimalAsync(AnimalsRequest entity, string dbName); 
+        Task<Animals> CreateAnimalAsync(AnimalsRequest entity, string dbName);
         Task<DataResultDTO<Animals>> ReadAnimalAllAsync(NameBaseEntityFilter filter, string dbName);
-        Task<Animals> ReadAnimalByIdAsync(int id, string dbName); 
+        Task<Animals> ReadAnimalByIdAsync(int id, string dbName);
         Task<Animals> UpdateAnimalAsync(int id, AnimalsRequest entity, string dbName);
         Task DeleteAnimalAsync(int id, string dbName);
 

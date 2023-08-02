@@ -41,7 +41,7 @@ namespace Application.Services.Implementations
         {
             var data = await _repository.GetById(dbName, request.Id.Value);
             var statusId = request.StatusId.Value;
-            if(statusId != data.StatusId + 1)
+            if (statusId != data.StatusId + 1)
             {
                 throw new Exception("Unallowed status change");
             }

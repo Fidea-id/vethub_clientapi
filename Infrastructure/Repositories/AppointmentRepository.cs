@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
@@ -49,9 +48,6 @@ namespace Infrastructure.Repositories
                 $"JOIN Services s ON s.Id = a.ServiceId " +
                 $"JOIN Profile pr ON pr.Id = a.StaffId " +
                 $"JOIN AppointmentsStatus st ON st.Id = a.StatusId ";
-
-            // Check if any filter parameters are provided
-            bool isFilterApplied = false;
             if (filter != null)
             {
                 var whereClause = new List<string>();
@@ -60,14 +56,12 @@ namespace Infrastructure.Repositories
                 if (filter.StatusId.HasValue)
                 {
                     whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
-                    isFilterApplied = true;
                 }
 
                 // Check and add StaffId filter
                 if (filter.StaffId.HasValue)
                 {
                     whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
-                    isFilterApplied = true;
                 }
 
                 // Check and add Date filter
@@ -87,7 +81,6 @@ namespace Infrastructure.Repositories
                                 DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
                             {
                                 whereClause.Add($"a.Date >= '{startDate:yyyy-MM-dd}' AND a.Date <= '{endDate:yyyy-MM-dd}'");
-                                isFilterApplied = true;
                             }
                         }
                     }
@@ -96,7 +89,6 @@ namespace Infrastructure.Repositories
                         if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
                         {
                             whereClause.Add($"a.Date = '{date:yyyy-MM-dd}'");
-                            isFilterApplied = true;
                         }
                     }
                 }

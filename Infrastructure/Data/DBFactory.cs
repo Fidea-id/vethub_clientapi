@@ -3,7 +3,6 @@ using DevExpress.Xpo.DB;
 using Infrastructure.Utils;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
-using System;
 using System.Data;
 
 namespace Infrastructure.Data

@@ -2,7 +2,6 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses.Clients;
-using Domain.Entities.Responses;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 

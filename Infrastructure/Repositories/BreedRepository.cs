@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using DevExpress.Utils.About;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
@@ -7,7 +6,6 @@ using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
-using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Repositories
 {
@@ -34,7 +32,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
 
             var mainTableName = "Breeds";
-            var joinQuery = "JOIN Animals ON Animals.Id = Breeds.AnimalsId"; 
+            var joinQuery = "JOIN Animals ON Animals.Id = Breeds.AnimalsId";
             var selectColumns = new List<string> { "Breeds.*", "Animals.Name as AnimalName" };
             var filterQuery = QueryGenerator.GenerateFilterQuery(filter, mainTableName, joinQuery, selectColumns);
             var queryString = filterQuery.Item1;

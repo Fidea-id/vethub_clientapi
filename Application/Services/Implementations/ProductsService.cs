@@ -8,8 +8,6 @@ using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using Newtonsoft.Json;
-using System.Xml.Linq;
 
 namespace Application.Services.Implementations
 {
@@ -61,7 +59,7 @@ namespace Application.Services.Implementations
                 //add product
                 var newId = await _repository.Add(dbName, newProducts);
 
-                if(request.BundleItem != null)
+                if (request.BundleItem != null)
                 {
 
                     if (request.BundleItem.Count() > 0)

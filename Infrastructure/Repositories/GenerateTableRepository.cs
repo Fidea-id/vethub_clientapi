@@ -1,16 +1,15 @@
 ﻿using Dapper;
-using DevExpress.Xpo.DB;
 using DevExpress.Xpo;
+using DevExpress.Xpo.DB;
+using DevExpress.Xpo.Metadata;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Models.Clients.XPO;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 using Newtonsoft.Json.Linq;
 using System.Data;
-using System.Reflection;
 using System.Text;
-using DevExpress.Xpo.Metadata;
-using Domain.Entities.Models.Clients.XPO;
 
 namespace Infrastructure.Repositories
 {
