@@ -1,9 +1,11 @@
 ﻿using Dapper;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Infrastructure.Repositories
 {
@@ -20,7 +22,7 @@ namespace Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountDetail(string dbName)
+        public async Task<DataResultDTO<ProductDiscountDetailResponse>> GetProductDiscountDetail(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             const string query = @"
@@ -43,7 +45,13 @@ namespace Infrastructure.Repositories
                     ProductDiscounts pd
                 JOIN
                     Products p ON pd.ProductId = p.Id";
-            return await _db.QueryAsync<ProductDiscountDetailResponse>(query);
+            var data = await _db.QueryAsync<ProductDiscountDetailResponse>(query);
+            var result = new DataResultDTO<ProductDiscountDetailResponse>
+            {
+                Data = data,
+                TotalData = data.Count()
+            };
+            return result;
         }
     }
 }

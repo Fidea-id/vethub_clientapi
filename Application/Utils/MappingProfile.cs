@@ -43,6 +43,7 @@ namespace Application.Utils
             CreateMap<PetsAddRequest, Patients>();
             CreateMap<PatientsRequest, Patients>();
             CreateMap<PatientsStatisticRequest, PatientsStatistic>();
+            CreateMap<ProductAsBundleRequest, Products>();
             CreateMap<ProductsBundlesRequest, ProductBundles>();
             CreateMap<ProductsCategoriesRequest, ProductCategories>();
             CreateMap<ProductsDiscountsRequest, ProductDiscounts>();

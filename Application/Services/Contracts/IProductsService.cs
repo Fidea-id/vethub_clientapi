@@ -21,7 +21,7 @@ namespace Application.Services.Contracts
         Task<ProductCategories> UpdateProductCategoriesAsync(int id, ProductsCategoriesRequest request, string dbName);
         Task DeleteProductCategoriesAsync(int id, string dbName);
 
-        Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountsAsync(string dbName);
+        Task<DataResultDTO<ProductDiscountDetailResponse>> GetProductDiscountsAsync(string dbName);
         Task<ProductDiscounts> GetProductDiscountByIdAsync(int id, string dbName);
         Task<ProductDiscounts> AddProductDiscountsAsync(ProductsDiscountsRequest request, string dbName);
         Task<ProductDiscounts> UpdateProductDiscountsAsync(int id, ProductsDiscountsRequest request, string dbName);

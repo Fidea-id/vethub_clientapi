@@ -211,7 +211,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<ProductDiscountDetailResponse>> GetProductDiscountsAsync(string dbName)
+        public async Task<DataResultDTO<ProductDiscountDetailResponse>> GetProductDiscountsAsync(string dbName)
         {
             return await _unitOfWork.ProductDiscountsRepository.GetProductDiscountDetail(dbName);
         }
