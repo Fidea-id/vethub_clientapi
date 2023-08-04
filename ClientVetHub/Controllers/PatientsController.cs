@@ -50,7 +50,6 @@ namespace ClientVetHub.Controllers
             }
         }
 
-
         [HttpGet("Owner/{id}")]
         public async Task<IActionResult> GetByOwner(int id)
         {
@@ -119,6 +118,37 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var entities = await _patientsService.ReadPatientsList(filters, dbName);
                 return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+        [HttpPost("Statistic")]
+        public async Task<IActionResult> PostStatistic([FromBody] PatientsStatisticRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _patientsService.AddPatientStatistic(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Statistic/{patientid}")]
+        public async Task<IActionResult> GetPatientLatestStatistic(int patientid)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _patientsService.ReadPatientsStatisticAsync(patientid, dbName);
+                return Ok(data);
             }
             catch
             {

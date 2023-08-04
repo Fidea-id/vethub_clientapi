@@ -55,6 +55,8 @@ namespace Infrastructure.Repositories
                 typeof(AppointmentsXPO),
                 typeof(AppointmentsActivityXPO),
                 typeof(AppointmentsStatusXPO),
+                typeof(PatientsStatisticXPO),
+                typeof(DiagnosesXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))

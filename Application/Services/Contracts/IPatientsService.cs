@@ -10,5 +10,10 @@ namespace Application.Services.Contracts
     {
         Task<DataResultDTO<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName);
         Task<IEnumerable<Patients>> ReadByOwnerIdAsync(int id, string dbName);
+
+
+        Task<PatientsStatistic> AddPatientStatistic(PatientsStatisticRequest request, string dbName);
+        Task<IEnumerable<PatientsStatisticResponse>> ReadPatientsStatisticAsync(int patientId, string dbName);
+        Task<IEnumerable<PatientsStatisticHistoryResponse>> ReadPatientsStatisticHistoryAsync(string type, int patientId, string dbName);
     }
 }

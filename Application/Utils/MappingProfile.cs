@@ -33,17 +33,21 @@ namespace Application.Utils
 
             //request to model
             CreateMap<AnimalsRequest, Animals>();
+            CreateMap<AppointmentsActivityRequest, AppointmentsActivity>();
+            CreateMap<AppointmentsRequest, Appointments>();
+            CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
             CreateMap<BreedsRequest, Breeds>();
+            CreateMap<DiagnosesRequest, Diagnoses>();
             CreateMap<OwnersRequest, Owners>();
             CreateMap<OwnersAddRequest, Owners>();
             CreateMap<PetsAddRequest, Patients>();
             CreateMap<PatientsRequest, Patients>();
-            CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
-            CreateMap<AppointmentsRequest, Appointments>();
-            CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
-            CreateMap<ProductsCategoriesRequest, ProductCategories>();
+            CreateMap<PatientsStatisticRequest, PatientsStatistic>();
             CreateMap<ProductsBundlesRequest, ProductBundles>();
+            CreateMap<ProductsCategoriesRequest, ProductCategories>();
             CreateMap<ProductsDiscountsRequest, ProductDiscounts>();
+            CreateMap<ProductsRequest, Products>();
+            CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 
             //DTO to request

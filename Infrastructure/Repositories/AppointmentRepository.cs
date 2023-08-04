@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses.Clients;
@@ -33,12 +34,12 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailList(string dbName, AppointmentDetailFilter filter)
+        public async Task<DataResultDTO<AppointmentsDetailResponse>> GetAllDetailList(string dbName, AppointmentDetailFilter filter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
             // Start building the SQL query
-            var sqlQuery = $"SELECT a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed," +
+            var sqlQuery = $"SELECT a.Id AS AppointmentId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed," +
                 $" a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate," +
                 $" s.DurationType AS DurationTypeEstimate, " +
                 $"CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR)" +
@@ -80,7 +81,7 @@ namespace Infrastructure.Repositories
                             if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
                                 DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
                             {
-                                whereClause.Add($"a.Date >= '{startDate:yyyy-MM-dd}' AND a.Date <= '{endDate:yyyy-MM-dd}'");
+                                whereClause.Add($"DATE(a.Date) >= '{startDate:yyyy-MM-dd}' AND DATE(a.Date) <= '{endDate:yyyy-MM-dd}'");
                             }
                         }
                     }
@@ -88,7 +89,7 @@ namespace Infrastructure.Repositories
                     {
                         if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
                         {
-                            whereClause.Add($"a.Date = '{date:yyyy-MM-dd}'");
+                            whereClause.Add($"DATE(a.Date) = '{date:yyyy-MM-dd}'");
                         }
                     }
                 }
@@ -99,9 +100,15 @@ namespace Infrastructure.Repositories
                     sqlQuery += " WHERE " + string.Join(" AND ", whereClause);
                 }
             }
-
             // Execute the SQL query
-            return await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
+            var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
+
+            var result = new DataResultDTO<AppointmentsDetailResponse>
+            {
+                Data = data,
+                TotalData = data.Count()
+            };
+            return result;
         }
 
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailListToday(string dbName)

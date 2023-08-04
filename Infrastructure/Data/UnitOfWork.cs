@@ -199,5 +199,18 @@ namespace Infrastructure.Data
                 return _DiagnoseRepository;
             }
         }
+
+        private IPatientsStatisticRepository _PatientsStatisticRepository;
+        public IPatientsStatisticRepository PatientsStatisticRepository
+        {
+            get
+            {
+                if (_PatientsStatisticRepository == null)
+                {
+                    _PatientsStatisticRepository = new PatientsStatisticRepository(_dbFactory);
+                }
+                return _PatientsStatisticRepository;
+            }
+        }
     }
 }

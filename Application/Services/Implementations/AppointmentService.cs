@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -14,7 +15,7 @@ namespace Application.Services.Implementations
         : base(unitOfWork, repository)
         { }
 
-        public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
+        public async Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
         {
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName, filter);
             return result;
