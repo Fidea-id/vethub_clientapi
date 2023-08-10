@@ -22,6 +22,7 @@ namespace Application
             services.AddScoped<IProductsService, ProductsService>();
             services.AddScoped<IServicesService, ServicesService>();
             services.AddScoped<IAdditionalDataService, AdditionalDataService>();
+            services.AddScoped<IOrdersService, OrdersService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

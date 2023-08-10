@@ -2,6 +2,7 @@
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
+using Domain.Entities.Responses.Clients;
 
 namespace Application.Utils
 {
@@ -28,6 +29,7 @@ namespace Application.Utils
         {
             //model to response
             CreateMap<Domain.Entities.Models.Clients.Profile, UserProfileResponse>();
+            CreateMap<Orders, OrdersResponse>();
 
             //model to request
 
@@ -37,6 +39,7 @@ namespace Application.Utils
             CreateMap<AppointmentsRequest, Appointments>();
             CreateMap<AppointmentsStatusRequest, AppointmentsStatus>();
             CreateMap<BreedsRequest, Breeds>();
+            CreateMap<ClinicsRequest, Clinics>();
             CreateMap<DiagnosesRequest, Diagnoses>();
             CreateMap<OwnersRequest, Owners>();
             CreateMap<OwnersAddRequest, Owners>();
@@ -48,6 +51,10 @@ namespace Application.Utils
             CreateMap<ProductsCategoriesRequest, ProductCategories>();
             CreateMap<ProductsDiscountsRequest, ProductDiscounts>();
             CreateMap<ProductsRequest, Products>();
+            CreateMap<OrdersRequest, Orders>();
+            CreateMap<OrdersDetailRequest, OrdersDetail>();
+            CreateMap<OrdersPaymentRequest, OrdersPayment>();
+            CreateMap<PaymentMethodRequest, PaymentMethod>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 

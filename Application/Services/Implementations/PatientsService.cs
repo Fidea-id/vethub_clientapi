@@ -25,7 +25,7 @@ namespace Application.Services.Implementations
         {
             return await _unitOfWork.PatientsRepository.GetPatientsList(dbName, filter);
         }
-        
+
         public async Task<PatientsStatistic> AddPatientStatistic(PatientsStatisticRequest request, string dbName)
         {
             try
@@ -67,7 +67,7 @@ namespace Application.Services.Implementations
             var dtoData = await _unitOfWork.PatientsStatisticRepository.ReadPatientsStatisticAsync(patientId, dbName);
 
             var result = new List<PatientsStatisticResponse>();
-            foreach(var item in dtoData)
+            foreach (var item in dtoData)
             {
                 string change;
                 string beforeValueText = item.Before != null ? $"{item.Before} {item.Unit}" : "null";

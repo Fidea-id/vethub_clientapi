@@ -21,6 +21,52 @@ namespace ClientVetHub.Controllers
             _additionalDataService = additionalDataService;
         }
 
+        #region Clinics
+        [HttpGet("Clinics")]
+        public async Task<IActionResult> GetClinics()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadClinicsAsync(dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("Clinics")]
+        public async Task<IActionResult> PostClinics([FromBody] ClinicsRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _additionalDataService.CreateClinicsAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Clinics/{id}")]
+        public async Task<IActionResult> PutClinics(int id, [FromBody] ClinicsRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _additionalDataService.UpdateClinicsAsync(id, value, dbName);
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
         #region Animal
         [HttpGet("Animal")]
         public async Task<IActionResult> GetAnimal([FromQuery] NameBaseEntityFilter filter)
@@ -258,6 +304,83 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 await _additionalDataService.DeleteDiagnoseAsync(id, dbName);
+                return Ok(default(Patients));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
+
+        #region PaymentMethod
+        [HttpGet("PaymentMethod")]
+        public async Task<IActionResult> GetPaymentMethod([FromQuery] NameBaseEntityFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _additionalDataService.ReadPaymentMethodAllAsync(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("PaymentMethod/{id}")]
+        public async Task<IActionResult> GetPaymentMethod(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadPaymentMethodByIdAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("PaymentMethod")]
+        public async Task<IActionResult> PostPaymentMethod([FromBody] PaymentMethodRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _additionalDataService.CreatePaymentMethodAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("PaymentMethod/{id}")]
+        public async Task<IActionResult> PutPaymentMethod(int id, [FromBody] PaymentMethodRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _additionalDataService.UpdatePaymentMethodAsync(id, value, dbName);
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("PaymentMethod/{id}")]
+        public async Task<IActionResult> DeletePaymentMethod(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _additionalDataService.DeletePaymentMethodAsync(id, dbName);
                 return Ok(default(Patients));
             }
             catch

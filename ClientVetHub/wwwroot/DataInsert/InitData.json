@@ -7,6 +7,17 @@
       "Name": "Medicine"
     }
   ],
+  "PaymentMethod": [
+    {
+      "Name": "Cash"
+    },
+    {
+      "Name": "Credit Card"
+    },
+    {
+      "Name": "Bank Transfer"
+    }
+  ],
   "AppointmentsStatus": [
     {
       "Name": "Bookings",

@@ -5,7 +5,6 @@ using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
-using static Dapper.SqlMapper;
 
 namespace Infrastructure.Repositories
 {

@@ -29,6 +29,11 @@ namespace Infrastructure
             services.AddScoped<IAnimalRepository, AnimalRepository>();
             services.AddScoped<IBreedRepository, BreedRepository>();
             services.AddScoped<IPatientsStatisticRepository, PatientsStatisticRepository>();
+            services.AddScoped<IOrdersRepository, OrdersRepository>();
+            services.AddScoped<IOrdersDetailRepository, OrdersDetailRepository>();
+            services.AddScoped<IOrdersPaymentRepository, OrdersPaymentRepository>();
+            services.AddScoped<IClinicRepository, ClinicRepository>();
+            services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();

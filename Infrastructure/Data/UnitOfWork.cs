@@ -56,7 +56,6 @@ namespace Infrastructure.Data
                 return _ServicesRepository;
             }
         }
-
         private IOwnersRepository _OwnersRepository;
         public IOwnersRepository OwnersRepository
         {
@@ -69,7 +68,6 @@ namespace Infrastructure.Data
                 return _OwnersRepository;
             }
         }
-
         private IPatientsRepository _PatientsRepository;
         public IPatientsRepository PatientsRepository
         {
@@ -82,7 +80,6 @@ namespace Infrastructure.Data
                 return _PatientsRepository;
             }
         }
-
         private IProductsRepository _ProductsRepository;
         public IProductsRepository ProductsRepository
         {
@@ -107,9 +104,7 @@ namespace Infrastructure.Data
                 return _AppointmentRepository;
             }
         }
-
         public IGenerateTableRepository _GenerateTableRepository;
-
         public IGenerateTableRepository GenerateTableRepository
         {
             get
@@ -121,7 +116,6 @@ namespace Infrastructure.Data
                 return _GenerateTableRepository;
             }
         }
-
         private IProductBundlesRepository _ProductBundlesRepository;
         public IProductBundlesRepository ProductBundlesRepository
         {
@@ -134,7 +128,6 @@ namespace Infrastructure.Data
                 return _ProductBundlesRepository;
             }
         }
-
         private IProductCategoriesRepository _ProductCategoriesRepository;
         public IProductCategoriesRepository ProductCategoriesRepository
         {
@@ -147,7 +140,6 @@ namespace Infrastructure.Data
                 return _ProductCategoriesRepository;
             }
         }
-
         private IProductDiscountsRepository _ProductDiscountsRepository;
         public IProductDiscountsRepository ProductDiscountsRepository
         {
@@ -160,7 +152,6 @@ namespace Infrastructure.Data
                 return _ProductDiscountsRepository;
             }
         }
-
         private IAnimalRepository _AnimalRepository;
         public IAnimalRepository AnimalRepository
         {
@@ -173,7 +164,6 @@ namespace Infrastructure.Data
                 return _AnimalRepository;
             }
         }
-
         private IBreedRepository _BreedRepository;
         public IBreedRepository BreedRepository
         {
@@ -186,7 +176,6 @@ namespace Infrastructure.Data
                 return _BreedRepository;
             }
         }
-
         private IDiagnosesRepository _DiagnoseRepository;
         public IDiagnosesRepository DiagnoseRepository
         {
@@ -199,7 +188,6 @@ namespace Infrastructure.Data
                 return _DiagnoseRepository;
             }
         }
-
         private IPatientsStatisticRepository _PatientsStatisticRepository;
         public IPatientsStatisticRepository PatientsStatisticRepository
         {
@@ -210,6 +198,66 @@ namespace Infrastructure.Data
                     _PatientsStatisticRepository = new PatientsStatisticRepository(_dbFactory);
                 }
                 return _PatientsStatisticRepository;
+            }
+        }
+        private IOrdersRepository _OrdersRepository;
+        public IOrdersRepository OrdersRepository
+        {
+            get
+            {
+                if (_OrdersRepository == null)
+                {
+                    _OrdersRepository = new OrdersRepository(_dbFactory);
+                }
+                return _OrdersRepository;
+            }
+        }
+        private IOrdersDetailRepository _OrdersDetailRepository;
+        public IOrdersDetailRepository OrdersDetailRepository
+        {
+            get
+            {
+                if (_OrdersDetailRepository == null)
+                {
+                    _OrdersDetailRepository = new OrdersDetailRepository(_dbFactory);
+                }
+                return _OrdersDetailRepository;
+            }
+        }
+        private IOrdersPaymentRepository _OrdersPaymentRepository;
+        public IOrdersPaymentRepository OrdersPaymentRepository
+        {
+            get
+            {
+                if (_OrdersPaymentRepository == null)
+                {
+                    _OrdersPaymentRepository = new OrdersPaymentRepository(_dbFactory);
+                }
+                return _OrdersPaymentRepository;
+            }
+        }
+        private IPaymentMethodRepository _PaymentMethodRepository;
+        public IPaymentMethodRepository PaymentMethodRepository
+        {
+            get
+            {
+                if (_PaymentMethodRepository == null)
+                {
+                    _PaymentMethodRepository = new PaymentMethodRepository(_dbFactory);
+                }
+                return _PaymentMethodRepository;
+            }
+        }
+        private IClinicRepository _ClinicRepository;
+        public IClinicRepository ClinicsRepository
+        {
+            get
+            {
+                if (_ClinicRepository == null)
+                {
+                    _ClinicRepository = new ClinicRepository(_dbFactory);
+                }
+                return _ClinicRepository;
             }
         }
     }

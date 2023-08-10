@@ -41,6 +41,11 @@ namespace Application.Services.Implementations
         public async Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName)
         {
             var data = await _repository.GetById(dbName, request.Id.Value);
+            if (data == null)
+                throw new Exception("Appointment not found");
+            var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.StaffId.Value);
+            if (staff == null)
+                throw new Exception("Staff not found");
             var statusId = request.StatusId.Value;
             if (statusId != data.StatusId + 1)
             {
@@ -56,10 +61,11 @@ namespace Application.Services.Implementations
                 AppointmentId = data.Id,
                 CurrentDate = DateTime.Now,
                 CurrentStatusId = statusId,
-                StaffId = request.StaffId.Value,
+                StaffId = staff.Id,
                 Note = request.Notes
             };
 
+            FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
             await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
         }
     }

@@ -8,6 +8,11 @@ namespace Application.Services.Contracts
 {
     public interface IAdditionalDataService
     {
+        //Clinics
+        Task<Clinics> CreateClinicsAsync(ClinicsRequest entity, string dbName);
+        Task<Clinics> ReadClinicsAsync(string dbName);
+        Task<Clinics> UpdateClinicsAsync(int id, ClinicsRequest entity, string dbName);
+
         //animal
         Task<Animals> CreateAnimalAsync(AnimalsRequest entity, string dbName);
         Task<DataResultDTO<Animals>> ReadAnimalAllAsync(NameBaseEntityFilter filter, string dbName);
@@ -29,5 +34,12 @@ namespace Application.Services.Contracts
         Task<Diagnoses> ReadDiagnoseByIdAsync(int id, string dbName);
         Task<Diagnoses> UpdateDiagnoseAsync(int id, DiagnosesRequest entity, string dbName);
         Task DeleteDiagnoseAsync(int id, string dbName);
+
+        //PaymentMethod
+        Task<PaymentMethod> CreatePaymentMethodAsync(PaymentMethodRequest entity, string dbName);
+        Task<DataResultDTO<PaymentMethod>> ReadPaymentMethodAllAsync(NameBaseEntityFilter filter, string dbName);
+        Task<PaymentMethod> ReadPaymentMethodByIdAsync(int id, string dbName);
+        Task<PaymentMethod> UpdatePaymentMethodAsync(int id, PaymentMethodRequest entity, string dbName);
+        Task DeletePaymentMethodAsync(int id, string dbName);
     }
 }
