@@ -22,6 +22,21 @@ namespace ClientVetHub.Controllers
         }
 
         #region Clinics
+        [HttpGet("ClinicsEntity/{entity}")]
+        [Authorize(Roles = "Superadmin")]
+        public async Task<IActionResult> GetClinics(string entity)
+        {
+            try
+            {
+                var data = await _additionalDataService.ReadClinicsAsync(entity);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Clinics")]
         public async Task<IActionResult> GetClinics()
         {
@@ -30,6 +45,21 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _additionalDataService.ReadClinicsAsync(dbName);
                 return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("ClinicsEntity/{entity}")]
+        [Authorize(Roles = "Superadmin")]
+        public async Task<IActionResult> PostClinics(string entity, [FromBody] ClinicsRequest request)
+        {
+            try
+            {
+                var create = await _additionalDataService.CreateClinicsAsync(request, entity);
+                return Ok(create);
             }
             catch
             {

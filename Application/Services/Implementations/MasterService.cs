@@ -69,6 +69,19 @@ namespace Application.Services.Implementations
                                     }
                                     await _unitOfWork.AppointmentRepository.AddStatusRange(map, dbName);
                                 }
+                                else if (kvp.Key == "PaymentMethod")
+                                {
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<PaymentMethodRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<PaymentMethod>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<PaymentMethod>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<PaymentMethod>(itm);
+                                    }
+                                    await _unitOfWork.PaymentMethodRepository.AddRange(dbName, map);
+                                }
 
                             }
                             // set the schema init

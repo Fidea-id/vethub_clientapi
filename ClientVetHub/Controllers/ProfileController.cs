@@ -93,6 +93,22 @@ namespace ClientVetHub.Controllers
             }
         }
 
+
+        [HttpPut("GlobalId/{id}")]
+        public async Task<IActionResult> PutGlobal(int id, [FromBody] ProfileRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var response = await _profileService.UpdateUserProfileByGlobalIdAsync(dbName, value, id);
+                return Ok(response);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPut("Deactive/{id}")]
         public async Task<IActionResult> Deactive(int id)
         {
