@@ -5,9 +5,9 @@ using Infrastructure.Data;
 
 namespace Infrastructure.Repositories
 {
-    public class ClinicRepository : GenericRepository<Clinics, ClinicsFilter>, IClinicRepository
+    public class MedicalRecordsRepository : GenericRepository<MedicalRecords, MedicalRecordsFilter>, IMedicalRecordsRepository
     {
-        public ClinicRepository(IDBFactory context) : base(context)
+        public MedicalRecordsRepository(IDBFactory context) : base(context)
         {
         }
     }

@@ -19,21 +19,17 @@ namespace Infrastructure.Repositories
 
             string query = $@"
                 SELECT
-                    a.PatientId, MAX(a.StaffId) AS StaffId, a.Type, MAX(a.Unit) AS Unit, MAX(a.CreatedAt) AS CreatedAt, MAX(a.Value) AS Latest, MAX(b.Value) AS `Before`
+                    a.PatientId,
+                    MAX(a.StaffId) AS StaffId,
+                    a.Type,
+                    MAX(a.Unit) AS Unit,
+                    MAX(a.CreatedAt) AS CreatedAt,
+                    (SELECT MAX(Value) FROM PatientsStatistic c WHERE c.PatientId = a.PatientId AND c.Type = a.Type AND c.CreatedAt = MAX(a.CreatedAt)) AS Latest,
+                    (SELECT Value FROM PatientsStatistic d WHERE d.PatientId = a.PatientId AND d.Type = a.Type AND d.CreatedAt = (SELECT MAX(CreatedAt) 
+                        FROM PatientsStatistic e WHERE e.PatientId = a.PatientId AND e.Type = a.Type AND e.CreatedAt < MAX(a.CreatedAt))) AS `Before`
                 FROM PatientsStatistic a
-                LEFT JOIN (
-                    SELECT
-                        PatientId, Value, CreatedAt
-                    FROM PatientsStatistic
-                    WHERE PatientId = @patientId AND CreatedAt < (
-                        SELECT MAX(CreatedAt)
-                        FROM PatientsStatistic
-                        WHERE PatientId = @patientId
-                    )
-                ) b ON a.PatientId = b.PatientId
                 WHERE a.PatientId = @patientId
-                GROUP BY a.Type
-                ORDER BY MAX(a.CreatedAt) DESC;";
+                GROUP BY a.PatientId, a.Type;";
 
             return await _db.QueryAsync<PatientsStatisticDto>(query, new { patientId });
         }

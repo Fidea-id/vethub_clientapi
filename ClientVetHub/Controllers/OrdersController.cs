@@ -1,6 +1,4 @@
 ﻿using Application.Services.Contracts;
-using Application.Services.Implementations;
-using Domain.Entities.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

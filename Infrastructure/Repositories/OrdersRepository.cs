@@ -2,7 +2,6 @@
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Entities.Responses.Masters;
 using Domain.Interfaces.Clients;
@@ -42,7 +41,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<OrderFullResponse>> GetListOrderFull(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            
+
             const string query = @"
                 SELECT
                     o.Id AS Id,

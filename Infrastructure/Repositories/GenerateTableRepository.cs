@@ -62,6 +62,10 @@ namespace Infrastructure.Repositories
                 typeof(OrdersPaymentXPO),
                 typeof(ClinicsXPO),
                 typeof(PaymentMethodXPO),
+                typeof(MedicalRecordsXPO),
+                typeof(MedicalRecordsDiagnosesXPO),
+                typeof(MedicalRecordsNotesXPO),
+                typeof(MedicalRecordsPrescriptionsXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))
