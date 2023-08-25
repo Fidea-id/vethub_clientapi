@@ -17,6 +17,11 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE GlobalId = @Id", new { Id = id });
         }
+        public async Task<Profile> GetByEmail(string dbName, string email)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Email = @Email", new { Email = email });
+        }
     }
 }
 

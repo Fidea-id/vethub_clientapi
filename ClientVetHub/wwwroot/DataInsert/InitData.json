@@ -18,6 +18,96 @@
       "Name": "Bank Transfer"
     }
   ],
+  "PrescriptionFrequents": [
+    {
+      "Name": "1 time a day",
+      "Lang": "EN"
+    },
+    {
+      "Name": "2 times a day",
+      "Lang": "EN"
+    },
+    {
+      "Name": "3 times a day",
+      "Lang": "EN"
+    },
+    {
+      "Name": "4 times a day",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 3 day",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 1 week",
+      "Lang": "EN"
+    },
+    {
+      "Name": "2 times a week ",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 2 hours",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 4 hours",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 8 hours",
+      "Lang": "EN"
+    },
+    {
+      "Name": "Every 12 hours",
+      "Lang": "EN"
+    },
+    {
+      "Name": "1 kali sehari",
+      "Lang": "ID"
+    },
+    {
+      "Name": "2 kali sehari",
+      "Lang": "ID"
+    },
+    {
+      "Name": "3 kali sehari",
+      "Lang": "ID"
+    },
+    {
+      "Name": "4 kali sehari",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Setiap 3 hari",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Sekali seminggu",
+      "Lang": "ID"
+    },
+    {
+      "Name": "2 kali seminggu",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Setiap 2 jam",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Setiap 4 jam",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Setiap 8 jam",
+      "Lang": "ID"
+    },
+    {
+      "Name": "Setiap 12 jam",
+      "Lang": "ID"
+    }
+  ],
   "AppointmentsStatus": [
     {
       "Name": "Bookings",

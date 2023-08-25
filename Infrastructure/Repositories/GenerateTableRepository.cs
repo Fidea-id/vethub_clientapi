@@ -66,6 +66,7 @@ namespace Infrastructure.Repositories
                 typeof(MedicalRecordsDiagnosesXPO),
                 typeof(MedicalRecordsNotesXPO),
                 typeof(MedicalRecordsPrescriptionsXPO),
+                typeof(PrescriptionFrequentsXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))
@@ -77,38 +78,6 @@ namespace Infrastructure.Repositories
 
             //var batchQueries = "CREATE TABLE IF NOT EXISTS SchemaVersion (Version INT, Note VARCHAR(255)); CREATE TABLE IF NOT EXISTS Profile (Id INT PRIMARY KEY AUTO_INCREMENT, GlobalId INT, Name VARCHAR(255), Entity VARCHAR(255), Email VARCHAR(255), Photo VARCHAR(255), Roles VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Services (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Duration INT, DurationType VARCHAR(255), IsActive TINYINT(1), Price DOUBLE, CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Animals (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Breeds (Id INT PRIMARY KEY AUTO_INCREMENT, AnimalsId INT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Owners (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Photo VARCHAR(255), Email VARCHAR(255), Title VARCHAR(255), Address VARCHAR(255), PhoneNumber VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Patients (Id INT PRIMARY KEY AUTO_INCREMENT, OwnersId INT, Name VARCHAR(255), Photo VARCHAR(255), Species VARCHAR(255), Breed VARCHAR(255), Gender VARCHAR(255), DateOfBirth DATETIME, Vaccinated TINYINT(1), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Products (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Description VARCHAR(255), CategoryId INT, Price DOUBLE, IsBundle TINYINT(1), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductStocks (Id INT PRIMARY KEY AUTO_INCREMENT, ProductId INT, Stock DOUBLE, Volume VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductBundles (Id INT PRIMARY KEY AUTO_INCREMENT, BundleId INT, ItemId INT, Quantity DOUBLE, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductDiscounts (Id INT PRIMARY KEY AUTO_INCREMENT, ProductId INT, Description VARCHAR(255), DiscountValue DOUBLE, DiscountType ENUM('Percentage', 'Amount'), StartDate DATETIME DEFAULT NULL, EndDate DATETIME DEFAULT NULL, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductCategories (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Appointments (Id INT PRIMARY KEY AUTO_INCREMENT, OwnersId INT, PatientsId INT, Date DATETIME, StaffId INT, ServiceId INT, StatusId INT, Notes VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS AppointmentsStatus (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Description VARCHAR(255), Weight INT, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME);";
             //await _db.ExecuteAsync(batchQueries);
-        }
-        public async Task<string> GenerateAllTableQuery(string dbName)
-        {
-            var _db = _dbFactory.GetDbConnection(dbName, true);
-
-            var batchQueries = new List<string>();
-
-            var models = new List<Type>
-            {
-                typeof(SchemaVersion),
-                typeof(Profile),
-                typeof(Services),
-                typeof(Animals),
-                typeof(Breeds),
-                typeof(Owners),
-                typeof(Patients),
-                typeof(Products),
-                typeof(ProductStocks),
-                typeof(ProductBundles),
-                typeof(ProductDiscounts),
-                typeof(ProductCategories),
-                typeof(Appointments),
-                typeof(AppointmentsStatus),
-                // Add more model types here
-            };
-            foreach (var modelType in models)
-            {
-                string createTableQuery = QueryGenerator.GenerateCreateTableQuery(modelType);
-                batchQueries.Add(createTableQuery);
-            }
-            string batchQuery = string.Join(" ", batchQueries);
-            return batchQuery;
         }
 
         public async Task GenerateTableField(string dbName, JObject fields)

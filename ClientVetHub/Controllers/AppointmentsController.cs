@@ -20,20 +20,6 @@ namespace ClientVetHub.Controllers
             _appointmentService = appointmentService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] AppointmentsFilter filters)
-        {
-            try
-            {
-                var dbName = User.FindFirstValue("Entity");
-                var entities = await _appointmentService.GetEntitiesByFilter(filters, dbName);
-                return Ok(entities);
-            }
-            catch
-            {
-                throw;
-            }
-        }
         [HttpGet("Today")]
         public async Task<IActionResult> GetToday()
         {
@@ -56,6 +42,21 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var entities = await _appointmentService.GetStatus(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] AppointmentsFilter filters)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _appointmentService.GetEntitiesByFilter(filters, dbName);
                 return Ok(entities);
             }
             catch

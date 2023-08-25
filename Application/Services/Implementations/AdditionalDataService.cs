@@ -433,5 +433,78 @@ namespace Application.Services.Implementations
             }
         }
         #endregion
+        
+        #region PrescriptionFrequents
+        public async Task<PrescriptionFrequents> CreatePrescriptionFrequentsAsync(PrescriptionFrequentsRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<PrescriptionFrequents>(request);
+                FormatUtil.SetIsActive<PrescriptionFrequents>(entity, true);
+                FormatUtil.SetDateBaseEntity<PrescriptionFrequents>(entity);
+
+                var newId = await _uow.PrescriptionFrequentsRepository.Add(dbName, entity);
+                entity.Id = newId;
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.CreatePrescriptionFrequentsAsync";
+                throw;
+            }
+        }
+        public async Task<DataResultDTO<PrescriptionFrequents>> ReadPrescriptionFrequentsAllAsync(PrescriptionFrequentsFilter filter, string dbName)
+        {
+            try
+            {
+                var data = await _uow.PrescriptionFrequentsRepository.GetByFilter(dbName, filter);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadAllPrescriptionFrequentsAsync";
+                throw;
+            }
+        }
+        public async Task<PrescriptionFrequents> UpdatePrescriptionFrequentsAsync(int id, PrescriptionFrequentsRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<PrescriptionFrequents>(request); // cek dulu
+                FormatUtil.SetDateBaseEntity<PrescriptionFrequents>(entity, true);
+
+                PrescriptionFrequents checkedEntity = await _uow.PrescriptionFrequentsRepository.GetById(dbName, id);
+                FormatUtil.ConvertUpdateObject<PrescriptionFrequents, PrescriptionFrequents>(entity, checkedEntity);
+                FormatUtil.SetIsActive<PrescriptionFrequents>(checkedEntity, true);
+                await _uow.PrescriptionFrequentsRepository.Update(dbName, checkedEntity);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.UpdatePrescriptionFrequentsAsync";
+                throw;
+            }
+        }
+        public async Task DeletePrescriptionFrequentsAsync(int id, string dbName)
+        {
+            try
+            {
+                //get entity
+                var entity = await _uow.PrescriptionFrequentsRepository.GetById(dbName, id);
+                if (entity == null) throw new Exception("Entity not found");
+
+                await _uow.PrescriptionFrequentsRepository.Remove(dbName, id);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.DeletePrescriptionFrequentsAsync";
+                throw;
+            }
+        }
+        #endregion
     }
 }

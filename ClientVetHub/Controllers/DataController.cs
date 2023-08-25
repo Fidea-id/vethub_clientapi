@@ -419,5 +419,67 @@ namespace ClientVetHub.Controllers
             }
         }
         #endregion
+
+        #region PrescriptionFrequents
+        [HttpGet("PrescriptionFrequents")]
+        public async Task<IActionResult> GetPrescriptionFrequents([FromQuery] PrescriptionFrequentsFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _additionalDataService.ReadPrescriptionFrequentsAllAsync(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("PrescriptionFrequents")]
+        public async Task<IActionResult> PostPrescriptionFrequents([FromBody] PrescriptionFrequentsRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _additionalDataService.CreatePrescriptionFrequentsAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("PrescriptionFrequents/{id}")]
+        public async Task<IActionResult> PutPrescriptionFrequents(int id, [FromBody] PrescriptionFrequentsRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _additionalDataService.UpdatePrescriptionFrequentsAsync(id, value, dbName);
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("PrescriptionFrequents/{id}")]
+        public async Task<IActionResult> DeletePrescriptionFrequents(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _additionalDataService.DeletePrescriptionFrequentsAsync(id, dbName);
+                return Ok(default(Patients));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
     }
 }

@@ -260,5 +260,66 @@ namespace Infrastructure.Data
                 return _ClinicRepository;
             }
         }
+
+        private IMedicalRecordsRepository _MedicalRecordsRepository;
+        public IMedicalRecordsRepository MedicalRecordsRepository
+        {
+            get
+            {
+                if (_MedicalRecordsRepository == null)
+                {
+                    _MedicalRecordsRepository = new MedicalRecordsRepository(_dbFactory);
+                }
+                return _MedicalRecordsRepository;
+            }
+        }
+        private IMedicalRecordsPrescriptionsRepository _MedicalRecordsPrescriptionsRepository;
+        public IMedicalRecordsPrescriptionsRepository MedicalRecordsPrescriptionsRepository
+        {
+            get
+            {
+                if (_MedicalRecordsPrescriptionsRepository == null)
+                {
+                    _MedicalRecordsPrescriptionsRepository = new MedicalRecordsPrescriptionsRepository(_dbFactory);
+                }
+                return _MedicalRecordsPrescriptionsRepository;
+            }
+        }
+        private IMedicalRecordsNotesRepository _MedicalRecordsNotesRepository;
+        public IMedicalRecordsNotesRepository MedicalRecordsNotesRepository
+        {
+            get
+            {
+                if (_MedicalRecordsNotesRepository == null)
+                {
+                    _MedicalRecordsNotesRepository = new MedicalRecordsNotesRepository(_dbFactory);
+                }
+                return _MedicalRecordsNotesRepository;
+            }
+        }
+        private IMedicalRecordsDiagnosesRepository _MedicalRecordsDiagnosesRepository;
+        public IMedicalRecordsDiagnosesRepository MedicalRecordsDiagnosesRepository
+        {
+            get
+            {
+                if (_MedicalRecordsDiagnosesRepository == null)
+                {
+                    _MedicalRecordsDiagnosesRepository = new MedicalRecordsDiagnosesRepository(_dbFactory);
+                }
+                return _MedicalRecordsDiagnosesRepository;
+            }
+        }
+        private IPrescriptionFrequentsRepository _PrescriptionFrequentsRepository;
+        public IPrescriptionFrequentsRepository PrescriptionFrequentsRepository
+        {
+            get
+            {
+                if (_PrescriptionFrequentsRepository == null)
+                {
+                    _PrescriptionFrequentsRepository = new PrescriptionFrequentsRepository(_dbFactory);
+                }
+                return _PrescriptionFrequentsRepository;
+            }
+        }
     }
 }

@@ -82,10 +82,23 @@ namespace Application.Services.Implementations
                                     }
                                     await _unitOfWork.PaymentMethodRepository.AddRange(dbName, map);
                                 }
+                                else if (kvp.Key == "PrescriptionFrequents")
+                                {
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<PrescriptionFrequentsRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<PrescriptionFrequents>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<PrescriptionFrequents>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<PrescriptionFrequents>(itm);
+                                    }
+                                    await _unitOfWork.PrescriptionFrequentsRepository.AddRange(dbName, map);
+                                }
 
                             }
                             // set the schema init
-                            await _generateTableRepository.SetInitSchema(dbName, "initdata_1");
+                            await _generateTableRepository.SetInitSchema(dbName, "initdata_2");
                         }
                     }
                 }

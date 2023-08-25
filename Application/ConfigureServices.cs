@@ -23,6 +23,7 @@ namespace Application
             services.AddScoped<IServicesService, ServicesService>();
             services.AddScoped<IAdditionalDataService, AdditionalDataService>();
             services.AddScoped<IOrdersService, OrdersService>();
+            services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

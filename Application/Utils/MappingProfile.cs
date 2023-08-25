@@ -55,6 +55,8 @@ namespace Application.Utils
             CreateMap<OrdersDetailRequest, OrdersDetail>();
             CreateMap<OrdersPaymentRequest, OrdersPayment>();
             CreateMap<PaymentMethodRequest, PaymentMethod>();
+            CreateMap<MedicalRecordsRequest, MedicalRecords>();
+            CreateMap<MedicalRecordsNotesRequest, MedicalRecordsNotes>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 

@@ -41,5 +41,11 @@ namespace Application.Services.Contracts
         Task<PaymentMethod> ReadPaymentMethodByIdAsync(int id, string dbName);
         Task<PaymentMethod> UpdatePaymentMethodAsync(int id, PaymentMethodRequest entity, string dbName);
         Task DeletePaymentMethodAsync(int id, string dbName);
+
+        //PrescriptionFrequents
+        Task<PrescriptionFrequents> CreatePrescriptionFrequentsAsync(PrescriptionFrequentsRequest entity, string dbName);
+        Task<DataResultDTO<PrescriptionFrequents>> ReadPrescriptionFrequentsAllAsync(PrescriptionFrequentsFilter filter, string dbName);
+        Task<PrescriptionFrequents> UpdatePrescriptionFrequentsAsync(int id, PrescriptionFrequentsRequest entity, string dbName);
+        Task DeletePrescriptionFrequentsAsync(int id, string dbName);
     }
 }
