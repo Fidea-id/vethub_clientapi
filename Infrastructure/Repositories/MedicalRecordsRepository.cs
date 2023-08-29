@@ -15,9 +15,8 @@ namespace Infrastructure.Repositories
         public async Task<string> GetLatestCode(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            string query = "SELECT TOP 1 Code FROM MedicalRecords ORDER BY Id DESC";
+            string query = "SELECT Code FROM MedicalRecords ORDER BY Id DESC";
             return await _db.QueryFirstOrDefaultAsync<string>(query);
-
         }
     }
 }

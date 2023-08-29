@@ -131,9 +131,9 @@ namespace Infrastructure.Repositories
         public async Task<AppointmentsDetailResponse> GetAllDetail(int id, string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstAsync<AppointmentsDetailResponse>($@"SELECT a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+            return await _db.QueryFirstAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
-                s.DurationType AS DurationTypeEstimate, 
+                s.DurationType AS DurationTypeEstimate, mr.Id AS MedicalRecordId,
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
                 WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
@@ -141,6 +141,7 @@ namespace Infrastructure.Repositories
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId 
+                LEFT JOIN MedicalRecords AS mr ON mr.AppointmentId = a.Id
                 WHERE a.Id = @id", new { id = id });
         }
 

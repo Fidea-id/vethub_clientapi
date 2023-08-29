@@ -54,19 +54,9 @@ namespace Application.Services.Implementations
             data.StatusId = statusId;
             FormatUtil.SetDateBaseEntity<Appointments>(data, true);
             await _repository.Update(dbName, data);
-
-            // add appointment activity
             var now = DateTime.Now;
-            var newAppointment = new AppointmentsActivity()
-            {
-                AppointmentId = data.Id,
-                CurrentDate = now,
-                CurrentStatusId = statusId,
-                StaffId = staff.Id,
-                Note = request.Notes
-            };
 
-            if(statusId == 3) //buat medical record
+            if (statusId == 3) //buat medical record
             {
                 var getService = await _unitOfWork.ServicesRepository.GetById(dbName, data.ServiceId);
                 var getLatestCode = await _unitOfWork.MedicalRecordsRepository.GetLatestCode(dbName);
@@ -91,6 +81,15 @@ namespace Application.Services.Implementations
 
             }
 
+            // add appointment activity
+            var newAppointment = new AppointmentsActivity()
+            {
+                AppointmentId = data.Id,
+                CurrentDate = now,
+                CurrentStatusId = statusId,
+                StaffId = staff.Id,
+                Note = request.Notes
+            };
             FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
             await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
         }
