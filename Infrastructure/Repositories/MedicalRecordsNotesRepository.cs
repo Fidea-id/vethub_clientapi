@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Filters.Clients;
+﻿using Dapper;
+using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
@@ -9,6 +10,12 @@ namespace Infrastructure.Repositories
     {
         public MedicalRecordsNotesRepository(IDBFactory context) : base(context)
         {
+        }
+
+        public async Task<MedicalRecordsNotes> CheckRecordType(string dbName, int medicalRecordsId, string type)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryFirstOrDefaultAsync<MedicalRecordsNotes>($"SELECT * FROM MedicalRecordsNotes WHERE MedicalRecordsId = @Id And Type = @NoteType", new { Id = medicalRecordsId, NoteType = type });
         }
     }
 }

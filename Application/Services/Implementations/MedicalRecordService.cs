@@ -35,14 +35,26 @@ namespace Application.Services.Implementations
                 FormatUtil.TrimObjectProperties(request);
                 var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request);
                 FormatUtil.SetIsActive<MedicalRecordsNotes>(entity, true);
-                FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
                 var staff = await _unitOfWork.ProfileRepository.GetByEmail(dbName, email);
                 entity.StaffId = staff.Id;
-                var newId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
+
+                var checkType = await _unitOfWork.MedicalRecordsNotesRepository.CheckRecordType(dbName, request.MedicalRecordsId, request.Type);
+                var noteId = checkType.Id;
+                if (checkType == null)
+                {
+                    FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
+                    noteId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
+                }
+                else
+                {
+                    entity.Id = noteId;
+                    FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity, true);
+                    await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, entity);
+                }
 
                 var response = new MedicalRecordsNotesResponse
                 {
-                    Id = newId,
+                    Id = noteId,
                     MedicalRecordsId = request.MedicalRecordsId,
                     StaffId = request.MedicalRecordsId,
                     Title = request.Title,

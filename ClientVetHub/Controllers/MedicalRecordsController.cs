@@ -135,7 +135,7 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 await _medicalRecordService.DeleteMedicalRecordsNotes(id, dbName);
-                return Ok(default(Patients));
+                return Ok(default(MedicalRecordsNotes));
             }
             catch
             {
