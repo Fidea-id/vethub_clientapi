@@ -15,6 +15,7 @@ namespace Application.Services.Contracts
         Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName);
         Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName);
         Task<MedicalDocsRequirementResponse> GetMedicalRecordRequirement(int medicalRecordId, string dbName);
+        Task<IEnumerable<MedicalRecordsNotes>> GetMedicalRecordsNotes(int id, string dbName);
         Task DeleteMedicalRecordsNotes(int id, string dbName);
     }
 }

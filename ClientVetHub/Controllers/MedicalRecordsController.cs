@@ -128,6 +128,20 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Notes/{id}")]
+        public async Task<IActionResult> GetNotesByMedicalRecordId(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _medicalRecordService.GetMedicalRecordsNotes(id, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
         [HttpDelete("Notes/{id}")]
         public async Task<IActionResult> DeleteNotes(int id)
         {

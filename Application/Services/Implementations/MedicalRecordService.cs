@@ -69,6 +69,22 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+        public async Task<IEnumerable<MedicalRecordsNotes>> GetMedicalRecordsNotes(int id, string dbName)
+        {
+            try
+            {
+                //get entity
+                var entity = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, id);
+                if (entity == null) throw new Exception("Entity not found");
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"MedicalRecordService.GetMedicalRecordsNotes";
+                throw;
+            }
+        }
+        
         public async Task DeleteMedicalRecordsNotes(int id, string dbName)
         {
             try
