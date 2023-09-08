@@ -90,5 +90,85 @@ namespace Application.Services.Implementations
             }
         }
 
+        public async Task<OrderFullResponse> CreateOrderFullAsync(OrderFullRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var client = await _unitOfWork.OwnersRepository.GetById(dbName, request.ClientId);
+                if (client == null) throw new Exception("Client not found");
+                var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.ClientId);
+                if (staff == null) throw new Exception("Staff not found");
+                var getLatestCode = await _unitOfWork.OrdersRepository.GetLatestCode(dbName);
+                var orderNumber = FormatUtil.GenerateOrdersNumber(getLatestCode);
+                var newOrders = new Orders
+                {
+                    BranchId = 0,
+                    ClientId = request.ClientId,
+                    ClientName = client.Name,
+                    Date = request.Date,
+                    DueDate = request.DueDate,
+                    Type = request.Type,
+                    OrderNumber = orderNumber,
+                    Status = "Unpaid",
+                    StaffId = request.StaffId,
+                    TotalQuantity = request.TotalQuantity,
+                    TotalDiscountedPrice = request.TotalDiscountedPrice ?? 0,
+                    TotalPrice = request.TotalPrice
+                };
+
+                FormatUtil.SetIsActive<Orders>(newOrders, true);
+                FormatUtil.SetDateBaseEntity<Orders>(newOrders);
+
+                var newId = await _unitOfWork.OrdersRepository.Add(dbName, newOrders);
+                newOrders.Id = newId;
+
+                //add orders detail
+                var detailList = new List<OrdersDetail>();
+                foreach(var item in request.OrderDetailItem)
+                {
+                    var newOrdersDetail = new OrdersDetail
+                    {
+                        StaffId = item.StaffId,
+                        Discount = item.Discount,
+                        DiscountType = item.DiscountType,
+                        OrderId = newOrders.Id,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        TotalPrice = item.TotalPrice
+                    };
+                    FormatUtil.SetIsActive<OrdersDetail>(newOrdersDetail, true);
+                    FormatUtil.SetDateBaseEntity<OrdersDetail>(newOrdersDetail);
+                    detailList.Add(newOrdersDetail);
+                }
+                await _unitOfWork.OrdersDetailRepository.AddRange(dbName, detailList);
+
+                var detailResponse = Mapping.Mapper.Map<List<OrdersDetailResponse>>(detailList);
+
+                var response = new OrderFullResponse
+                {
+                    ClientId = newOrders.ClientId,
+                    ClientName = newOrders.ClientName,
+                    Date = newOrders.Date,
+                    DueDate = newOrders.DueDate,
+                    OrderNumber = newOrders.OrderNumber,
+                    StaffId = newOrders.StaffId,
+                    StaffName = staff.Name,
+                    Status = newOrders.Status,
+                    TotalQuantity = newOrders.TotalQuantity,
+                    TotalDiscountedPrice = newOrders.TotalDiscountedPrice,
+                    TotalPrice = newOrders.TotalPrice,
+                    OrderProducts = detailResponse,
+                    ClinicData = null
+                };
+                return response;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.CreateOrderFullAsync";
+                throw;
+            }
+        }
     }
 }

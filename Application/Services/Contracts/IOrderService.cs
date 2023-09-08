@@ -13,6 +13,7 @@ namespace Application.Services.Contracts
         //OrderFullResponse
         Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName);
         Task<OrderFullResponse> GetOrderFullByIdAsync(int id, string dbName);
+        Task<OrderFullResponse> CreateOrderFullAsync(OrderFullRequest request, string dbName);
 
         //OrderDetail
         Task<OrdersDetail> AddOrdersDetailAsync(OrdersDetailRequest request, string dbName);

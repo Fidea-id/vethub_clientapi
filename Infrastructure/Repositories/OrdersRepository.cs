@@ -15,6 +15,12 @@ namespace Infrastructure.Repositories
         public OrdersRepository(IDBFactory context) : base(context)
         {
         }
+        public async Task<string> GetLatestCode(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            string query = "SELECT OrderNumber FROM Orders ORDER BY Id DESC";
+            return await _db.QueryFirstOrDefaultAsync<string>(query);
+        }
         public async Task<DataResultDTO<OrdersResponse>> GetOrdersList(string dbName, OrdersFilter filter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);

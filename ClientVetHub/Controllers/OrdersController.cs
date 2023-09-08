@@ -1,4 +1,6 @@
 ﻿using Application.Services.Contracts;
+using Application.Services.Implementations;
+using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +43,21 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var entities = await _orderService.GetOrderFullByIdAsync(id, dbName);
                 return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("Full")]
+        public async Task<IActionResult> Post([FromBody] OrderFullRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _orderService.CreateOrderFullAsync(request, dbName);
+                return Ok(data);
             }
             catch
             {

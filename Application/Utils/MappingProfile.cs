@@ -30,6 +30,7 @@ namespace Application.Utils
             //model to response
             CreateMap<Domain.Entities.Models.Clients.Profile, UserProfileResponse>();
             CreateMap<Orders, OrdersResponse>();
+            CreateMap<OrdersDetail, OrdersDetailResponse>();
 
             //model to request
 
