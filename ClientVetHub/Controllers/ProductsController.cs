@@ -52,12 +52,12 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Products request)
+        public async Task<IActionResult> Post([FromBody] ProductAsBundleRequest request)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _productsService.CreateAsync(request, dbName);
+                var create = await _productsService.AddProducts(request, dbName);
                 return Ok(create);
             }
             catch

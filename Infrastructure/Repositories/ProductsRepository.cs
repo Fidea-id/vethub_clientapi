@@ -28,6 +28,7 @@ namespace Infrastructure.Repositories
                 pc.Name AS Category,
                 p.Price,
 	             p.IsBundle,
+                p.IsActive,
 	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
                 Products p
@@ -39,7 +40,8 @@ namespace Infrastructure.Repositories
 	            p.IsActive = TRUE And
                 p.Id = @ProductId
             GROUP BY
-                p.Id";
+                p.Id,
+                ps.Volume";
             var result = await _db.QueryFirstOrDefaultAsync<ProductDetailsResponse>(query, new { ProductId = id });
             if (result == null)
                 return null;
@@ -108,13 +110,14 @@ namespace Infrastructure.Repositories
                 p.Id,
                 p.Name,
                 p.Description,
-                COALESCE(Sum(ps.Stock), 0) AS Stock, 
-                ps.Volume,
                 p.CategoryId,
                 pc.Name AS Category,
                 p.Price,
-	             p.IsBundle,
-	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
+                p.IsBundle,
+                COALESCE(Sum(ps.Stock), 0) AS Stock, 
+                ps.Volume,
+                p.IsActive,
+                IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
                 Products p
                 JOIN ProductCategories pc ON p.CategoryId = pc.Id
@@ -122,9 +125,10 @@ namespace Infrastructure.Repositories
                 LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
-	            p.IsActive = TRUE
+               p.IsActive = TRUE
             GROUP BY
-                p.Id";
+                p.Id,
+                ps.Volume;";
             var results = await _db.QueryAsync<ProductDetailsResponse>(query);
             var productList = results.ToList();
 

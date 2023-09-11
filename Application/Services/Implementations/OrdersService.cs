@@ -96,26 +96,38 @@ namespace Application.Services.Implementations
             {
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
-                var client = await _unitOfWork.OwnersRepository.GetById(dbName, request.ClientId);
-                if (client == null) throw new Exception("Client not found");
-                var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.ClientId);
+                Owners clientData;
+                if(request.ClientId == 0)
+                {
+                    clientData = new Owners("Guest");
+                }
+                else
+                {
+                    clientData = await _unitOfWork.OwnersRepository.GetById(dbName, request.ClientId);
+                    if (clientData == null) throw new Exception("Client not found");
+                }
+                var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.StaffId);
                 if (staff == null) throw new Exception("Staff not found");
                 var getLatestCode = await _unitOfWork.OrdersRepository.GetLatestCode(dbName);
                 var orderNumber = FormatUtil.GenerateOrdersNumber(getLatestCode);
+
+                var countQty = request.OrderDetailItem.Sum(x => x.Quantity);
+                var countDiscounted = request.OrderDetailItem.Sum(x => x.Discount);
+                var countTotal = request.OrderDetailItem.Sum(x => x.TotalPrice);
                 var newOrders = new Orders
                 {
                     BranchId = 0,
                     ClientId = request.ClientId,
-                    ClientName = client.Name,
+                    ClientName = clientData.Name,
                     Date = request.Date,
                     DueDate = request.DueDate,
                     Type = request.Type,
                     OrderNumber = orderNumber,
                     Status = "Unpaid",
                     StaffId = request.StaffId,
-                    TotalQuantity = request.TotalQuantity,
-                    TotalDiscountedPrice = request.TotalDiscountedPrice ?? 0,
-                    TotalPrice = request.TotalPrice
+                    TotalQuantity = countQty,
+                    TotalDiscountedPrice = countDiscounted ?? 0,
+                    TotalPrice = countTotal
                 };
 
                 FormatUtil.SetIsActive<Orders>(newOrders, true);
@@ -141,6 +153,16 @@ namespace Application.Services.Implementations
                     FormatUtil.SetIsActive<OrdersDetail>(newOrdersDetail, true);
                     FormatUtil.SetDateBaseEntity<OrdersDetail>(newOrdersDetail);
                     detailList.Add(newOrdersDetail);
+
+                    //update stock
+                    if(newOrders.Type == "Income")
+                    {
+                        await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, item.Quantity, dbName);
+                    }
+                    else
+                    {
+                        await _unitOfWork.ProductStockRepository.UpdateAddStock(item.ProductId, item.Quantity, dbName);
+                    }
                 }
                 await _unitOfWork.OrdersDetailRepository.AddRange(dbName, detailList);
 
@@ -148,6 +170,7 @@ namespace Application.Services.Implementations
 
                 var response = new OrderFullResponse
                 {
+                    Id = newOrders.Id,
                     ClientId = newOrders.ClientId,
                     ClientName = newOrders.ClientName,
                     Date = newOrders.Date,

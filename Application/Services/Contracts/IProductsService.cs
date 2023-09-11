@@ -13,6 +13,7 @@ namespace Application.Services.Contracts
         Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName);
         Task<ProductDetailsResponse> GetProductDetailAsync(int id, string dbName);
 
+        Task<Products> AddProducts(ProductAsBundleRequest request, string dbName);
         Task<Products> AddProductAsBundle(ProductAsBundleRequest request, string dbName);
 
         Task<DataResultDTO<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName);

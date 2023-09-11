@@ -44,6 +44,40 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+        public async Task<Products> AddProducts(ProductAsBundleRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+
+                var newProducts = Mapping.Mapper.Map<Products>(request);
+                FormatUtil.SetIsActive<Products>(newProducts, true);
+                FormatUtil.SetDateBaseEntity<Products>(newProducts);
+
+                //add product
+                var newId = await _repository.Add(dbName, newProducts);
+                newProducts.Id = newId;
+
+                //add stock
+                var newStock = new ProductStocks
+                {
+                    ProductId = newProducts.Id,
+                    Stock = request.Stock,
+                    Volume = request.Volume,
+                };
+                FormatUtil.SetIsActive<ProductStocks>(newStock, true);
+                FormatUtil.SetDateBaseEntity<ProductStocks>(newStock);
+                await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+
+                return newProducts;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"ProductService.AddProductAsBundle";
+                throw;
+            }
+        }
 
         public async Task<Products> AddProductAsBundle(ProductAsBundleRequest request, string dbName)
         {
@@ -82,6 +116,18 @@ namespace Application.Services.Implementations
                     }
                 }
                 newProducts.Id = newId;
+
+                //add stock
+                var newStock = new ProductStocks
+                {
+                    ProductId = newProducts.Id,
+                    Stock = request.Stock,
+                    Volume = request.Volume,
+                };
+                FormatUtil.SetIsActive<ProductStocks>(newStock, true);
+                FormatUtil.SetDateBaseEntity<ProductStocks>(newStock);
+                await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+
                 return newProducts;
             }
             catch (Exception ex)

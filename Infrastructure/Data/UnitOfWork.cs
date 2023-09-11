@@ -140,6 +140,19 @@ namespace Infrastructure.Data
                 return _ProductCategoriesRepository;
             }
         }
+
+        private IProductStockRepository _ProductStockRepository;
+        public IProductStockRepository ProductStockRepository
+        {
+            get
+            {
+                if (_ProductStockRepository == null)
+                {
+                    _ProductStockRepository = new ProductStockRepository(_dbFactory);
+                }
+                return _ProductStockRepository;
+            }
+        }
         private IProductDiscountsRepository _ProductDiscountsRepository;
         public IProductDiscountsRepository ProductDiscountsRepository
         {
