@@ -64,5 +64,19 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        [HttpPost("Payment")]
+        public async Task<IActionResult> PostPayment([FromBody] OrdersPaymentRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _orderService.AddOrdersPaymentAsync(request, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }

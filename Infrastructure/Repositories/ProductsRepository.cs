@@ -97,7 +97,9 @@ namespace Infrastructure.Repositories
                 JOIN
                     Products p ON pd.ProductId = p.Id
                 WHERE
-                    pd.ProductId = @ProductId";
+                    pd.ProductId = @ProductId
+                    AND pd.IsActive = 1
+                    AND NOW() BETWEEN pd.StartDate AND pd.EndDate";
                 result.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = id });
             }
             return result;
@@ -184,7 +186,9 @@ namespace Infrastructure.Repositories
                     JOIN
                       Products p ON pd.ProductId = p.Id
                     WHERE
-                      pd.ProductId = @ProductId";
+                      pd.ProductId = @ProductId
+                    AND pd.IsActive = 1
+                    AND NOW() BETWEEN pd.StartDate AND pd.EndDate";
                     product.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = product.Id });
                 }
             }

@@ -7,14 +7,20 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Implementations
 {
     public class OrdersService : GenericService<Orders, OrdersRequest, OrdersResponse, OrdersFilter>, IOrdersService
     {
-        public OrdersService(IUnitOfWork unitOfWork, IGenericRepository<Orders, OrdersFilter> repository)
+        private readonly ILogger<OrdersService> _logger;
+
+        public OrdersService(IUnitOfWork unitOfWork, IGenericRepository<Orders, OrdersFilter> repository,
+            ILoggerFactory loggerFactory)
         : base(unitOfWork, repository)
-        { }
+        {
+            _logger = loggerFactory.CreateLogger<OrdersService>();
+        }
 
         public async Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName)
         {
@@ -43,7 +49,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<OrdersPayment> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName)
+        public async Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName)
         {
             try
             {
@@ -53,9 +59,60 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<OrdersPayment>(entity, true);
                 FormatUtil.SetDateBaseEntity<OrdersPayment>(entity);
 
+                var orderDetail = await _unitOfWork.OrdersRepository.GetOrderFull(dbName, request.OrderId);
+                if (orderDetail == null) throw new Exception("Order not found");
+
+                var paymentStatus = "Paid";
+                entity.Status = paymentStatus;
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
-                return entity;
+                //update status
+                var getTotalLastPayment = orderDetail.OrderPayments.Sum(x => x.Total);
+                var totalPayments = getTotalLastPayment + request.Total;
+                _logger.LogInformation("Last payment is " + getTotalLastPayment);
+                if ((totalPayments) >= orderDetail.TotalPrice)
+                {
+                    var order = await _unitOfWork.OrdersRepository.GetById(dbName, request.OrderId);
+                    order.Status = paymentStatus;
+                    FormatUtil.SetDateBaseEntity<Orders>(order, true);
+                    await _unitOfWork.OrdersRepository.Update(dbName, order);
+
+                    //update stock
+                    if (orderDetail.Type == "Incomes")
+                    {
+                        _logger.LogInformation("Start update stock of order type " + orderDetail.Type);
+                        foreach (var item in orderDetail.OrderProducts)
+                        {
+                            _logger.LogInformation("Start update stock of " + item.ProductId + " by amount " + item.Quantity);
+                            await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, item.Quantity, dbName);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Start update stock of order type " + orderDetail.Type);
+                        foreach (var item in orderDetail.OrderProducts)
+                        {
+                            _logger.LogInformation("Start update stock of " + item.ProductId + " by amount " + item.Quantity);
+                            await _unitOfWork.ProductStockRepository.UpdateAddStock(item.ProductId, item.Quantity, dbName);
+                        }
+                    }
+                }
+                else
+                {
+                    paymentStatus = "Paid Less";
+                }
+
+
+                var result = new OrdersPaymentResponse
+                {
+                    Date = request.Date,
+                    OrderId = orderDetail.Id,
+                    PaymentMethodId = request.PaymentMethodId,
+                    Total = request.Total,
+                    LessTotal = orderDetail.TotalPrice - totalPayments,
+                    Status = paymentStatus
+                };
+                return result;
             }
             catch (Exception ex)
             {
@@ -153,16 +210,6 @@ namespace Application.Services.Implementations
                     FormatUtil.SetIsActive<OrdersDetail>(newOrdersDetail, true);
                     FormatUtil.SetDateBaseEntity<OrdersDetail>(newOrdersDetail);
                     detailList.Add(newOrdersDetail);
-
-                    //update stock
-                    if(newOrders.Type == "Income")
-                    {
-                        await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, item.Quantity, dbName);
-                    }
-                    else
-                    {
-                        await _unitOfWork.ProductStockRepository.UpdateAddStock(item.ProductId, item.Quantity, dbName);
-                    }
                 }
                 await _unitOfWork.OrdersDetailRepository.AddRange(dbName, detailList);
 

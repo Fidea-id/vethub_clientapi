@@ -19,6 +19,6 @@ namespace Application.Services.Contracts
         Task<OrdersDetail> AddOrdersDetailAsync(OrdersDetailRequest request, string dbName);
 
         //OrderPayment
-        Task<OrdersPayment> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName);
+        Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName);
     }
 }

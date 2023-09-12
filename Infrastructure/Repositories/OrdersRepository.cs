@@ -59,6 +59,7 @@ namespace Infrastructure.Repositories
                     o.StaffId,
                     p.Name AS StaffName,
                     o.Quantity,
+                    o.Type,
                     o.Status,
                     o.Discount,
                     o.DiscountType,
@@ -75,13 +76,13 @@ namespace Infrastructure.Repositories
             {
                 const string productsQuery = @"
                     SELECT
-                        od.ProductId,
-                        pr.Name AS ProductName,
-                        od.Quantity AS ProductQuantity,
-                        pr.Price AS ProductPrice,
-                        od.Discount AS ProductDiscount,
-                        od.DiscountType AS ProductDiscountType,
-                        od.TotalPrice AS ProductTotalPrice
+                     od.ProductId,
+                     pr.Name AS ProductName,
+                     od.Quantity AS Quantity,
+                     pr.Price AS Price,
+                     od.Discount AS Discount,
+                     od.DiscountType AS DiscountType,
+                     od.TotalPrice AS TotalPrice
                     FROM Orders o
                     LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                     LEFT JOIN Products pr ON od.ProductId = pr.Id
@@ -90,6 +91,7 @@ namespace Infrastructure.Repositories
 
                 const string paymentQuery = @"
                     SELECT
+                        o.Id AS OrderId,
                         op.PaymentMethodId,
                         pm.Name,
                         op.Date,
@@ -121,6 +123,7 @@ namespace Infrastructure.Repositories
                     o.StaffId,
                     p.Name AS StaffName,
                     o.Quantity,
+                    o.Type,
                     o.Status,
                     o.Discount,
                     o.DiscountType,
@@ -136,13 +139,13 @@ namespace Infrastructure.Repositories
             var clinicData = new ClientClinicResponse();
             const string productsQuery = @"
                 SELECT
-                    od.ProductId,
-                    pr.Name AS ProductName,
-                    od.Quantity AS ProductQuantity,
-                    pr.Price AS ProductPrice,
-                    od.Discount AS ProductDiscount,
-                    od.DiscountType AS ProductDiscountType,
-                    od.TotalPrice AS ProductTotalPrice
+                 od.ProductId,
+                 pr.Name AS ProductName,
+                 od.Quantity AS Quantity,
+                 pr.Price AS Price,
+                 od.Discount AS Discount,
+                 od.DiscountType AS DiscountType,
+                 od.TotalPrice AS TotalPrice
                 FROM Orders o
                 LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                 LEFT JOIN Products pr ON od.ProductId = pr.Id
@@ -151,6 +154,7 @@ namespace Infrastructure.Repositories
 
             const string paymentQuery = @"
                 SELECT
+                    o.Id AS OrderId,
                     op.PaymentMethodId,
                     pm.Name,
                     op.Date,
