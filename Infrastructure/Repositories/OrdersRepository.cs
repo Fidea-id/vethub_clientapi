@@ -15,6 +15,19 @@ namespace Infrastructure.Repositories
         public OrdersRepository(IDBFactory context) : base(context)
         {
         }
+
+        public async Task<DashboardOrderResponse> GetOrdersDashboard(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            string query = @"SELECT
+                COUNT(CASE WHEN Type = 'Incomes' THEN 1 END) AS IncomesTotal,
+                COUNT(CASE WHEN Type = 'Expenses' THEN 1 END) AS ExpensesTotal,
+                SUM(CASE WHEN Type = 'Incomes' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS IncomesAmount,
+                SUM(CASE WHEN Type = 'Expenses' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS ExpensesAmount
+            FROM Orders
+            WHERE MONTH(Date) = MONTH(CURRENT_DATE)";
+            return await _db.QueryFirstOrDefaultAsync<DashboardOrderResponse>(query);
+        }
         public async Task<string> GetLatestCode(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
@@ -44,11 +57,11 @@ namespace Infrastructure.Repositories
             return result;
         }
 
-        public async Task<IEnumerable<OrderFullResponse>> GetListOrderFull(string dbName)
+        public async Task<IEnumerable<OrderFullResponse>> GetListOrderFull(string dbName, bool thisMonth = false)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
-            const string query = @"
+            string query = @"
                 SELECT
                     o.Id AS Id,
                     o.OrderNumber,
@@ -68,6 +81,10 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 LEFT JOIN Profile p ON o.StaffId = p.Id
                 LEFT JOIN Owners c ON o.ClientId = c.Id";
+            if (thisMonth)
+            {
+                query += " WHERE MONTH(o.Date) = MONTH(CURRENT_DATE()) AND YEAR(o.Date) = YEAR(CURRENT_DATE());";
+            }
             var results = await _db.QueryAsync<OrderFullResponse>(query);
 
             //TODO: Clinic Data
@@ -136,7 +153,23 @@ namespace Infrastructure.Repositories
             var results = await _db.QueryFirstAsync<OrderFullResponse>(query, new { OrderId = id });
 
             //TODO: Clinic Data
-            var clinicData = new ClientClinicResponse();
+            const string clinicQuery = @"
+                SELECT 
+                    Id,
+                    Name,
+                    Email,
+                    Logo,
+                    Address,
+                    City,
+                    State,
+                    Description,
+                    PhoneNumber,
+                    WebUrl,
+                    MapUrl
+                FROM
+                    Clinics";
+            var clinicData = await _db.QueryFirstAsync<ClientClinicResponse>(clinicQuery);
+
             const string productsQuery = @"
                 SELECT
                  od.ProductId,

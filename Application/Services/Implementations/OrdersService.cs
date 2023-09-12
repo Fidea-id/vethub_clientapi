@@ -8,6 +8,7 @@ using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace Application.Services.Implementations
 {
@@ -21,7 +22,14 @@ namespace Application.Services.Implementations
         {
             _logger = loggerFactory.CreateLogger<OrdersService>();
         }
-
+        public async Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName)
+        {
+            var data = await _unitOfWork.OrdersRepository.GetOrdersDashboard(dbName); 
+            CultureInfo culture = new CultureInfo("id-ID"); // You can specify the culture you want here.
+            data.IncomesAmountText = string.Format(culture, "Rp {0:N0}", data.IncomesAmount); 
+            data.ExpensesAmountText = string.Format(culture, "Rp {0:N0}", data.ExpensesAmount);
+            return data;
+        }
         public async Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName)
         {
             var data = await _unitOfWork.OrdersRepository.GetOrdersList(dbName, filters);
@@ -121,11 +129,11 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName)
+        public async Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName, bool thisMonth = false)
         {
             try
             {
-                return await _unitOfWork.OrdersRepository.GetListOrderFull(dbName);
+                return await _unitOfWork.OrdersRepository.GetListOrderFull(dbName, thisMonth);
             }
             catch (Exception ex)
             {

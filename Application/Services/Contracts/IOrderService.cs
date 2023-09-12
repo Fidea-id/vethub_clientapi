@@ -8,10 +8,11 @@ namespace Application.Services.Contracts
 {
     public interface IOrdersService : IGenericService<Orders, OrdersRequest, OrdersResponse, OrdersFilter>
     {
+        Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName);
         Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName);
 
         //OrderFullResponse
-        Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName);
+        Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName, bool thisMonth = false);
         Task<OrderFullResponse> GetOrderFullByIdAsync(int id, string dbName);
         Task<OrderFullResponse> CreateOrderFullAsync(OrderFullRequest request, string dbName);
 

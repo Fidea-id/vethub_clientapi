@@ -20,6 +20,20 @@ namespace ClientVetHub.Controllers
             _orderService = orderService;
         }
 
+        [HttpGet("Dashboard")]
+        public async Task<IActionResult> GetOrderDashboardAsync()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _orderService.GetOrderDashboardAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
         [HttpGet("Full")]
         public async Task<IActionResult> GetOrderFullAsync()
         {
@@ -27,6 +41,20 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var entities = await _orderService.GetOrderFullAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("FullMonth")]
+        public async Task<IActionResult> GetOrderFullMonthAsync()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _orderService.GetOrderFullAsync(dbName, true);
                 return Ok(entities);
             }
             catch
