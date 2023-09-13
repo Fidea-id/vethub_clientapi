@@ -80,6 +80,21 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        
+        [HttpPost("Detail")]
+        public async Task<IActionResult> PostDetail([FromBody] MedicalRecordsDetailRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.PostAllMedicalRecords(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] MedicalRecordsRequest value)
@@ -111,7 +126,6 @@ namespace ClientVetHub.Controllers
             }
         }
 
-
         [HttpPost("Notes")]
         public async Task<IActionResult> PostNotes([FromBody] MedicalRecordsNotesRequest request)
         {
@@ -120,6 +134,22 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var email = User.FindFirstValue(ClaimTypes.Email);
                 var create = await _medicalRecordService.PostMedicalRecordsNotes(request, email, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Notes/{id}")]
+        public async Task<IActionResult> PutNotes(int id, [FromBody] MedicalRecordsNotesRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var email = User.FindFirstValue(ClaimTypes.Email);
+                var create = await _medicalRecordService.PutMedicalRecordsNotes(id, request, email, dbName);
                 return Ok(create);
             }
             catch

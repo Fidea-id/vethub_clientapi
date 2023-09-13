@@ -24,7 +24,38 @@ namespace Application.Services.Implementations
 
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
         {
-            throw new NotImplementedException();
+            var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
+
+            // update data medical records
+
+            // add data prescription
+            foreach (var pItem in request.Prescriptions)
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(pItem);
+                var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
+                FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
+                FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+
+            }
+
+            // add data diagnoses
+            foreach (var dItem in request.Diagnoses)
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(dItem);
+                var entity = Mapping.Mapper.Map<MedicalRecordsDiagnoses>(dItem);
+                FormatUtil.SetIsActive<MedicalRecordsDiagnoses>(entity, true);
+                FormatUtil.SetDateBaseEntity<MedicalRecordsDiagnoses>(entity);
+                var newId = await _unitOfWork.MedicalRecordsDiagnosesRepository.Add(dbName, entity);
+
+            }
+            var response = new MedicalRecordsDetailResponse
+            {
+                Id = medicalRecords.Id
+            };
+            return response;
         }
 
         public async Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName)
@@ -56,7 +87,46 @@ namespace Application.Services.Implementations
                 {
                     Id = noteId,
                     MedicalRecordsId = request.MedicalRecordsId,
-                    StaffId = request.MedicalRecordsId,
+                    StaffId = entity.StaffId,
+                    Title = entity.Title,
+                    Type = entity.Type,
+                    Value = entity.Value
+                };
+                return response;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.CreateAnimalAsync";
+                throw;
+            }
+        }
+
+        public async Task<MedicalRecordsNotesResponse> PutMedicalRecordsNotes(int id, MedicalRecordsNotesRequest request, string email, string dbName)
+        {
+            try
+            {
+                var staff = await _unitOfWork.ProfileRepository.GetByEmail(dbName, email);
+
+                var checkType = await _unitOfWork.MedicalRecordsNotesRepository.CheckRecordType(dbName, request.MedicalRecordsId, request.Type);
+                var noteId = checkType.Id;
+
+
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request); // cek dulu
+                FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity, true);
+
+                MedicalRecordsNotes checkedEntity = await _unitOfWork.MedicalRecordsNotesRepository.GetById(dbName, id);
+                if (checkedEntity.MedicalRecordsId != request.MedicalRecordsId) throw new Exception("Invalid medical records note");
+                FormatUtil.ConvertUpdateObject<MedicalRecordsNotes, MedicalRecordsNotes>(entity, checkedEntity);
+                FormatUtil.SetIsActive<MedicalRecordsNotes>(checkedEntity, true);
+                await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, checkedEntity);
+
+                var response = new MedicalRecordsNotesResponse
+                {
+                    Id = noteId,
+                    MedicalRecordsId = request.MedicalRecordsId,
+                    StaffId = staff.Id,
                     Title = request.Title,
                     Type = request.Type,
                     Value = request.Value
@@ -65,7 +135,7 @@ namespace Application.Services.Implementations
             }
             catch (Exception ex)
             {
-                ex.Source = $"AdditionalDataService.CreateAnimalAsync";
+                ex.Source = $"AdditionalDataService.PutMedicalRecordsNotes";
                 throw;
             }
         }

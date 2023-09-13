@@ -58,6 +58,8 @@ namespace Application.Utils
             CreateMap<PaymentMethodRequest, PaymentMethod>();
             CreateMap<MedicalRecordsRequest, MedicalRecords>();
             CreateMap<MedicalRecordsNotesRequest, MedicalRecordsNotes>();
+            CreateMap<MedicalRecordsPrescriptionsRequest, MedicalRecordsPrescriptions>();
+            CreateMap<MedicalRecordsDiagnosesRequest, MedicalRecordsDiagnoses>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
 
