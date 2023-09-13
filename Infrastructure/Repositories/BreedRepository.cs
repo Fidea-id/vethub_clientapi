@@ -15,6 +15,11 @@ namespace Infrastructure.Repositories
         {
         }
 
+        public async Task<Breeds> GetByName(string dbName, string name)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryFirstOrDefaultAsync<Breeds>($"SELECT * FROM Breeds WHERE Name = @Name", new { Name = name });
+        }
         public async Task<BreedAnimalResponse> GetBreedAnimal(int id, string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);

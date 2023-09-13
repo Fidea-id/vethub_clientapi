@@ -1,6 +1,7 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities.DTOs;
+using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -107,6 +108,66 @@ namespace Application.Services.Implementations
         public Task<IEnumerable<PatientsStatisticHistoryResponse>> ReadPatientsStatisticHistoryAsync(string type, int patientId, string dbName)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<Patients> CreatePatientsAsync(Patients entity, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(entity);
+                FormatUtil.SetIsActive<Patients>(entity, true);
+                FormatUtil.SetDateBaseEntity<Patients>(entity);
+
+                var newId = await _repository.Add(dbName, entity);
+                entity.Id = newId;
+
+                var species = await _unitOfWork.AnimalRepository.GetByName(dbName, entity.Species);
+                if(species == null)
+                {
+                    //add species
+                    var newSpecies = new Animals
+                    {
+                        Name = entity.Species,
+                    };
+                    FormatUtil.SetIsActive<Animals>(newSpecies, true);
+                    FormatUtil.SetDateBaseEntity<Animals>(newSpecies);
+                    var newSpeciesId = await _unitOfWork.AnimalRepository.Add(dbName, newSpecies);
+
+                    //add breed
+                    var newBreed = new Breeds
+                    {
+                        AnimalsId = newSpeciesId,
+                        Name = entity.Breed,
+                    };
+                    FormatUtil.SetIsActive<Breeds>(newBreed, true);
+                    FormatUtil.SetDateBaseEntity<Breeds>(newBreed);
+                    await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+                }
+                else
+                {
+                    var breed = await _unitOfWork.BreedRepository.GetByName(dbName, entity.Breed);
+                    if (breed == null)
+                    {
+                        //add breed
+                        var newBreed = new Breeds
+                        {
+                            AnimalsId = species.Id,
+                            Name = entity.Breed,
+                        };
+                        FormatUtil.SetIsActive<Breeds>(newBreed, true);
+                        FormatUtil.SetDateBaseEntity<Breeds>(newBreed);
+                        await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+                    }
+                }
+
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"PatientsService.CreatePatientsAsync";
+                throw;
+            }
         }
     }
 }

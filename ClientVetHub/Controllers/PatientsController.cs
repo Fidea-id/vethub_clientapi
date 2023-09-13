@@ -71,7 +71,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _patientsService.CreateAsync(request, dbName);
+                var create = await _patientsService.CreatePatientsAsync(request, dbName);
                 return Ok(create);
             }
             catch
