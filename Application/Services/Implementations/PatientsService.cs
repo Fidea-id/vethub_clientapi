@@ -146,7 +146,7 @@ namespace Application.Services.Implementations
                 }
                 else
                 {
-                    var breed = await _unitOfWork.BreedRepository.GetByName(dbName, entity.Breed);
+                    var breed = await _unitOfWork.BreedRepository.GetByName(dbName, species.Id, entity.Breed);
                     if (breed == null)
                     {
                         //add breed

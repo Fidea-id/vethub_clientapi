@@ -86,6 +86,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Animals>(entity, true);
                 FormatUtil.SetDateBaseEntity<Animals>(entity);
 
+                //check name first
+                var checkedEntity = await _uow.AnimalRepository.GetByName(dbName, request.Name);
+                if (checkedEntity != null) throw new Exception($"Already have {request.Name} as species");
+
                 var newId = await _uow.AnimalRepository.Add(dbName, entity);
                 entity.Id = newId;
                 return entity;
@@ -171,6 +175,10 @@ namespace Application.Services.Implementations
                 var entity = Mapping.Mapper.Map<Breeds>(request);
                 FormatUtil.SetIsActive<Breeds>(entity, true);
                 FormatUtil.SetDateBaseEntity<Breeds>(entity);
+
+                //check name first
+                var checkedEntity = await _uow.BreedRepository.GetByName(dbName, request.AnimalsId, request.Name);
+                if (checkedEntity != null) throw new Exception($"Already have {request.Name} as breeds at selected species");
 
                 var newId = await _uow.BreedRepository.Add(dbName, entity);
                 entity.Id = newId;
