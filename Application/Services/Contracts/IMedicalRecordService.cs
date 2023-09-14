@@ -12,6 +12,7 @@ namespace Application.Services.Contracts
 {
     public interface IMedicalRecordService : IGenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>
     {
+        Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName);
         Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName);
         Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName);
         Task<MedicalRecordsNotesResponse> PutMedicalRecordsNotes(int id, MedicalRecordsNotesRequest request, string email, string dbName);

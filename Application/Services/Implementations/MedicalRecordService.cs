@@ -22,11 +22,56 @@ namespace Application.Services.Implementations
         : base(unitOfWork, repository)
         { }
 
+        public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName)
+        {
+            var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
+            var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+            var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointments.ServiceId);
+            var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
+            var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
+            var owner = await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId);
+            var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+
+            var response = new MedicalRecordsDetailResponse
+            {
+                Id = medicalRecords.Id,
+                Code = medicalRecords.Code,
+                Appointments = appointments,
+                Patients = patient,
+                Services = services,
+                Owners = owner,
+                Staff = staff,
+                StartDate = medicalRecords.StartDate,
+                EndDate = medicalRecords.EndDate.Value,
+                TotalPrice = medicalRecords.Total,
+                Prescriptions = presciptions,
+                Diagnoses = diagnoses,
+                Notes = notes
+            };
+            return response;
+        }
+
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
 
+            //TODO:update appointment status to pharmacy
+            //TODO:add appointment activity
+
+
             // update data medical records
+            medicalRecords.EndDate = DateTime.Now;
+            var currentTotal = medicalRecords.Total;
+            var totalPrescription = request.Prescriptions.Sum(x => x.Total);
+            var totalDiagnose = request.Diagnoses.Sum(x => x.TotalPrice);
+            medicalRecords.Total = currentTotal + totalDiagnose + totalPrescription;
+            FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
+            await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
+
+            var prescriptionData = new List<MedicalRecordsPrescriptions>();
+            var diagnoseData = new List<MedicalRecordsDiagnoses>();
 
             // add data prescription
             foreach (var pItem in request.Prescriptions)
@@ -36,8 +81,10 @@ namespace Application.Services.Implementations
                 var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
                 FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
                 FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                entity.MedicalRecordsId = medicalRecords.Id;
                 var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
-
+                entity.Id = newId;
+                prescriptionData.Add(entity);
             }
 
             // add data diagnoses
@@ -48,12 +95,20 @@ namespace Application.Services.Implementations
                 var entity = Mapping.Mapper.Map<MedicalRecordsDiagnoses>(dItem);
                 FormatUtil.SetIsActive<MedicalRecordsDiagnoses>(entity, true);
                 FormatUtil.SetDateBaseEntity<MedicalRecordsDiagnoses>(entity);
+                entity.MedicalRecordsId = medicalRecords.Id;
                 var newId = await _unitOfWork.MedicalRecordsDiagnosesRepository.Add(dbName, entity);
-
+                entity.Id = newId;
+                diagnoseData.Add(entity);
             }
             var response = new MedicalRecordsDetailResponse
             {
-                Id = medicalRecords.Id
+                Id = medicalRecords.Id,
+                Code = medicalRecords.Code,
+                StartDate = medicalRecords.StartDate,
+                EndDate = medicalRecords.EndDate.Value,
+                TotalPrice = medicalRecords.Total,
+                Prescriptions = prescriptionData,
+                Diagnoses = diagnoseData
             };
             return response;
         }

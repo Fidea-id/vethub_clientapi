@@ -81,6 +81,21 @@ namespace ClientVetHub.Controllers
             }
         }
         
+        [HttpGet("Detail/{id}")]
+        public async Task<IActionResult> GetDetail(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.GetDetailMedicalRecords(id, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        
         [HttpPost("Detail")]
         public async Task<IActionResult> PostDetail([FromBody] MedicalRecordsDetailRequest request)
         {

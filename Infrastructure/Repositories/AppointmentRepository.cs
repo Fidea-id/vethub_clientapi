@@ -39,7 +39,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
 
             // Start building the SQL query
-            var sqlQuery = $@"SELECT a.Id AS AppointmentId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+            var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
@@ -48,7 +48,8 @@ namespace Infrastructure.Repositories
                 JOIN Patients p ON p.Id = a.PatientsId 
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
-                JOIN AppointmentsStatus st ON st.Id = a.StatusId ";
+                JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id ";
             if (filter != null)
             {
                 var whereClause = new List<string>();
@@ -115,7 +116,7 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             DateTime currentDate = DateTime.Now.Date; // Get the current date with time component set to midnight (00:00:00)
-            return await _db.QueryAsync<AppointmentsDetailResponse>($@"SELECT a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+            return await _db.QueryAsync<AppointmentsDetailResponse>($@"SELECT a.OwnersId, COALESCE(mr.Id, 0) AS MedicalRecordId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
@@ -125,6 +126,7 @@ namespace Infrastructure.Repositories
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId 
+                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id 
                 WHERE DATE(a.Date) = @CurrentDate", new { CurrentDate = currentDate });
         }
 
@@ -133,7 +135,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryFirstAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
-                s.DurationType AS DurationTypeEstimate, mr.Id AS MedicalRecordId,
+                s.DurationType AS DurationTypeEstimate, COALESCE(mr.Id, 0)  AS MedicalRecordId,
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
                 WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
