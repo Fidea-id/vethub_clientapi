@@ -1,7 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities.DTOs;
-using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -123,7 +122,7 @@ namespace Application.Services.Implementations
                 entity.Id = newId;
 
                 var species = await _unitOfWork.AnimalRepository.GetByName(dbName, entity.Species);
-                if(species == null)
+                if (species == null)
                 {
                     //add species
                     var newSpecies = new Animals

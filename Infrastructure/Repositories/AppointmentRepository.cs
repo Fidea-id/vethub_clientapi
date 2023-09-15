@@ -34,6 +34,38 @@ namespace Infrastructure.Repositories
             }
         }
 
+        public async Task<IEnumerable<BookingHistoryResponse>> GetBookingHistoryOwner(string dbName, int ownerId)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
+                p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, mr.PaymentStatus AS StatusName, 
+                mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
+                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                JOIN Patients p ON p.Id = a.PatientsId 
+                JOIN Services s ON s.Id = a.ServiceId 
+                JOIN Profile pr ON pr.Id = a.StaffId 
+                JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                WHERE a.OwnersId = @ownerId", new { ownerId = ownerId });
+            return data;
+        }
+
+        public async Task<IEnumerable<BookingHistoryResponse>> GetBookingHistoryPatient(string dbName, int patientId)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
+                p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, mr.PaymentStatus AS StatusName, 
+                mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
+                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                JOIN Patients p ON p.Id = a.PatientsId 
+                JOIN Services s ON s.Id = a.ServiceId 
+                JOIN Profile pr ON pr.Id = a.StaffId 
+                JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                WHERE a.PatientsId = @patientId", new { patientId = patientId });
+            return data;
+        }
+
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetAllDetailList(string dbName, AppointmentDetailFilter filter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
@@ -164,6 +196,12 @@ namespace Infrastructure.Repositories
 
             var query = $"INSERT INTO AppointmentsActivity ({columnNames}) VALUES ({parameterNames}); SELECT LAST_INSERT_ID();";
             return await _db.ExecuteScalarAsync<int>(query, entity);
+        }
+
+        public async Task<IEnumerable<Appointments>> GetAllByStatusId(string dbName, int statusId)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryAsync<Appointments>($"SELECT * FROM Appointments WHERE StatusId = @Id", new { Id = statusId });
         }
     }
 }

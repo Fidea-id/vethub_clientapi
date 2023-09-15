@@ -334,5 +334,17 @@ namespace Infrastructure.Data
                 return _PrescriptionFrequentsRepository;
             }
         }
+        private INotificationsRepository _NotificationsRepository;
+        public INotificationsRepository NotificationsRepository
+        {
+            get
+            {
+                if (_NotificationsRepository == null)
+                {
+                    _NotificationsRepository = new NotificationsRepository(_dbFactory);
+                }
+                return _NotificationsRepository;
+            }
+        }
     }
 }

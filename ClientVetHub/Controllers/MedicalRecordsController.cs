@@ -80,7 +80,7 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        
+
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> GetDetail(int id)
         {
@@ -95,7 +95,37 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        
+
+        [HttpGet("Detail/Owner/{ownerId}")]
+        public async Task<IActionResult> GetBookingHistoryByOwner(int ownerId)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _medicalRecordService.GetBookingHistoryByOwner(ownerId, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Detail/Patient/{patientId}")]
+        public async Task<IActionResult> GetBookingHistoryByPatient(int patientId)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _medicalRecordService.GetBookingHistoryByPatient(patientId, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("Detail")]
         public async Task<IActionResult> PostDetail([FromBody] MedicalRecordsDetailRequest request)
         {

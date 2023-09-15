@@ -441,7 +441,7 @@ namespace Application.Services.Implementations
             }
         }
         #endregion
-        
+
         #region PrescriptionFrequents
         public async Task<PrescriptionFrequents> CreatePrescriptionFrequentsAsync(PrescriptionFrequentsRequest request, string dbName)
         {

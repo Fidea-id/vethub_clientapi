@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Application.Services.Implementations;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -15,9 +16,11 @@ namespace ClientVetHub.Controllers
     public class AppointmentsController : Controller
     {
         private readonly IAppointmentService _appointmentService;
-        public AppointmentsController(IAppointmentService appointmentService)
+        private readonly INotificationService _iNotificationService;
+        public AppointmentsController(IAppointmentService appointmentService, INotificationService iNotificationService)
         {
             _appointmentService = appointmentService;
+            _iNotificationService = iNotificationService;
         }
 
         [HttpGet("Today")]
@@ -87,8 +90,15 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _appointmentService.CreateRequestAsync(request, dbName);
+
                 //map to detail
                 var data = await _appointmentService.GetDetailAppointment(create.Id, dbName);
+
+                //create notif
+                var url = "";
+                var notif = new NotificationsRequest(data.StaffId, "Create", "New Appointment", $"Appointment from {data.OwnersName} at {data.Date.ToString("dd/MMMM/yyyy")}", url);
+                await _iNotificationService.CreateRequestAsync(notif, dbName);
+                //add push fcm
                 return Ok(data);
             }
             catch

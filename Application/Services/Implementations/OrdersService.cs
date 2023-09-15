@@ -24,9 +24,9 @@ namespace Application.Services.Implementations
         }
         public async Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName)
         {
-            var data = await _unitOfWork.OrdersRepository.GetOrdersDashboard(dbName); 
+            var data = await _unitOfWork.OrdersRepository.GetOrdersDashboard(dbName);
             CultureInfo culture = new CultureInfo("id-ID"); // You can specify the culture you want here.
-            data.IncomesAmountText = string.Format(culture, "Rp {0:N0}", data.IncomesAmount); 
+            data.IncomesAmountText = string.Format(culture, "Rp {0:N0}", data.IncomesAmount);
             data.ExpensesAmountText = string.Format(culture, "Rp {0:N0}", data.ExpensesAmount);
             return data;
         }
@@ -162,7 +162,7 @@ namespace Application.Services.Implementations
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
                 Owners clientData;
-                if(request.ClientId == 0)
+                if (request.ClientId == 0)
                 {
                     clientData = new Owners("Guest");
                 }
@@ -203,7 +203,7 @@ namespace Application.Services.Implementations
 
                 //add orders detail
                 var detailList = new List<OrdersDetail>();
-                foreach(var item in request.OrderDetailItem)
+                foreach (var item in request.OrderDetailItem)
                 {
                     var newOrdersDetail = new OrdersDetail
                     {

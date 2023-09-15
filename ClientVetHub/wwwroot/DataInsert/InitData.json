@@ -140,6 +140,11 @@
       "Weight": 6
     },
     {
+      "Name": "Expired",
+      "Description": "Expired booking",
+      "Weight": 7
+    },
+    {
       "Name": "Unknown",
       "Description": "Unknown status. Take look at note",
       "Weight": 99

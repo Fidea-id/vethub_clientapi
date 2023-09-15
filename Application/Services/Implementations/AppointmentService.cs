@@ -17,17 +17,20 @@ namespace Application.Services.Implementations
 
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
         {
+            await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName, filter);
             return result;
         }
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName)
         {
+            await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailListToday(dbName);
             return result;
         }
 
         public async Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName)
         {
+            await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetail(id, dbName);
             return result;
         }
@@ -92,6 +95,17 @@ namespace Application.Services.Implementations
             };
             FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
             await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
+        }
+
+        private async Task SetExpiredBooking(string dbName)
+        {
+            var getExpiredBooking = await _unitOfWork.AppointmentRepository.WhereQuery(dbName, $"StatusId = 1 AND Date < CURRENT_DATE");
+            foreach (var item in getExpiredBooking)
+            {
+                item.StatusId = 7; //expired booking
+                FormatUtil.SetDateBaseEntity<Appointments>(item, true);
+                await _unitOfWork.AppointmentRepository.Update(dbName, item);
+            }
         }
     }
 }

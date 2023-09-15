@@ -2,7 +2,6 @@
 using DevExpress.Xpo;
 using DevExpress.Xpo.DB;
 using DevExpress.Xpo.Metadata;
-using Domain.Entities.Models.Clients;
 using Domain.Entities.Models.Clients.XPO;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
@@ -67,6 +66,7 @@ namespace Infrastructure.Repositories
                 typeof(MedicalRecordsNotesXPO),
                 typeof(MedicalRecordsPrescriptionsXPO),
                 typeof(PrescriptionFrequentsXPO),
+                typeof(NotificationsXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))

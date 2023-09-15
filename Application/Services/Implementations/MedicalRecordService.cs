@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -7,12 +8,6 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Application.Services.Implementations
 {
@@ -51,6 +46,33 @@ namespace Application.Services.Implementations
                 Notes = notes
             };
             return response;
+        }
+        public async Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName)
+        {
+            var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryOwner(dbName, ownerId);
+            if(data.Count() > 0)
+            {
+                foreach(var item in data)
+                {
+                    var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, item.MedicalRecordsId);
+                    item.Diagnoses = diagnoses;
+                }
+            }
+            return new DataResultDTO<BookingHistoryResponse> { Data = data, TotalData = data.Count() };
+        }
+        
+        public async Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByPatient(int patientId, string dbName)
+        {
+            var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryPatient(dbName, patientId);
+            if (data.Count() > 0)
+            {
+                foreach (var item in data)
+                {
+                    var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, item.MedicalRecordsId);
+                    item.Diagnoses = diagnoses;
+                }
+            }
+            return new DataResultDTO<BookingHistoryResponse> { Data = data, TotalData = data.Count() };
         }
 
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
@@ -209,7 +231,7 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-        
+
         public async Task DeleteMedicalRecordsNotes(int id, string dbName)
         {
             try

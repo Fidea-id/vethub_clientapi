@@ -1,5 +1,4 @@
 ﻿using Application.Services.Contracts;
-using Application.Services.Implementations;
 using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
