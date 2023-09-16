@@ -39,7 +39,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
             var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
                  p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, 
-                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, 
+                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
                  mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
                  FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                  JOIN Patients p ON p.Id = a.PatientsId 
@@ -56,7 +56,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
             var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
                  p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, 
-                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, 
+                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
                  mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
                  FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                  JOIN Patients p ON p.Id = a.PatientsId 
