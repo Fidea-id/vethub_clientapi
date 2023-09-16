@@ -98,7 +98,7 @@ namespace ClientVetHub.Controllers
                 var url = "";
                 var notif = new NotificationsRequest(data.StaffId, "Create", "New Appointment", $"Appointment from {data.OwnersName} at {data.Date.ToString("dd/MMMM/yyyy")}", url);
                 await _iNotificationService.CreateRequestAsync(notif, dbName);
-                //add push fcm
+
                 return Ok(data);
             }
             catch

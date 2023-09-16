@@ -87,7 +87,6 @@ namespace Infrastructure.Repositories
             }
             var results = await _db.QueryAsync<OrderFullResponse>(query);
 
-            //TODO: Clinic Data
             var clinicData = new ClientClinicResponse();
             foreach (var item in results)
             {
@@ -152,7 +151,6 @@ namespace Infrastructure.Repositories
                 WHERE o.Id = @OrderId";
             var results = await _db.QueryFirstAsync<OrderFullResponse>(query, new { OrderId = id });
 
-            //TODO: Clinic Data
             const string clinicQuery = @"
                 SELECT 
                     Id,

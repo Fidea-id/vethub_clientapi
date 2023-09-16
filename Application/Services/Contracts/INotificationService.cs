@@ -10,6 +10,7 @@ namespace Application.Services.Contracts
         Task<IEnumerable<Notifications>> GetRecent(string dbName, int profile);
         Task<DataResultDTO<Notifications>> GetAll(string dbName, int profile);
         Task ReadAllNotification(string dbName, int profile);
+        Task CreateNotification(string dbName, NotificationsRequest request);
         Task ReadNotificationById(string dbName, int profile, int id);
 
     }

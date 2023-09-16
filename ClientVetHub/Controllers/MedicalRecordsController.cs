@@ -81,6 +81,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpPost("Payment/{id}")]
+        public async Task<IActionResult> PostPayment(int id,[FromBody] OrdersPaymentRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.AddOrdersPaymentAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> GetDetail(int id)
         {

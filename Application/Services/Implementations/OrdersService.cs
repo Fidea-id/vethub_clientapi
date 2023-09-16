@@ -66,7 +66,7 @@ namespace Application.Services.Implementations
                 var entity = Mapping.Mapper.Map<OrdersPayment>(request);
                 FormatUtil.SetIsActive<OrdersPayment>(entity, true);
                 FormatUtil.SetDateBaseEntity<OrdersPayment>(entity);
-
+                entity.Type = "Order";
                 var orderDetail = await _unitOfWork.OrdersRepository.GetOrderFull(dbName, request.OrderId);
                 if (orderDetail == null) throw new Exception("Order not found");
 
@@ -108,6 +108,10 @@ namespace Application.Services.Implementations
                 else
                 {
                     paymentStatus = "Paid Less";
+                    var order = await _unitOfWork.OrdersRepository.GetById(dbName, request.OrderId);
+                    order.Status = paymentStatus;
+                    FormatUtil.SetDateBaseEntity<Orders>(order, true);
+                    await _unitOfWork.OrdersRepository.Update(dbName, order);
                 }
 
 
@@ -118,7 +122,8 @@ namespace Application.Services.Implementations
                     PaymentMethodId = request.PaymentMethodId,
                     Total = request.Total,
                     LessTotal = orderDetail.TotalPrice - totalPayments,
-                    Status = paymentStatus
+                    Status = paymentStatus,
+                    Type = entity.Type
                 };
                 return result;
             }

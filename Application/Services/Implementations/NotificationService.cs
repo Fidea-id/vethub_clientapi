@@ -1,9 +1,11 @@
 ﻿using Application.Services.Contracts;
+using Application.Utils;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Interfaces.Clients;
+using Domain.Utils;
 
 namespace Application.Services.Implementations
 {
@@ -12,6 +14,28 @@ namespace Application.Services.Implementations
         public NotificationService(IUnitOfWork unitOfWork, IGenericRepository<Notifications, NotificationsFilter> repository)
         : base(unitOfWork, repository)
         { }
+        public async Task CreateNotification(string dbName, NotificationsRequest request)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<Notifications>(request);
+                FormatUtil.SetIsActive<Notifications>(entity, true);
+                FormatUtil.SetDateBaseEntity<Notifications>(entity);
+
+                var newId = await _repository.Add(dbName, entity);
+                entity.Id = newId;
+
+                //TODO:add push fcm
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"NotificationService.CreateRequestAsync";
+                throw;
+            }
+
+        }
 
         public async Task<DataResultDTO<Notifications>> GetAll(string dbName, int profile)
         {

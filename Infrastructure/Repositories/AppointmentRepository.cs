@@ -38,14 +38,15 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
-                p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, mr.PaymentStatus AS StatusName, 
-                mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
-                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
-                JOIN Patients p ON p.Id = a.PatientsId 
-                JOIN Services s ON s.Id = a.ServiceId 
-                JOIN Profile pr ON pr.Id = a.StaffId 
-                JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                 p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, 
+                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, 
+                 mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
+                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                 JOIN Patients p ON p.Id = a.PatientsId 
+                 JOIN Services s ON s.Id = a.ServiceId 
+                 JOIN Profile pr ON pr.Id = a.StaffId 
+                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                 Left JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
                 WHERE a.OwnersId = @ownerId", new { ownerId = ownerId });
             return data;
         }
@@ -54,14 +55,15 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
-                p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, mr.PaymentStatus AS StatusName, 
-                mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
-                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
-                JOIN Patients p ON p.Id = a.PatientsId 
-                JOIN Services s ON s.Id = a.ServiceId 
-                JOIN Profile pr ON pr.Id = a.StaffId 
-                JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                 p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, 
+                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, 
+                 mr.StartDate AS StartDate, mr.EndDate AS EndDate, s.Price AS TotalPrice, mr.Code
+                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                 JOIN Patients p ON p.Id = a.PatientsId 
+                 JOIN Services s ON s.Id = a.ServiceId 
+                 JOIN Profile pr ON pr.Id = a.StaffId 
+                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                 JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
                 WHERE a.PatientsId = @patientId", new { patientId = patientId });
             return data;
         }

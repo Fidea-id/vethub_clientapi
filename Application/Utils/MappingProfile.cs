@@ -62,6 +62,7 @@ namespace Application.Utils
             CreateMap<MedicalRecordsDiagnosesRequest, MedicalRecordsDiagnoses>();
             CreateMap<ProfileRequest, Domain.Entities.Models.Clients.Profile>();
             CreateMap<ServicesRequest, Domain.Entities.Models.Clients.Services>();
+            CreateMap<NotificationsRequest, Notifications>();
 
             //DTO to request
 

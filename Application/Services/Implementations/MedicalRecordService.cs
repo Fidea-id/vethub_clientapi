@@ -28,6 +28,8 @@ namespace Application.Services.Implementations
             var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
+            var totalLastPayment = lastPayments.Sum(x => x.Total);
 
             var response = new MedicalRecordsDetailResponse
             {
@@ -41,6 +43,7 @@ namespace Application.Services.Implementations
                 StartDate = medicalRecords.StartDate,
                 EndDate = medicalRecords.EndDate.Value,
                 TotalPrice = medicalRecords.Total,
+                TotalPaid = totalLastPayment,
                 Prescriptions = presciptions,
                 Diagnoses = diagnoses,
                 Notes = notes
@@ -318,5 +321,67 @@ namespace Application.Services.Implementations
             }
             return result;
         }
+        public async Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName)
+        {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                var entity = Mapping.Mapper.Map<OrdersPayment>(request);
+                FormatUtil.SetIsActive<OrdersPayment>(entity, true);
+                FormatUtil.SetDateBaseEntity<OrdersPayment>(entity);
+                entity.Type = "MedicalRecord";
+
+                var medicalRecord = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.OrderId);
+                if (medicalRecord == null) throw new Exception("MedicalRecord not found");
+
+                var paymentStatus = "Paid";
+                entity.Status = paymentStatus;
+                var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
+                entity.Id = newId;
+                //update status
+                var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, request.OrderId, entity.Type); 
+                var getTotalLastPayment = lastPayments.Sum(x => x.Total);
+                var totalPayments = getTotalLastPayment + request.Total;
+                if ((totalPayments) >= medicalRecord.Total)
+                {
+                    medicalRecord.PaymentStatus = paymentStatus;
+                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
+                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
+
+                    var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
+
+                    foreach (var item in prescriptions)
+                    {
+                        await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, Convert.ToInt32(item.Quantity), dbName);
+                    }
+                }
+                else
+                {
+                    paymentStatus = "Paid Less";
+                    medicalRecord.PaymentStatus = paymentStatus;
+                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
+                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
+                }
+
+                var result = new OrdersPaymentResponse
+                {
+                    Date = request.Date,
+                    OrderId = request.OrderId,
+                    PaymentMethodId = request.PaymentMethodId,
+                    Total = request.Total,
+                    LessTotal = medicalRecord.Total - totalPayments,
+                    Status = paymentStatus,
+                    Type = entity.Type
+                };
+                return result;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.AddOrdersPaymentAsync";
+                throw;
+            }
+        }
+
     }
 }
