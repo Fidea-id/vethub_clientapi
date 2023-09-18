@@ -40,6 +40,46 @@ namespace Application.Services.Implementations
             var data = await _unitOfWork.AppointmentRepository.GetAllStatus(dbName);
             return data;
         }
+        
+        public async Task<InvoiceResponse> GetDetailMedicalInvoice(int medicalId, string dbName)
+        {
+            var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalId);
+            var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+            var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointments.ServiceId);
+            var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
+            var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
+            var owner = await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId);
+            var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
+            var totalLastPayment = lastPayments.Sum(x => x.Total);
+
+            var medicalDetail = new MedicalRecordsDetailResponse
+            {
+                Id = medicalRecords.Id,
+                Code = medicalRecords.Code,
+                Appointments = appointments,
+                Patients = patient,
+                Services = services,
+                Owners = owner,
+                Staff = staff,
+                StartDate = medicalRecords.StartDate,
+                EndDate = medicalRecords.EndDate.Value,
+                TotalPrice = medicalRecords.Total,
+                TotalPaid = totalLastPayment,
+                Prescriptions = presciptions,
+                Diagnoses = diagnoses,
+                Notes = notes
+            };
+            var clinicData = await _unitOfWork.ClinicsRepository.GetAll(dbName);
+            var response = new InvoiceResponse
+            {
+                Detail = medicalDetail,
+                ClinicData = new Clinics()
+            };
+            return response;
+        }
 
         public async Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName)
         {
@@ -78,10 +118,6 @@ namespace Application.Services.Implementations
 
                 FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
                 await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
-            }
-            if (statusId == 5) //buat invoice
-            {
-
             }
 
             // add appointment activity

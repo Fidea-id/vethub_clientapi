@@ -116,8 +116,8 @@ namespace Infrastructure.Repositories
                     FROM Orders o
                     JOIN OrdersPayment op ON o.Id = op.OrderId
                     JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
-                    WHERE o.Id = @OrderId";
-                item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id });
+                    WHERE o.Id = @OrderId AND op.Type = @PaymentType";
+                item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id, PaymentType = "Order" });
 
                 item.ClinicData = clinicData;
             }
@@ -194,8 +194,8 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 JOIN OrdersPayment op ON o.Id = op.OrderId
                 JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
-                WHERE o.Id = @OrderId";
-            results.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = id });
+                WHERE o.Id = @OrderId AND op.Type = @PaymentType";
+            results.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = id, PaymentType = "Order" });
             results.ClinicData = clinicData;
             return results;
         }

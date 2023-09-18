@@ -4,6 +4,7 @@ using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Models.Masters;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
@@ -81,10 +82,24 @@ namespace Application.Services.Implementations
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
+            var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+            //update appointment status to pharmacy
+            var currentStatus = 4;
+            appointment.StatusId = currentStatus;
+            FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords, true);
+            await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
 
-            //TODO:update appointment status to pharmacy
-            //TODO:add appointment activity
-
+            // add appointment activity
+            var newAppointment = new AppointmentsActivity()
+            {
+                AppointmentId = appointment.Id,
+                CurrentDate = DateTime.Now,
+                CurrentStatusId = currentStatus,
+                StaffId = medicalRecords.StaffId,
+                Note = ""
+            };
+            FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
+            await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
 
             // update data medical records
             medicalRecords.EndDate = DateTime.Now;
@@ -97,6 +112,22 @@ namespace Application.Services.Implementations
 
             var prescriptionData = new List<MedicalRecordsPrescriptions>();
             var diagnoseData = new List<MedicalRecordsDiagnoses>();
+
+            // add data notes
+            if(request.Notes != null)
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request.Notes);
+                var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request.Notes);
+                FormatUtil.SetIsActive<MedicalRecordsNotes>(entity, true);
+                FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
+                entity.MedicalRecordsId = medicalRecords.Id;
+                entity.StaffId = medicalRecords.StaffId;
+                var newId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
+                entity.Id = newId;
+            }
+
+            var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
 
             // add data prescription
             foreach (var pItem in request.Prescriptions)
@@ -129,6 +160,7 @@ namespace Application.Services.Implementations
             {
                 Id = medicalRecords.Id,
                 Code = medicalRecords.Code,
+                Notes = notes,
                 StartDate = medicalRecords.StartDate,
                 EndDate = medicalRecords.EndDate.Value,
                 TotalPrice = medicalRecords.Total,
@@ -150,7 +182,7 @@ namespace Application.Services.Implementations
                 entity.StaffId = staff.Id;
 
                 var checkType = await _unitOfWork.MedicalRecordsNotesRepository.CheckRecordType(dbName, request.MedicalRecordsId, request.Type);
-                var noteId = checkType.Id;
+                var noteId = 0;
                 if (checkType == null)
                 {
                     FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
@@ -158,7 +190,8 @@ namespace Application.Services.Implementations
                 }
                 else
                 {
-                    entity.Id = noteId;
+                    noteId = checkType.Id;
+                    entity.Id = checkType.Id;
                     FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity, true);
                     await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, entity);
                 }
@@ -331,6 +364,8 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<OrdersPayment>(entity, true);
                 FormatUtil.SetDateBaseEntity<OrdersPayment>(entity);
                 entity.Type = "MedicalRecord";
+                var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, request.OrderId, entity.Type);
+                var getTotalLastPayment = lastPayments.Sum(x => x.Total);
 
                 var medicalRecord = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.OrderId);
                 if (medicalRecord == null) throw new Exception("MedicalRecord not found");
@@ -340,8 +375,6 @@ namespace Application.Services.Implementations
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
                 //update status
-                var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, request.OrderId, entity.Type); 
-                var getTotalLastPayment = lastPayments.Sum(x => x.Total);
                 var totalPayments = getTotalLastPayment + request.Total;
                 if ((totalPayments) >= medicalRecord.Total)
                 {
@@ -383,5 +416,21 @@ namespace Application.Services.Implementations
             }
         }
 
+        public async Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName)
+        {
+            try
+            {
+                var type = "MedicalRecord";
+                var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecordId, type);
+                var getTotalLastPayment = lastPayments.Sum(x => x.Total);
+
+                return lastPayments;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.GetOrdersPaymentAsync";
+                throw;
+            }
+        }
     }
 }

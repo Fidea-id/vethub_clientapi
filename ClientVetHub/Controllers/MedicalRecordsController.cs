@@ -81,8 +81,8 @@ namespace ClientVetHub.Controllers
             }
         }
 
-        [HttpPost("Payment/{id}")]
-        public async Task<IActionResult> PostPayment(int id,[FromBody] OrdersPaymentRequest request)
+        [HttpPost("Payment")]
+        public async Task<IActionResult> PostPayment([FromBody] OrdersPaymentRequest request)
         {
             try
             {
@@ -103,6 +103,21 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _medicalRecordService.GetDetailMedicalRecords(id, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("Payment/{id}")]
+        public async Task<IActionResult> GetMedicalPayment(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.GetOrdersPaymentAsync(id, dbName);
                 return Ok(create);
             }
             catch

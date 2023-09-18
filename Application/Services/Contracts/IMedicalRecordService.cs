@@ -9,6 +9,7 @@ namespace Application.Services.Contracts
     public interface IMedicalRecordService : IGenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>
     {
         Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName);
+        Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName);
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName); //seperti detail medical records, tapi lebih ringkas
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByPatient(int patientId, string dbName); //seperti detail medical records, tapi lebih ringkas
         Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName);

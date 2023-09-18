@@ -169,6 +169,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Invoice/{id}")]
+        public async Task<IActionResult> GetDetailInvoice(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _appointmentService.GetDetailMedicalInvoice(id, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> GetDetail(int id)
         {
