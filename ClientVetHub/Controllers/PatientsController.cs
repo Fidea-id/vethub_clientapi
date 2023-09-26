@@ -15,9 +15,11 @@ namespace ClientVetHub.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly IPatientsService _patientsService;
-        public PatientsController(IPatientsService patientsService)
+        private readonly IAdditionalDataService _additionalService;
+        public PatientsController(IPatientsService patientsService, IAdditionalDataService additionalDataService)
         {
             _patientsService = patientsService;
+            _additionalService = additionalDataService;
         }
 
         [HttpGet]
@@ -70,7 +72,21 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var dbName = User.FindFirstValue("Entity");
+                var dbName = User.FindFirstValue("Entity"); 
+                int speciesId; 
+                int breedId; 
+
+                if (int.TryParse(request.Species, out speciesId))
+                {
+                    var species = await _additionalService.ReadAnimalByIdAsync(speciesId, dbName);
+                    request.Species = species.Name;
+                }
+
+                if (int.TryParse(request.Breed, out breedId))
+                {
+                    var breed = await _additionalService.ReadBreedByIdAsync(breedId, dbName);
+                    request.Breed = breed.Name;
+                }
                 var create = await _patientsService.CreatePatientsAsync(request, dbName);
                 return Ok(create);
             }
