@@ -36,6 +36,19 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        [HttpGet("Entity")]
+        public async Task<IActionResult> GetEntity()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                return Ok(dbName);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpGet("Clinics")]
         public async Task<IActionResult> GetClinics()

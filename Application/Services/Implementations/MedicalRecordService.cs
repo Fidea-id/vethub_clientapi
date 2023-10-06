@@ -105,8 +105,7 @@ namespace Application.Services.Implementations
             medicalRecords.EndDate = DateTime.Now;
             var currentTotal = medicalRecords.Total;
             var totalPrescription = request.Prescriptions.Sum(x => x.Total);
-            var totalDiagnose = request.Diagnoses.Sum(x => x.TotalPrice);
-            medicalRecords.Total = currentTotal + totalDiagnose + totalPrescription;
+            medicalRecords.Total = currentTotal + totalPrescription;
             FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
             await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
 

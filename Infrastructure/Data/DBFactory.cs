@@ -51,6 +51,11 @@ namespace Infrastructure.Data
                     // Local connection string
                     tempConnectionString = $"Server=localhost;port=3306;Database=VethubMaster;userid=root;password=;sslmode=none;";
                 }
+                else if (environment == "STAGING")
+                {
+                    // Local connection string
+                    tempConnectionString = $"Server=localhost;port=3306;Database=vethubmaster;userid=adminmaster;password=S@k2lu87COAlYOcNOfApuB1nu26o1a;Allow User Variables=true";
+                }
                 else
                 {
                     // Production connection string
@@ -97,6 +102,11 @@ namespace Infrastructure.Data
             {
                 // Local connection string
                 tempConnectionString = MySqlConnectionProvider.GetConnectionString("localhost", "root", "", dbName);
+            }
+            else if (environment == "STAGING")
+            {
+                // Local connection string
+                tempConnectionString = MySqlConnectionProvider.GetConnectionString("localhost", "adminmaster", "S@k2lu87COAlYOcNOfApuB1nu26o1a", dbName);
             }
             else
             {
