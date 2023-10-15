@@ -36,6 +36,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("PatientDiagnose/{patientId}")]
+        public async Task<IActionResult> GetPatientDiagnose(int patientId)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _medicalRecordService.GetPatientDiagnose(patientId, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {

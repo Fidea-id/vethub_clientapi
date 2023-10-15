@@ -2,11 +2,13 @@
 using Application.Utils;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters;
+using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations
 {
@@ -18,6 +20,87 @@ namespace Application.Services.Implementations
         {
             _uow = unitOfWork;
         }
+
+        #region Dashboard
+        public async Task<DashboardResponse> ReadDashboardAsync(string dbName)
+        {
+            var currentMonthQuery = $"MONTH(CreatedAt) = MONTH(CURRENT_DATE()) AND YEAR(CreatedAt) = YEAR(CURRENT_DATE())";
+            var statusPaid = "Paid";
+            var clientsAll = await _uow.OwnersRepository.Count(dbName);
+            var clientsMonth = await _uow.OwnersRepository.CountWithQuery(dbName, currentMonthQuery);
+            var petsAll = await _uow.PatientsRepository.Count(dbName);
+            var petsMonth = await _uow.PatientsRepository.CountWithQuery(dbName, currentMonthQuery);
+            var appointmentsAll = await _uow.AppointmentRepository.CountWithQuery(dbName, "StatusId = 6");
+            var appointmentsMonth = await _uow.AppointmentRepository.CountWithQuery(dbName, currentMonthQuery + " AND StatusId = 6");
+            var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"{currentMonthQuery} AND PaymentStatus = '{statusPaid}'");
+            var revenueOrderAll = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
+            var revenueOrderMonth = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"{currentMonthQuery} AND Status = '{statusPaid}'");
+            var appointmentDetail = await _uow.AppointmentRepository.GetAllDetailList(dbName, null);
+
+            var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName);
+
+            var visitYearlyConverted = visitYearly.Select(item => new MonthlyDataChart()
+            {
+                Month = DateTime.ParseExact(item.Month, "MM", null).ToString("MMM"),
+                Year = item.Year,
+                Total = item.Total
+            });
+
+            var revenueAll = revenueOrderAll + revenueAppointmentAll;
+            var revenueMonth = revenueOrderMonth + revenueAppointmentMonth;
+
+            var result = new DashboardResponse();
+            result.Clients = new CardDashboard()
+            {
+                Total = clientsMonth,
+                Percentage = FormatUtil.CountPercentageMonth(clientsMonth, clientsAll)
+            };
+            result.Pets = new CardDashboard()
+            {
+                Total = petsMonth,
+                Percentage = FormatUtil.CountPercentageMonth(petsMonth, petsAll)
+            };
+            result.Appointments = new CardDashboard()
+            {
+                Total = appointmentsMonth,
+                Percentage = FormatUtil.CountPercentageMonth(appointmentsMonth, appointmentsAll)
+            };
+            result.Revenues = new CardDashboard()
+            {
+                Total = revenueMonth,
+                Percentage = FormatUtil.CountPercentageMonth(revenueMonth, revenueAll)
+            };
+
+            //appointment activity & order activity
+            var listActivities = new List<ActivityDashboard>();
+            var latestAppointment = appointmentDetail.Data.OrderByDescending(x => x.Date).Take(10);
+            foreach(var item in latestAppointment)
+            {
+                var newActivity = new ActivityDashboard()
+                {
+                    Time = item.Date,
+                    Type = "Appointment",
+                    Name = $"{item.PatientsName}({item.OwnersName})",
+                    Detail = $"{item.ServiceName} with {item.StaffName}"
+                };
+                listActivities.Add(newActivity);
+            }
+            result.Activities = listActivities;
+
+            //chart overview
+            result.ChartClients = new List<ChartDataSeries>();
+            var visitChart = new ChartDataSeries()
+            {
+                Data = visitYearlyConverted,
+                Name = "Visits"
+            };
+            result.ChartClients.Add(visitChart);
+
+            return result;
+        }
+        #endregion
+
         #region Clinics
         public async Task<Clinics> CreateClinicsAsync(ClinicsRequest request, string dbName)
         {

@@ -2,6 +2,8 @@
 using Domain.Entities.Filters;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
+using Domain.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +22,24 @@ namespace ClientVetHub.Controllers
         {
             _additionalDataService = additionalDataService;
         }
+
+        #region Dashboard
+        [HttpGet("DashboardData")]
+        [Authorize(Roles = "Owner")]
+        public async Task<IActionResult> GetDashboard()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadDashboardAsync(dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
 
         #region Clinics
         [HttpGet("ClinicsEntity/{entity}")]

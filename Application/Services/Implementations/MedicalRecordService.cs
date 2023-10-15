@@ -2,6 +2,7 @@
 using Application.Utils;
 using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
+using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Models.Masters;
@@ -9,14 +10,20 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Application.Services.Implementations
 {
     public class MedicalRecordService : GenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>, IMedicalRecordService
     {
-        public MedicalRecordService(IUnitOfWork unitOfWork, IGenericRepository<MedicalRecords, MedicalRecordsFilter> repository)
+        private readonly ILogger<MedicalRecordService> _logger;
+        public MedicalRecordService(IUnitOfWork unitOfWork, IGenericRepository<MedicalRecords, MedicalRecordsFilter> repository,
+            ILoggerFactory loggerFactory)
         : base(unitOfWork, repository)
-        { }
+        {
+            _logger = loggerFactory.CreateLogger<MedicalRecordService>();
+        }
 
         public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName)
         {
@@ -154,6 +161,22 @@ namespace Application.Services.Implementations
                 var newId = await _unitOfWork.MedicalRecordsDiagnosesRepository.Add(dbName, entity);
                 entity.Id = newId;
                 diagnoseData.Add(entity);
+
+                //check new diagnose
+                var existDiagnose = await _unitOfWork.DiagnoseRepository.GetByFilter(dbName, new NameBaseEntityFilter() { Name = dItem.Diagnose });
+                if (existDiagnose.TotalData < 1)
+                {
+                    var newDiagnose = new Diagnoses() 
+                    { 
+                        Name = dItem.Diagnose,
+                    };
+                    _logger.LogInformation("Try add new diagnose : " + JsonConvert.SerializeObject(newDiagnose));
+                    FormatUtil.SetIsActive<Diagnoses>(newDiagnose, true);
+                    FormatUtil.SetDateBaseEntity<Diagnoses>(newDiagnose);
+
+                    var newDiagnoseId = await _unitOfWork.DiagnoseRepository.Add(dbName, newDiagnose);
+                    newDiagnose.Id = newDiagnoseId;
+                }
             }
             var response = new MedicalRecordsDetailResponse
             {
@@ -430,6 +453,32 @@ namespace Application.Services.Implementations
                 ex.Source = $"OrderService.GetOrdersPaymentAsync";
                 throw;
             }
+        }
+
+        public async Task<IEnumerable<PatientDiagnosesResponse>> GetPatientDiagnose(int patientId, string dbName)
+        {
+            var result = new List<PatientDiagnosesResponse>();
+            var mapData = new List<string>();
+            var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryPatient(dbName, patientId);
+            if (data.Count() > 0)
+            {
+                foreach (var item in data.Select(x => x.MedicalRecordsId))
+                {
+                    var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, item);
+                    mapData.AddRange(diagnoses.Select(x => x.Diagnose));
+                }
+
+                if(mapData.Count() > 0)
+                {
+                    result = mapData.GroupBy(x => x).Select(g => new PatientDiagnosesResponse
+                    {
+                        Diagnose = g.Key,
+                        Count = g.Count(),
+                        Percentage = (g.Count() / (double)mapData.Count()) * 100
+                    }).ToList();
+                }
+            }
+            return result;
         }
     }
 }

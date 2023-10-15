@@ -50,6 +50,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Statistic/{id}")]
+        public async Task<IActionResult> GetStatistic(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _ownersService.GetOwnerStatisticAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] OwnersPetsRequest request)
         {

@@ -3,6 +3,7 @@ using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 
@@ -48,6 +49,25 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = "OwnersService.CreateOwnersPetsAsync";
+                throw;
+            }
+        }
+
+        public async Task<OwnerStatistic> GetOwnerStatisticAsync(int ownerId, string dbName)
+        {
+            try
+            {
+                var result = new OwnerStatistic();
+                //get booking data
+                var bookings = await _unitOfWork.AppointmentRepository.GetBookingHistoryOwner(dbName, ownerId);
+                result.TotalBooking = bookings.Count();
+                result.TotalPayment = Convert.ToInt64(bookings.Where(x => x.StatusPayment == "Paid").Sum(x => x.TotalPrice));
+                result.LastVisit = bookings.OrderByDescending(x => x.DateAppointment).Select(x => x.DateAppointment).First();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = "OwnersService.GetOwnerStatisticAsync";
                 throw;
             }
         }

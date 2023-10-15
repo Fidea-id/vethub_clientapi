@@ -4,6 +4,7 @@ using Domain.Entities.DTOs;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data;
 
 namespace Infrastructure.Repositories
@@ -177,6 +178,31 @@ namespace Infrastructure.Repositories
             string querys = $"SELECT COUNT(*) FROM {_tableName} WHERE {query}";
             var result = await _db.ExecuteScalarAsync<int>(querys);
             return result > 0;
+        }
+
+        public async Task<int> Count(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var query = $"SELECT COUNT(*) FROM {_tableName}";
+            return await _db.ExecuteScalarAsync<int>(query);
+        }
+
+        public async Task<int> CountWithQuery(string dbName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.ExecuteScalarAsync<int>($"SELECT * FROM {_tableName} WHERE {query}");
+        }
+        public async Task<int> Sum(string dbName, string columnName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName); 
+            string sql = $"SELECT SUM({columnName}) FROM {_tableName}";
+            return await _db.ExecuteScalarAsync<int>(sql);
+        }
+        public async Task<int> SumWithQuery(string dbName, string columnName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName); 
+            string sql = $"SELECT SUM({columnName}) FROM {_tableName} WHERE {query}";
+            return await _db.ExecuteScalarAsync<int>(sql);
         }
     }
 }

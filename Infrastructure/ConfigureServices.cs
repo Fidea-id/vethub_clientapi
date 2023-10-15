@@ -46,11 +46,11 @@ namespace Infrastructure
 
             //EmailSender
             services.AddScoped<IEmailSender, EmailSender>();
-            services.AddFluentEmail("SenderEmailAddress", "SenderName").AddRazorRenderer()
-                .AddSmtpSender(new SmtpClient("smtp.gmail.com", 587)
+            services.AddFluentEmail("no-reply@vethub.id", "Vethub").AddRazorRenderer()
+                .AddSmtpSender(new SmtpClient("sandbox.smtp.mailtrap.io", 587)
                 {
                     UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential("SenderEmailAddress", "SenderEmailPassword"),
+                    Credentials = new NetworkCredential("c1e821993e0969", "b07a3bfd12ed78"),
                     EnableSsl = true
                 });
             return services;
