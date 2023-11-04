@@ -319,6 +319,7 @@ namespace Application.Services.Implementations
                 var responsePatientStatistic = await _unitOfWork.PatientsStatisticRepository.ReadPatientsStatisticAsync(responseAppointment.PatientsId, dbName);
                 var patientStatistic = await GetPatientStatisticLatest(responsePatientStatistic, dbName);
                 var responseOwner = await _unitOfWork.OwnersRepository.GetById(dbName, responseAppointment.OwnersId);
+                var responseDiagnose = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, responseMedicalRecords.Id);
                 var response = new MedicalDocsRequirementResponse
                 {
                     ClinicData = responseClinic.First(),
@@ -326,6 +327,7 @@ namespace Application.Services.Implementations
                     OwnerData = responseOwner,
                     PatientData = responsePatient,
                     PatientLatestStatistic = patientStatistic,
+                    MedicalDiagnoses = responseDiagnose,
                     VetName = responseVet.Name
                 };
                 return response;
