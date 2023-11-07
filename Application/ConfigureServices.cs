@@ -26,6 +26,7 @@ namespace Application
             services.AddScoped<IOrdersService, OrdersService>();
             services.AddScoped<IMedicalRecordService, MedicalRecordService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IReportService, ReportService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

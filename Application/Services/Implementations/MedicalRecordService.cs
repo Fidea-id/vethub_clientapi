@@ -38,6 +38,15 @@ namespace Application.Services.Implementations
             var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
             var totalLastPayment = lastPayments.Sum(x => x.Total);
+            string statusPayment = "Paid";
+            if(lastPayments.Count() < 1)
+            {
+                statusPayment = "Unpaid";
+            }
+            else if(totalLastPayment < medicalRecords.Total)
+            {
+                statusPayment = "Paid Less";
+            }
 
             var response = new MedicalRecordsDetailResponse
             {
@@ -54,6 +63,7 @@ namespace Application.Services.Implementations
                 TotalPaid = totalLastPayment,
                 Prescriptions = presciptions,
                 Diagnoses = diagnoses,
+                StatusPayment = statusPayment,
                 Notes = notes
             };
             return response;
