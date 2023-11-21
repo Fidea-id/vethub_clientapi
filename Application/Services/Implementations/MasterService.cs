@@ -4,6 +4,7 @@ using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Application.Services.Implementations
@@ -11,12 +12,15 @@ namespace Application.Services.Implementations
     public class MasterService : IMasterService
     {
         private readonly IGenerateTableRepository _generateTableRepository;
+        private ILogger<MasterService> _logger;
         private readonly IUnitOfWork _unitOfWork;
 
-        public MasterService(IGenerateTableRepository generateTableRepository, IUnitOfWork unitOfWork)
+        public MasterService(IGenerateTableRepository generateTableRepository, IUnitOfWork unitOfWork,
+            ILoggerFactory loggerFactory)
         {
             _generateTableRepository = generateTableRepository;
             _unitOfWork = unitOfWork;
+            _logger = loggerFactory.CreateLogger<MasterService>();
         }
 
         public async Task GenerateTableField(string dbName)
@@ -44,6 +48,7 @@ namespace Application.Services.Implementations
                             {
                                 if (kvp.Key == "ProductCategories")
                                 {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
                                     var data = JsonConvert.DeserializeObject<IEnumerable<ProductsCategoriesRequest>>(kvp.Value.ToString());
                                     //map items
                                     var map = Mapping.Mapper.Map<IEnumerable<ProductCategories>>(data);
@@ -53,11 +58,13 @@ namespace Application.Services.Implementations
                                         FormatUtil.SetIsActive<ProductCategories>(itm, true);
                                         FormatUtil.SetDateBaseEntity<ProductCategories>(itm);
                                     }
+                                    _logger.LogInformation("Success map " + kvp.Key);
 
                                     await _unitOfWork.ProductCategoriesRepository.AddRange(dbName, map);
                                 }
                                 else if (kvp.Key == "AppointmentsStatus")
                                 {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
                                     var data = JsonConvert.DeserializeObject<IEnumerable<AppointmentsStatusRequest>>(kvp.Value.ToString());
                                     //map items
                                     var map = Mapping.Mapper.Map<IEnumerable<AppointmentsStatus>>(data);
@@ -67,10 +74,12 @@ namespace Application.Services.Implementations
                                         FormatUtil.SetIsActive<AppointmentsStatus>(itm, true);
                                         FormatUtil.SetDateBaseEntity<AppointmentsStatus>(itm);
                                     }
+                                    _logger.LogInformation("Success map " + kvp.Key);
                                     await _unitOfWork.AppointmentRepository.AddStatusRange(map, dbName);
                                 }
                                 else if (kvp.Key == "PaymentMethod")
                                 {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
                                     var data = JsonConvert.DeserializeObject<IEnumerable<PaymentMethodRequest>>(kvp.Value.ToString());
                                     //map items
                                     var map = Mapping.Mapper.Map<IEnumerable<PaymentMethod>>(data);
@@ -80,21 +89,24 @@ namespace Application.Services.Implementations
                                         FormatUtil.SetIsActive<PaymentMethod>(itm, true);
                                         FormatUtil.SetDateBaseEntity<PaymentMethod>(itm);
                                     }
+                                    _logger.LogInformation("Success map " + kvp.Key);
                                     await _unitOfWork.PaymentMethodRepository.AddRange(dbName, map);
                                 }
-                                else if (kvp.Key == "PrescriptionFrequents")
-                                {
-                                    var data = JsonConvert.DeserializeObject<IEnumerable<PrescriptionFrequentsRequest>>(kvp.Value.ToString());
-                                    //map items
-                                    var map = Mapping.Mapper.Map<IEnumerable<PrescriptionFrequents>>(data);
-                                    foreach (var itm in map)
-                                    {
-                                        FormatUtil.TrimObjectProperties(itm);
-                                        FormatUtil.SetIsActive<PrescriptionFrequents>(itm, true);
-                                        FormatUtil.SetDateBaseEntity<PrescriptionFrequents>(itm);
-                                    }
-                                    await _unitOfWork.PrescriptionFrequentsRepository.AddRange(dbName, map);
-                                }
+                                //else if (kvp.Key == "PrescriptionFrequents")
+                                //{
+                                //    _logger.LogInformation("Try to map " + kvp.Key);
+                                //    var data = JsonConvert.DeserializeObject<IEnumerable<PrescriptionFrequentsRequest>>(kvp.Value.ToString());
+                                //    //map items
+                                //    var map = Mapping.Mapper.Map<IEnumerable<PrescriptionFrequents>>(data);
+                                //    foreach (var itm in map)
+                                //    {
+                                //        FormatUtil.TrimObjectProperties(itm);
+                                //        FormatUtil.SetIsActive<PrescriptionFrequents>(itm, true);
+                                //        FormatUtil.SetDateBaseEntity<PrescriptionFrequents>(itm);
+                                //    }
+                                //    _logger.LogInformation("Success map " + kvp.Key);
+                                //    await _unitOfWork.PrescriptionFrequentsRepository.AddRange(dbName, map);
+                                //}
 
                             }
                             // set the schema init

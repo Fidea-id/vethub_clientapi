@@ -1,4 +1,6 @@
 ﻿using Application.Services.Contracts;
+using Application.Services.Implementations;
+using Application.Utils;
 using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +15,14 @@ namespace ClientVetHub.Controllers
     public class OrdersController : Controller
     {
         private readonly IOrdersService _orderService;
+        private readonly INotificationService _notificationService;
+        private readonly IProfileService _profileService;
 
-        public OrdersController(IOrdersService orderService)
+        public OrdersController(IOrdersService orderService, INotificationService notificationService, IProfileService profileService)
         {
             _orderService = orderService;
+            _notificationService = notificationService;
+            _profileService = profileService;
         }
 
         [HttpGet("Dashboard")]
@@ -84,6 +90,12 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _orderService.CreateOrderFullAsync(request, dbName);
+                var ownerData = await _profileService.GetOwnerProfile(dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Create Order", $"Order type {data.Type} created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(data);
             }
             catch
@@ -98,6 +110,12 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _orderService.AddOrdersPaymentAsync(request, dbName);
+                var ownerData = await _profileService.GetOwnerProfile(dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Order Payment Created", $"Order type {data.Type} payment created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(data);
             }
             catch

@@ -190,7 +190,7 @@ namespace Infrastructure.Repositories
         public async Task<int> CountWithQuery(string dbName, string query)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.ExecuteScalarAsync<int>($"SELECT * FROM {_tableName} WHERE {query}");
+            return await _db.ExecuteScalarAsync<int>($"SELECT COUNT(*) FROM {_tableName} WHERE {query}");
         }
         public async Task<int> Sum(string dbName, string columnName)
         {

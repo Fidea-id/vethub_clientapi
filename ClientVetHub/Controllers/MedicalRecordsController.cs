@@ -1,10 +1,12 @@
 ﻿using Application.Services.Contracts;
 using Application.Services.Implementations;
+using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -16,9 +18,13 @@ namespace ClientVetHub.Controllers
     public class MedicalRecordsController : Controller
     {
         private readonly IMedicalRecordService _medicalRecordService;
-        public MedicalRecordsController(IMedicalRecordService medicalRecordService)
+        private readonly INotificationService _notificationService;
+        private readonly IProfileService _profileService;
+        public MedicalRecordsController(IMedicalRecordService medicalRecordService, INotificationService notificationService, IProfileService profileService)
         {
             _medicalRecordService = medicalRecordService;
+            _notificationService = notificationService;
+            _profileService = profileService;
         }
 
         [HttpGet]
@@ -88,6 +94,14 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _medicalRecordService.CreateRequestAsync(request, dbName);
+                var ownerData = await _profileService.GetOwnerProfile(dbName);
+
+                //create notif
+                var url = "appointment";
+                var notif = NotificationUtil.SetCreateNotifRequest(create.StaffId, "Create Medical Record", $"Medical Record created", url);
+                var notifOwner = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Create Medical Record", $"Medical Record created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
+                await _notificationService.CreateRequestAsync(notifOwner, dbName);
                 return Ok(create);
             }
             catch
@@ -102,7 +116,16 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                var id = User.FindFirstValue("Id");
                 var create = await _medicalRecordService.AddOrdersPaymentAsync(request, dbName);
+                var ownerData = await _profileService.GetOwnerProfile(dbName);
+
+                //create notif
+                var url = "appointment";
+                var notif = NotificationUtil.SetCreateNotifRequest(int.Parse(id), "Create Medical Payment", $"Medical payment created", url);
+                var notifOwner = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Create Medical Record", $"Medical Record created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
+                await _notificationService.CreateRequestAsync(notifOwner, dbName);
                 return Ok(create);
             }
             catch
@@ -178,6 +201,12 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _medicalRecordService.PostAllMedicalRecords(request, dbName);
+
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(create.Staff.Id, "Update Medical Record", $"Medical Record updated", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(create);
             }
             catch
@@ -193,6 +222,11 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var newData = await _medicalRecordService.UpdateAsync(id, value, dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(newData.StaffId, "Update Medical Record", $"Medical Record updated", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(newData);
             }
             catch

@@ -2,6 +2,7 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
+using FluentEmail.Core;
 using Infrastructure.Data;
 
 namespace Infrastructure.Repositories
@@ -21,6 +22,12 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Email = @Email", new { Email = email });
+        }
+
+        public async Task<Profile> GetOwner(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Roles = @Owner", new { Owner = "Owner" });
         }
     }
 }

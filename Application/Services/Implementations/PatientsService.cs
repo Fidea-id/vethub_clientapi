@@ -117,7 +117,8 @@ namespace Application.Services.Implementations
                 FormatUtil.TrimObjectProperties(entity);
                 FormatUtil.SetIsActive<Patients>(entity, true);
                 FormatUtil.SetDateBaseEntity<Patients>(entity);
-
+                entity.IsAlive = true;
+                
                 var newId = await _repository.Add(dbName, entity);
                 entity.Id = newId;
 

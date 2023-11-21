@@ -8,6 +8,8 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Domain.Entities.Filters.Clients;
+
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations

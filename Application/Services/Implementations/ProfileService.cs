@@ -71,5 +71,11 @@ namespace Application.Services.Implementations
                 throw new Exception(e.Message);
             }
         }
+
+        public async Task<Profile> GetOwnerProfile(string dbName)
+        {
+            var owner = await _unitOfWork.ProfileRepository.GetOwner(dbName);
+            return owner;
+        }
     }
 }

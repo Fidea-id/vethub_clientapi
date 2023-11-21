@@ -100,6 +100,7 @@ namespace Application.Services.Implementations
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
             var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+            var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
             //update appointment status to pharmacy
             var currentStatus = 4;
             appointment.StatusId = currentStatus;
@@ -192,6 +193,7 @@ namespace Application.Services.Implementations
             {
                 Id = medicalRecords.Id,
                 Code = medicalRecords.Code,
+                Staff = staff,
                 Notes = notes,
                 StartDate = medicalRecords.StartDate,
                 EndDate = medicalRecords.EndDate.Value,
@@ -420,7 +422,10 @@ namespace Application.Services.Implementations
 
                     foreach (var item in prescriptions)
                     {
-                        await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, Convert.ToInt32(item.Quantity), dbName);
+                        if(item.Type == "Product")
+                        {
+                            await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, Convert.ToInt32(item.Quantity), dbName);
+                        }
                     }
                 }
                 else

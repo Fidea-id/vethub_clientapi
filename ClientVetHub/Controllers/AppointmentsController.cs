@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Services.Implementations;
+using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ClientVetHub.Controllers
 {
@@ -95,8 +97,8 @@ namespace ClientVetHub.Controllers
                 var data = await _appointmentService.GetDetailAppointment(create.Id, dbName);
 
                 //create notif
-                var url = "";
-                var notif = new NotificationsRequest(data.StaffId, "Create", "New Appointment", $"Appointment from {data.OwnersName} at {data.Date.ToString("dd/MMMM/yyyy")}", url);
+                var url = "appointment";
+                var notif = NotificationUtil.SetCreateNotifRequest(data.StaffId, "New Appointment", $"Appointment from {data.OwnersName} at {data.Date.ToString("dd/MMMM/yyyy")}", url);
                 await _iNotificationService.CreateRequestAsync(notif, dbName);
 
                 return Ok(data);
@@ -116,6 +118,12 @@ namespace ClientVetHub.Controllers
                 await _appointmentService.ChangeAppointmentStatus(request, dbName);
                 //map to detail
                 var data = await _appointmentService.GetDetailAppointment(request.Id.Value, dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(data.StaffId, "Update Appointment Status", $"Appointment updated to {data.StatusName}", url);
+                await _iNotificationService.CreateRequestAsync(notif, dbName);
+
                 return Ok(data);
             }
             catch
@@ -131,6 +139,11 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var newData = await _appointmentService.UpdateAsync(id, value, dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(newData.StaffId, "Update Appointment", $"Appointment updated", url);
+                await _iNotificationService.CreateRequestAsync(notif, dbName);
                 return Ok(newData);
             }
             catch
@@ -146,6 +159,11 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 await _appointmentService.DeleteAsync(id, dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetDeleteNotifRequest(0, "Appointment Deleted", $"Appointment deleted");
+                await _iNotificationService.CreateRequestAsync(notif, dbName);
                 return Ok(default(Patients));
             }
             catch
