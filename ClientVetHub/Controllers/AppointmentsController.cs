@@ -108,6 +108,28 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        
+        [HttpPost("Reschedule/{id}")]
+        public async Task<IActionResult> Post(int id, [FromBody] AppointmentsRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+
+                var newData = await _appointmentService.UpdateAsync(id, request, dbName);
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(newData.StaffId, "Reschedule Appointment", $"Appointment reschedule", url);
+                await _iNotificationService.CreateRequestAsync(notif, dbName);
+
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpPost("StatusChange")]
         public async Task<IActionResult> StatusChange([FromBody] AppointmentsRequestChangeStatus request)

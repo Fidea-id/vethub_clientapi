@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.DTOs;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -12,9 +13,12 @@ namespace Application.Services.Contracts
         //detail all
         Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName);
         Task<ProductDetailsResponse> GetProductDetailAsync(int id, string dbName);
+        Task<IEnumerable<ProductStockHistoricalResponse>> GetProductStockHistoricalAsync(string dbName);
 
-        Task<Products> AddProducts(ProductAsBundleRequest request, string dbName);
-        Task<Products> AddProductAsBundle(ProductAsBundleRequest request, string dbName);
+        Task<Products> AddProducts(ProductAsBundleRequest request, string dbName, string globalId);
+        Task<Products> AddProductAsBundle(ProductAsBundleRequest request, string dbName, string globalId);
+        Task<ResponseUploadBulk> AddProductAsBulk(IEnumerable<BulkProduct> request, string dbName, string globalId);
+        Task<Products> UpdateBundleAsync(int id, ProductAsBundleRequest request, string dbName, string globalId);
 
         Task<DataResultDTO<ProductCategories>> GetProductCategoriesAsync(ProductCategoriesFilter filters, string dbName);
         Task<ProductCategories> GetProductCategoryByIdAsync(int id, string dbName);

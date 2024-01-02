@@ -8,6 +8,7 @@ using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Globalization;
 
 namespace Application.Services.Implementations
@@ -91,8 +92,17 @@ namespace Application.Services.Implementations
                         _logger.LogInformation("Start update stock of order type " + orderDetail.Type);
                         foreach (var item in orderDetail.OrderProducts)
                         {
+                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
+                            var tuple = StockUtil.CalculateProductStockMin(productStock, item.Quantity);
+                            tuple.Item2.Type = "Order.Incomes";
+                            var getProfile = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, order.StaffId);
+                            tuple.Item2.ProfileId = getProfile.Id;
+
                             _logger.LogInformation("Start update stock of " + item.ProductId + " by amount " + item.Quantity);
-                            await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, item.Quantity, dbName);
+                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
                         }
                     }
                     else
@@ -100,8 +110,18 @@ namespace Application.Services.Implementations
                         _logger.LogInformation("Start update stock of order type " + orderDetail.Type);
                         foreach (var item in orderDetail.OrderProducts)
                         {
+                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
+                            var tuple = StockUtil.CalculateProductStockMin(productStock, item.Quantity);
+                            tuple.Item2.Type = "Order.Outcomes";
+                            var getProfile = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, order.StaffId);
+                            tuple.Item2.ProfileId = getProfile.Id;
+
                             _logger.LogInformation("Start update stock of " + item.ProductId + " by amount " + item.Quantity);
-                            await _unitOfWork.ProductStockRepository.UpdateAddStock(item.ProductId, item.Quantity, dbName);
+                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+
                         }
                     }
                 }

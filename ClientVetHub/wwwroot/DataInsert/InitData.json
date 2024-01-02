@@ -148,6 +148,11 @@
       "Name": "Unknown",
       "Description": "Unknown status. Take look at note",
       "Weight": 99
+    },
+    {
+      "Name": "Cancel",
+      "Description": "Canceled booking",
+      "Weight": 8
     }
   ]
 }

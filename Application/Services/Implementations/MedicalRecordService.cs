@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using AutoMapper;
 using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters;
@@ -424,7 +425,16 @@ namespace Application.Services.Implementations
                     {
                         if(item.Type == "Product")
                         {
-                            await _unitOfWork.ProductStockRepository.UpdateMinStock(item.ProductId, Convert.ToInt32(item.Quantity), dbName);
+                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
+                            var tuple = StockUtil.CalculateProductStockMinVolume(productStock, item.PrescriptionAmount);
+                            tuple.Item2.Type = "MedicalRecord";
+                            tuple.Item2.ProfileId = medicalRecord.StaffId;
+
+                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+
+                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
                         }
                     }
                 }
@@ -450,7 +460,7 @@ namespace Application.Services.Implementations
             }
             catch (Exception ex)
             {
-                ex.Source = $"OrderService.AddOrdersPaymentAsync";
+                ex.Source = $"MedicalRecordService.AddOrdersPaymentAsync";
                 throw;
             }
         }

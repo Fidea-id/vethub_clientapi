@@ -130,8 +130,9 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                var getPatient = await _profileService.ReadByIdAsync(id, dbName);
                 await _profileService.DeleteAsync(id, dbName);
-                return Ok(default(Patients));
+                return Ok(getPatient);
             }
             catch
             {

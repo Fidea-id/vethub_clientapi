@@ -90,10 +90,6 @@ namespace Application.Services.Implementations
             if (staff == null)
                 throw new Exception("Staff not found");
             var statusId = request.StatusId.Value;
-            if (statusId != data.StatusId + 1)
-            {
-                throw new Exception("Unallowed status change");
-            }
             data.StatusId = statusId;
             FormatUtil.SetDateBaseEntity<Appointments>(data, true);
             await _repository.Update(dbName, data);

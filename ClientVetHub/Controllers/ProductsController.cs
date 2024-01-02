@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -20,6 +21,22 @@ namespace ClientVetHub.Controllers
         {
             _productsService = productsService;
         }
+        
+        [HttpGet("ProductStockHistorical")]
+        public async Task<IActionResult> ProductStockHistorical()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _productsService.GetProductStockHistoricalAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         #region Product
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] ProductsFilter filters)
@@ -35,7 +52,6 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -57,7 +73,24 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _productsService.AddProducts(request, dbName);
+                var idUser = User.FindFirstValue("Id");
+                var create = await _productsService.AddProducts(request, dbName, idUser);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("bundle/{id}")]
+        public async Task<IActionResult> PutBundle(int id, [FromBody] ProductAsBundleRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var idUser = User.FindFirstValue("Id");
+                var create = await _productsService.UpdateBundleAsync(id, request, dbName, idUser);
                 return Ok(create);
             }
             catch
@@ -119,7 +152,24 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _productsService.AddProductAsBundle(request, dbName);
+                var idUser = User.FindFirstValue("Id");
+                var entities = await _productsService.AddProductAsBundle(request, dbName, idUser);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("bulk")]
+        public async Task<IActionResult> AddProductBulk(BulkProducts request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var idUser = User.FindFirstValue("Id");
+                var entities = await _productsService.AddProductAsBulk(request.listData, dbName, idUser);
                 return Ok(entities);
             }
             catch

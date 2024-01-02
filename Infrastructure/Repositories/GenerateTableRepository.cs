@@ -67,6 +67,7 @@ namespace Infrastructure.Repositories
                 typeof(MedicalRecordsPrescriptionsXPO),
                 typeof(PrescriptionFrequentsXPO),
                 typeof(NotificationsXPO),
+                typeof(ProductStockHistoricalXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))

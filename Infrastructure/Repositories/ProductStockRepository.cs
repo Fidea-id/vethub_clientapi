@@ -13,7 +13,7 @@ namespace Infrastructure.Repositories
         {
         }
 
-        public async Task UpdateMinStock(int productId, int quantity, string dbName)
+        public async Task UpdateMinStock(int productId, double quantity, string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
@@ -23,7 +23,7 @@ namespace Infrastructure.Repositories
             if (product.Stock < quantity) throw new Exception("Insufficient stock");
 
             // Create the SQL query to update only stock and updatedAt
-            var query = $"UPDATE {_tableName} SET Stock = Stock - @quantity, UpdatedAt = @updatedAt WHERE Id = @productId";
+            var query = $"UPDATE {_tableName} SET Stock = Stock - @quantity, UpdatedAt = @updatedAt WHERE ProductId = @productId";
 
             // Create an anonymous object to pass the parameters
             var parameters = new
@@ -37,12 +37,12 @@ namespace Infrastructure.Repositories
             await _db.ExecuteAsync(query, parameters);
         }
 
-        public async Task UpdateAddStock(int productId, int quantity, string dbName)
+        public async Task UpdateAddStock(int productId, double quantity, string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
 
             // Create the SQL query to update only stock and updatedAt
-            var query = $"UPDATE {_tableName} SET Stock = Stock + @quantity, UpdatedAt = @updatedAt WHERE Id = @productId";
+            var query = $"UPDATE {_tableName} SET Stock = Stock + @quantity, UpdatedAt = @updatedAt WHERE ProductId = @productId";
 
             // Create an anonymous object to pass the parameters
             var parameters = new

@@ -1,10 +1,16 @@
 ﻿using Dapper;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
+using Domain.Entities.Models.Masters;
 using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace Infrastructure.Repositories
 {
@@ -24,6 +30,8 @@ namespace Infrastructure.Repositories
                 p.Description,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
+                ps.VolumeUnit,
+                ps.VolumeRemaining,
                 p.CategoryId,
                 pc.Name AS Category,
                 p.Price,
@@ -37,11 +45,12 @@ namespace Infrastructure.Repositories
                 LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
-	            p.IsActive = TRUE And
                 p.Id = @ProductId
             GROUP BY
                 p.Id,
-                ps.Volume";
+                ps.Volume,
+                ps.VolumeUnit,
+                ps.VolumeRemaining;";
             var result = await _db.QueryFirstOrDefaultAsync<ProductDetailsResponse>(query, new { ProductId = id });
             if (result == null)
                 return null;
@@ -118,6 +127,8 @@ namespace Infrastructure.Repositories
                 p.IsBundle,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
+                ps.VolumeUnit,
+                ps.VolumeRemaining,
                 p.IsActive,
                 IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
@@ -126,11 +137,11 @@ namespace Infrastructure.Repositories
                 LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
                 LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
-            WHERE
-               p.IsActive = TRUE
             GROUP BY
                 p.Id,
-                ps.Volume;";
+                ps.Volume,
+                ps.VolumeUnit,
+                ps.VolumeRemaining;";
             var results = await _db.QueryAsync<ProductDetailsResponse>(query);
             var productList = results.ToList();
 
@@ -194,5 +205,101 @@ namespace Infrastructure.Repositories
             }
             return productList;
         }
+        public async Task<CheckValidDTO> CheckProductValidList(IEnumerable<BulkProduct> data, string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var result = new CheckValidDTO();
+            result.ValidationMessage = new List<string>();
+            var listMessage = new List<string>();
+            var dataFix = new List<BulkProduct>();
+            foreach (var item in data)
+            {
+                //row
+                if (dataFix.Select(x => x.row).Contains(item.row))
+                {
+                    listMessage.Add($"Row duplicate detected!");
+                    break;
+                }
+
+                //productname
+                if (dataFix.Select(x => x.productName).Contains(item.productName))
+                {
+                    listMessage.Add($"Product Name duplicate in this file. Please make sure use unique Product Name!");
+                    break;
+                }
+                if (string.IsNullOrEmpty(item.productName))
+                {
+                    listMessage.Add($"Row {item.row}: Product Name is required!");
+                }
+
+                //description
+                if (string.IsNullOrEmpty(item.description))
+                {
+                    listMessage.Add($"Row {item.row}: Description is required!");
+                }
+
+                //categoryId
+                if (item.categoryId == 0)
+                {
+                    listMessage.Add($"Row {item.row}: Category Id is required!");
+                }
+                //check category
+                const string query = @"
+                    SELECT *
+                    FROM
+                        ProductCategories p
+                    Where
+                        p.Id = @CategoryId;";
+                var category = await _db.QueryFirstAsync<ProductCategories>(query, new { CategoryId = item.categoryId });
+
+                if(category == null)
+                {
+                    listMessage.Add($"Row {item.row}: Category is not found!");
+                }
+
+                //stock
+                if (item.stock == 0)
+                {
+                    listMessage.Add($"Row {item.row}: Stock is required!");
+                }
+
+                //volume
+                if (item.volume == 0)
+                {
+                    listMessage.Add($"Row {item.row}: Volume is required!");
+                }
+
+                //unit
+                if (string.IsNullOrEmpty(item.unit))
+                {
+                    listMessage.Add($"Row {item.row}: Unit is required!");
+                }
+
+
+                var checkName = await _db.ExecuteScalarAsync<bool>(@"select count(1) from `Products` where Lower(Name) = @ProductName", new { ProductName = item.productName.ToLower() });
+                if (checkName)
+                {
+                    listMessage.Add($"Row {item.row}: Product Name has been registered!");
+                }
+                dataFix.Add(item);
+            }
+
+            if (listMessage.Count > 0)
+            {
+                result.ValidationMessage = listMessage;
+                result.Data = null;
+                result.Status = 400;
+                result.Message = "One or more field in template is invalid.";
+            }
+            else
+            {
+                result.ValidationMessage = null;
+                result.Data = JsonConvert.SerializeObject(dataFix);
+                result.Status = 200;
+                result.Message = "Valid";
+            }
+            return result;
+        }
     }
+   
 }

@@ -172,6 +172,12 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.QueryAsync<T>($"SELECT * FROM {_tableName} WHERE {query}");
         }
+
+        public async Task<T> WhereFirstQuery(string dbName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            return await _db.QueryFirstAsync<T>($"SELECT * FROM {_tableName} WHERE {query}");
+        }
         public async Task<bool> AnyQuery(string dbName, string query)
         {
             var _db = _dbFactory.GetDbConnection(dbName);

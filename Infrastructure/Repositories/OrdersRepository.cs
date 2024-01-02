@@ -71,11 +71,9 @@ namespace Infrastructure.Repositories
                     c.Name AS ClientName,
                     o.StaffId,
                     p.Name AS StaffName,
-                    o.Quantity,
                     o.Type,
+                    o.TotalQuantity,
                     o.Status,
-                    o.Discount,
-                    o.DiscountType,
                     o.TotalPrice,
                     o.TotalDiscountedPrice
                 FROM Orders o
@@ -138,11 +136,9 @@ namespace Infrastructure.Repositories
                     c.Name AS ClientName,
                     o.StaffId,
                     p.Name AS StaffName,
-                    o.Quantity,
+                    o.TotalQuantity,
                     o.Type,
                     o.Status,
-                    o.Discount,
-                    o.DiscountType,
                     o.TotalPrice,
                     o.TotalDiscountedPrice
                 FROM Orders o

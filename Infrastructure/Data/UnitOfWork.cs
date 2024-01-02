@@ -346,5 +346,17 @@ namespace Infrastructure.Data
                 return _NotificationsRepository;
             }
         }
+        private IProductStockHistoricalRepository _ProductStockHistoricalRepository;
+        public IProductStockHistoricalRepository ProductStockHistoricalRepository
+        {
+            get
+            {
+                if (_ProductStockHistoricalRepository == null)
+                {
+                    _ProductStockHistoricalRepository = new ProductStockHistoricalRepository(_dbFactory);
+                }
+                return _ProductStockHistoricalRepository;
+            }
+        }
     }
 }
