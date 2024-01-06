@@ -1,6 +1,7 @@
 ﻿using Application.Services.Contracts;
 using Application.Services.Implementations;
 using Application.Utils;
+using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -117,6 +118,22 @@ namespace ClientVetHub.Controllers
                 var notif = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Order Payment Created", $"Order type {data.Type} payment created", url);
                 await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteOrder(int id)
+        {
+
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _orderService.DeleteAsync(id, dbName);
+                return Ok(default(Patients));
             }
             catch
             {
