@@ -9,6 +9,7 @@ namespace Application.Services.Contracts
     public interface IOrdersService : IGenericService<Orders, OrdersRequest, OrdersResponse, OrdersFilter>
     {
         Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName);
+        Task<List<RevenueResponse>> GetRevenueLogAsync(string dbName);
         Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName);
 
         //OrderFullResponse

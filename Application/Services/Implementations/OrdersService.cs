@@ -8,6 +8,7 @@ using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Globalization;
 
@@ -271,6 +272,42 @@ namespace Application.Services.Implementations
             {
                 ex.Source = $"OrderService.CreateOrderFullAsync";
                 throw;
+            }
+        }
+
+        public async Task<List<RevenueResponse>> GetRevenueLogAsync(string dbName)
+        {
+            try
+            {
+                var result = new List<RevenueResponse>();
+
+                var medicalPayment = await _unitOfWork.MedicalRecordsRepository.GetByFilter(dbName, new MedicalRecordsFilter { PaymentStatus = "Paid" });
+                var orderPayment = await _unitOfWork.OrdersRepository.GetByFilter(dbName, new OrdersFilter { Status = "Paid" });
+
+                if (medicalPayment.Data.Count() > 0)
+                {
+                    foreach(var item in medicalPayment.Data)
+                    {
+                        var detail = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, item.Id);
+                        result.Add(new RevenueResponse { Id = item.Id, Code = item.Code, Type = "Medical Record", Status = item.PaymentStatus, Total = item.Total, Date = item.StartDate, Details = JsonConvert.SerializeObject(detail) });
+                    }
+                }
+                if (orderPayment.Data.Count() > 0)
+                {
+                    foreach (var item in orderPayment.Data)
+                    {
+                        var detail = await _unitOfWork.OrdersDetailRepository.GetByOrderId(dbName, item.Id);
+                        result.Add(new RevenueResponse { Id = item.Id, Code = item.OrderNumber, Type = "Order", Status = item.Status, Total = item.TotalPrice, Date = item.Date, Details = JsonConvert.SerializeObject(detail) });
+                    }
+                }
+
+                return result;
+            }
+            catch(Exception ex)
+            {
+                ex.Source = $"OrderService.GetRevenueLogAsync";
+                throw;
+
             }
         }
     }

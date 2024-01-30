@@ -28,12 +28,12 @@ namespace ClientVetHub.Controllers
         #region Dashboard
         [HttpGet("DashboardData")]
         [Authorize(Roles = "Owner")]
-        public async Task<IActionResult> GetDashboard()
+        public async Task<IActionResult> GetDashboard(string? date)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var data = await _additionalDataService.ReadDashboardAsync(dbName);
+                var data = await _additionalDataService.ReadDashboardAsync(dbName, date);
                 return Ok(data);
             }
             catch

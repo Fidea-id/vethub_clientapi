@@ -408,6 +408,13 @@ namespace Application.Services.Implementations
                     var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, "ProductId = " + id);
                     var stockBefore = productStock.Stock;
                     productStock.Stock = request.Stock;
+                    if (!string.IsNullOrEmpty(request.VolumeUnit)){
+                        productStock.VolumeUnit = request.VolumeUnit;
+                    }
+                    if (request.Volume != null || request.Volume != 0)
+                    {
+                        productStock.Volume = request.Volume;
+                    }
                     FormatUtil.SetDateBaseEntity<ProductStocks>(productStock, true);
                     await _unitOfWork.ProductStockRepository.Update(dbName, productStock);
 

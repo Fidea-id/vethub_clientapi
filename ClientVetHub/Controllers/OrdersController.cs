@@ -140,5 +140,20 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+
+        [HttpGet("RevenueLogs")]
+        public async Task<IActionResult> GetRevenueLogAsync()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _orderService.GetRevenueLogAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }

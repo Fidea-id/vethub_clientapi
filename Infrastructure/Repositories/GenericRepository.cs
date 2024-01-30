@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using Domain.Entities;
 using Domain.Entities.DTOs;
+using Domain.Entities.Models.Clients;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
@@ -197,6 +199,21 @@ namespace Infrastructure.Repositories
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             return await _db.ExecuteScalarAsync<int>($"SELECT COUNT(*) FROM {_tableName} WHERE {query}");
+        }
+        public async Task<CardDashboard> CountToCard(string dbName, string date, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filter = "";
+            if (!string.IsNullOrEmpty(query))
+            {
+                filter = $"Where {query}";
+            }
+            if (string.IsNullOrEmpty(date))
+            {
+                date = $"2023-01-01"; //set min date
+            }
+            var resultQuery = $"SELECT COUNT(Id) AS TotalAll, COUNT(CASE WHEN CreatedAt > @Date THEN Id END) AS Total FROM {_tableName} {filter}";
+            return await _db.QueryFirstAsync<CardDashboard>(resultQuery, new { Date = date });
         }
         public async Task<int> Sum(string dbName, string columnName)
         {

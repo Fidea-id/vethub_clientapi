@@ -92,6 +92,66 @@ namespace Application.Services.Implementations
                                     _logger.LogInformation("Success map " + kvp.Key);
                                     await _unitOfWork.PaymentMethodRepository.AddRange(dbName, map);
                                 }
+                                else if (kvp.Key == "Animals")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<AnimalsRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<Animals>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<Animals>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<Animals>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.AnimalRepository.AddRange(dbName, map);
+                                }
+                                else if (kvp.Key == "Breeds")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<BreedsRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<Breeds>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<Breeds>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<Breeds>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.BreedRepository.AddRange(dbName, map);
+                                }
+                                else if (kvp.Key == "Services")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<ServicesRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<Domain.Entities.Models.Clients.Services>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<Domain.Entities.Models.Clients.Services>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<Domain.Entities.Models.Clients.Services>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.ServicesRepository.AddRange(dbName, map);
+                                }
+                                else if (kvp.Key == "Diagnoses")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<DiagnosesRequest>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<Diagnoses>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<Diagnoses>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<Diagnoses>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.DiagnoseRepository.AddRange(dbName, map);
+                                }
                                 //else if (kvp.Key == "PrescriptionFrequents")
                                 //{
                                 //    _logger.LogInformation("Try to map " + kvp.Key);

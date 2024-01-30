@@ -24,21 +24,23 @@ namespace Application.Services.Implementations
         }
 
         #region Dashboard
-        public async Task<DashboardResponse> ReadDashboardAsync(string dbName)
+        public async Task<DashboardResponse> ReadDashboardAsync(string dbName, string date)
         {
-            var currentMonthQuery = $"MONTH(CreatedAt) = MONTH(CURRENT_DATE()) AND YEAR(CreatedAt) = YEAR(CURRENT_DATE())";
             var statusPaid = "Paid";
-            var clientsAll = await _uow.OwnersRepository.Count(dbName);
-            var clientsMonth = await _uow.OwnersRepository.CountWithQuery(dbName, currentMonthQuery);
-            var petsAll = await _uow.PatientsRepository.Count(dbName);
-            var petsMonth = await _uow.PatientsRepository.CountWithQuery(dbName, currentMonthQuery);
-            var appointmentsAll = await _uow.AppointmentRepository.CountWithQuery(dbName, "StatusId = 6");
-            var appointmentsMonth = await _uow.AppointmentRepository.CountWithQuery(dbName, currentMonthQuery + " AND StatusId = 6");
+            var clients = await _uow.OwnersRepository.CountToCard(dbName, date, null);
+            var pets = await _uow.PatientsRepository.CountToCard(dbName, date, null);
+            var appointment = await _uow.AppointmentRepository.CountToCard(dbName, date, null);
+
+            var dateFilter = $"CreatedAt >= '2023-01-01'";
+            if (!string.IsNullOrEmpty(date))
+            {
+                dateFilter = $"CreatedAt >= '{date}'";
+            }
+
             var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
-            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"{currentMonthQuery} AND PaymentStatus = '{statusPaid}'");
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"{dateFilter} AND PaymentStatus = '{statusPaid}'");
             var revenueOrderAll = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
-            var revenueOrderMonth = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"{currentMonthQuery} AND Status = '{statusPaid}'");
-            var appointmentDetail = await _uow.AppointmentRepository.GetAllDetailList(dbName, null);
+            var revenueOrderMonth = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}'");
 
             var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName);
 
@@ -53,29 +55,25 @@ namespace Application.Services.Implementations
             var revenueMonth = revenueOrderMonth + revenueAppointmentMonth;
 
             var result = new DashboardResponse();
-            result.Clients = new CardDashboard()
-            {
-                Total = clientsMonth,
-                Percentage = FormatUtil.CountPercentageMonth(clientsMonth, clientsAll)
-            };
-            result.Pets = new CardDashboard()
-            {
-                Total = petsMonth,
-                Percentage = FormatUtil.CountPercentageMonth(petsMonth, petsAll)
-            };
-            result.Appointments = new CardDashboard()
-            {
-                Total = appointmentsMonth,
-                Percentage = FormatUtil.CountPercentageMonth(appointmentsMonth, appointmentsAll)
-            };
+            clients.Percentage = FormatUtil.CountPercentageMonth(clients.Total, clients.TotalAll);
+            result.Clients = clients;
+
+            pets.Percentage = FormatUtil.CountPercentageMonth(pets.Total, pets.TotalAll);
+            result.Pets = pets;
+
+            appointment.Percentage = FormatUtil.CountPercentageMonth(appointment.Total, appointment.TotalAll);
+            result.Appointments = appointment;
+
             result.Revenues = new CardDashboard()
             {
                 Total = revenueMonth,
+                TotalAll = revenueAll,
                 Percentage = FormatUtil.CountPercentageMonth(revenueMonth, revenueAll)
             };
 
             //appointment activity & order activity
             var listActivities = new List<ActivityDashboard>();
+            var appointmentDetail = await _uow.AppointmentRepository.GetAllDetailList(dbName, null);
             var latestAppointment = appointmentDetail.Data.OrderByDescending(x => x.Date).Take(10);
             foreach(var item in latestAppointment)
             {

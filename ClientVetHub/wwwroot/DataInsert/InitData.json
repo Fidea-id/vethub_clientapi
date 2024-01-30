@@ -1,4 +1,175 @@
 {
+  "Diagnoses": [
+    {
+      "Name": "Alergi"
+    },
+    {
+      "Name": "Blood Parasitic"
+    },
+    {
+      "Name": "Clamidia"
+    },
+    {
+      "Name": "Cystitis"
+    },
+    {
+      "Name": "Ear mite"
+    },
+    {
+      "Name": "Ectoparasitic"
+    },
+    {
+      "Name": "Endoparasitic"
+    },
+    {
+      "Name": "FIV"
+    },
+    {
+      "Name": "FLUTD"
+    },
+    {
+      "Name": "Fraktur"
+    },
+    {
+      "Name": "Gastroenteritis"
+    },
+    {
+      "Name": "Giardiasis"
+    },
+    {
+      "Name": "Hepatitis"
+    },
+    {
+      "Name": "Leptospira"
+    },
+    {
+      "Name": "Panleukopenia"
+    },
+    {
+      "Name": "Parvovirus"
+    },
+    {
+      "Name": "Pneumonia"
+    },
+    {
+      "Name": "Prolapsus ani"
+    },
+    {
+      "Name": "Rhinitis"
+    },
+    {
+      "Name": "Scabies"
+    },
+    {
+      "Name": "Tumor"
+    },
+    {
+      "Name": "Urolithiasis"
+    }
+  ],
+  "Animals": [
+    {
+      "Name": "Anjing"
+    },
+    {
+      "Name": "Kucing"
+    },
+    {
+      "Name": "Reptil"
+    },
+    {
+      "Name": "Burung"
+    }
+  ],
+  "Breeds": [
+    {
+      "AnimalsId": 1,
+      "Name": "Cihuahua"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "German Shepherd"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "Golden"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "Mix Breed"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "Pomerian"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "Poodle"
+    },
+    {
+      "AnimalsId": 1,
+      "Name": "Teckel"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "Angora"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "Bengal"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "BSH"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "Maine Coon"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "Persia"
+    },
+    {
+      "AnimalsId": 2,
+      "Name": "Scottish"
+    },
+    {
+      "AnimalsId": 3,
+      "Name": "Ular"
+    },
+    {
+      "AnimalsId": 3,
+      "Name": "Kura-kura"
+    },
+    {
+      "AnimalsId": 3,
+      "Name": "Iguana"
+    },
+    {
+      "AnimalsId": 4,
+      "Name": "Merpati"
+    },
+    {
+      "AnimalsId": 4,
+      "Name": "Kakatua"
+    },
+    {
+      "AnimalsId": 4,
+      "Name": "Kenari"
+    }
+  ],
+  "Services": [
+    {
+      "Name": "Grooming"
+    },
+    {
+      "Name": "House Call"
+    },
+    {
+      "Name": "Vet Checkup"
+    }
+  ],
   "ProductCategories": [
     {
       "Name": "Food"
