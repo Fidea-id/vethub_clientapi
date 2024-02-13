@@ -11,16 +11,20 @@ using Domain.Utils;
 using Domain.Entities.Filters.Clients;
 
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Domain.Entities.Requests.Masters;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Implementations
 {
     public class AdditionalDataService : IAdditionalDataService
     {
         private readonly IUnitOfWork _uow;
+        private readonly ILogger<AdditionalDataService> _logger;
 
-        public AdditionalDataService(IUnitOfWork unitOfWork)
+        public AdditionalDataService(IUnitOfWork unitOfWork, ILoggerFactory loggerFactory)
         {
             _uow = unitOfWork;
+            _logger = loggerFactory.CreateLogger<AdditionalDataService>();
         }
 
         #region Dashboard
@@ -596,6 +600,7 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+
         #endregion
     }
 }

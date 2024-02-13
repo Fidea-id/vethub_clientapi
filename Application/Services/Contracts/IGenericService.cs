@@ -18,6 +18,7 @@ namespace Application.Services.Contracts
         Task<DataResultDTO<T>> GetEntitiesByFilter(TFilter filters, string dbName);
         Task<IEnumerable<TResponse>> ReadAllActiveAsync(string dbName);
         Task<T> ReadByIdAsync(int id, string dbName);
+        Task<int> CountActiveAsync(string dbName);
         Task<TResponse> ReadByIdResponseAsync(int id, string dbName);
         //Update
         Task<T> UpdateAsync(int id, TRequest entity, string dbName);

@@ -6,6 +6,7 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Security.Claims;
 
 namespace ClientVetHub.Controllers
@@ -16,9 +17,11 @@ namespace ClientVetHub.Controllers
     public class ProfileController : Controller
     {
         private readonly IProfileService _profileService;
-        public ProfileController(IProfileService profileService)
+        private readonly ILogger<ProfileController> _logger;
+        public ProfileController(IProfileService profileService, ILoggerFactory loggerFactory)
         {
             _profileService = profileService;
+            _logger = loggerFactory.CreateLogger<ProfileController>();
         }
 
         [HttpGet("User/{id}")]
@@ -60,6 +63,29 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+
+        [AllowAnonymous]
+        [HttpPost("public/batch/{entity}")]
+        public async Task<IActionResult> PublicBatchPost(string entity, [FromBody] IEnumerable<Profile> request)
+        {
+            try
+            {
+                var dbName = entity;
+                var list = new List<Profile>();
+                foreach(var item in request)
+                {
+                    _logger.LogInformation("Client create profile : " + JsonConvert.SerializeObject(item));
+                    var create = await _profileService.CreateAsync(item, dbName);
+                    list.Add(create);
+                }
+                return Ok(list);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("{id}")]
         public async Task<IActionResult> Post(int id, [FromBody] ProfileRequest request)
         {

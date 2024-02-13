@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Domain.Entities.Filters.Clients;
-
+using Domain.Entities.Requests.Masters;
 
 namespace ClientVetHub.Controllers
 {
@@ -101,6 +101,7 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+
 
         [HttpPost("Clinics")]
         public async Task<IActionResult> PostClinics([FromBody] ClinicsRequest request)

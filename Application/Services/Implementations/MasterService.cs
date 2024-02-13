@@ -2,6 +2,7 @@
 using Application.Utils;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Requests.Masters;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
@@ -201,6 +202,41 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<Clinics> CreateClinicsProfileAsync(RegisterClinicProfileRequest data, string dbName)
+        {
+            try
+            {
+                _logger.LogInformation("Start create clinic profile");
+                //trim all string
+                FormatUtil.TrimObjectProperties(data.ClinicData);
+                var entity = Mapping.Mapper.Map<Clinics>(data.ClinicData);
+                FormatUtil.SetIsActive<Clinics>(entity, true);
+                FormatUtil.SetDateBaseEntity<Clinics>(entity);
+
+                var newId = await _unitOfWork.ClinicsRepository.Add(dbName, entity);
+                entity.Id = newId;
+                _logger.LogInformation("Success create clinic");
+
+                var profileData = data.ProfileData;
+                foreach (var itm in profileData)
+                {
+                    FormatUtil.TrimObjectProperties(itm);
+                    FormatUtil.SetIsActive<Profile>(itm, true);
+                    FormatUtil.SetDateBaseEntity<Profile>(itm);
+                }
+
+                await _unitOfWork.ProfileRepository.AddRange(dbName, profileData);
+                _logger.LogInformation("Success create profiles");
+
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"MasterService.CreateClinicsProfileAsync";
+                throw;
             }
         }
     }

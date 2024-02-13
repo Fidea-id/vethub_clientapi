@@ -256,5 +256,19 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+
+        public async Task<int> CountActiveAsync(string dbName)
+        {
+            try
+            {
+                var total = await _repository.CountWithQuery(dbName, "IsActive = 1");
+                return total;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"{typeof(T).Name}Service.CountActiveAsync";
+                throw;
+            }
+        }
     }
 }

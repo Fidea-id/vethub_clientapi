@@ -2,6 +2,7 @@
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +46,20 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _patientsService.ReadByIdAsync(id, dbName);
                 return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("CountActive/{dbName}")]
+        public async Task<IActionResult> GetTotalPatients(string dbName)
+        {
+            try
+            {
+                var data = await _patientsService.CountActiveAsync(dbName);
+                return Ok(new BaseAPIResponse<int> { Data = data });
             }
             catch
             {
