@@ -108,6 +108,10 @@ namespace Application.Services.Implementations
             FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords, true);
             await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
 
+
+            var prescriptionData = new List<MedicalRecordsPrescriptions>();
+            var diagnoseData = new List<MedicalRecordsDiagnoses>();
+
             // add appointment activity
             var newAppointment = new AppointmentsActivity()
             {
@@ -123,13 +127,27 @@ namespace Application.Services.Implementations
             // update data medical records
             medicalRecords.EndDate = DateTime.Now;
             var currentTotal = medicalRecords.Total;
-            var totalPrescription = request.Prescriptions.Sum(x => x.Total);
-            medicalRecords.Total = currentTotal + totalPrescription;
+            if(request.Prescriptions.Count() > 0)
+            {
+                var totalPrescription = request.Prescriptions.Sum(x => x.Total);
+                medicalRecords.Total = currentTotal + totalPrescription;
+
+                // add data prescription
+                foreach (var pItem in request.Prescriptions)
+                {
+                    //trim all string
+                    FormatUtil.TrimObjectProperties(pItem);
+                    var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
+                    FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
+                    FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                    entity.MedicalRecordsId = medicalRecords.Id;
+                    var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+                    entity.Id = newId;
+                    prescriptionData.Add(entity);
+                }
+            }
             FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
             await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
-
-            var prescriptionData = new List<MedicalRecordsPrescriptions>();
-            var diagnoseData = new List<MedicalRecordsDiagnoses>();
 
             // add data notes
             if(request.Notes != null)
@@ -146,20 +164,6 @@ namespace Application.Services.Implementations
             }
 
             var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
-
-            // add data prescription
-            foreach (var pItem in request.Prescriptions)
-            {
-                //trim all string
-                FormatUtil.TrimObjectProperties(pItem);
-                var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
-                FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
-                FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
-                entity.MedicalRecordsId = medicalRecords.Id;
-                var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
-                entity.Id = newId;
-                prescriptionData.Add(entity);
-            }
 
             // add data diagnoses
             foreach (var dItem in request.Diagnoses)
