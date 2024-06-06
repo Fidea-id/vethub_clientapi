@@ -59,14 +59,14 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        [HttpGet("CheckSchemeDB")]
+        [HttpGet("CheckSchemeDB/{version}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> CheckSchemeDB()
+        public async Task<IActionResult> CheckSchemeDB(int version)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _masterService.GenerateTables(dbName);
+                await _masterService.UpdateTables(dbName, version);
                 return Ok(new BaseAPIResponse(200, "Success"));
             }
             catch

@@ -26,7 +26,7 @@ namespace Application.Services.Implementations
             _logger = loggerFactory.CreateLogger<MedicalRecordService>();
         }
 
-        public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName)
+        public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
             var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
@@ -34,7 +34,11 @@ namespace Application.Services.Implementations
             var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
             var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
             var owner = await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId);
-            var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            IEnumerable<MedicalRecordsNotes> notes = null;
+            if(flag != "no_notes")
+            {
+                notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            }
             var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
@@ -59,6 +63,10 @@ namespace Application.Services.Implementations
                 Owners = owner,
                 Staff = staff,
                 StartDate = medicalRecords.StartDate,
+                DiscountMethod = medicalRecords.DiscountMethod,
+                DiscountValue = medicalRecords.DiscountValue,
+                DiscountTotal = medicalRecords.DiscountTotal,
+                TotalDiscounted = medicalRecords.TotalDiscounted,
                 EndDate = medicalRecords.EndDate.Value,
                 TotalPrice = medicalRecords.Total,
                 TotalPaid = totalLastPayment,
@@ -95,6 +103,49 @@ namespace Application.Services.Implementations
                 }
             }
             return new DataResultDTO<BookingHistoryResponse> { Data = data, TotalData = data.Count() };
+        }
+
+        public async Task<IEnumerable<MedicalRecordsPrescriptions>> EditMedicalRecordPrescription(int medicalRecordId, IEnumerable<MedicalRecordsPrescriptionsRequest> request, string dbName)
+        {
+            if (request.Count() > 0)
+            {
+                var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
+                var medicalRecordsPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecordId);
+                double currentTotal = 0;
+                if(medicalRecordsPrescriptions.Count() > 0)
+                {
+                    foreach (var pItem in medicalRecordsPrescriptions)
+                    {
+                        await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
+                    }
+                    currentTotal = medicalRecordsPrescriptions.Sum(x => x.Total);
+                }
+                var totalNow = medicalRecords.Total - currentTotal;
+                var prescriptionData = new List<MedicalRecordsPrescriptions>();
+
+                // add data prescription
+                foreach (var pItem in request)
+                {
+                    //trim all string
+                    FormatUtil.TrimObjectProperties(pItem);
+                    var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
+                    FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
+                    FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                    entity.MedicalRecordsId = medicalRecords.Id;
+                    var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+                    entity.Id = newId;
+                    prescriptionData.Add(entity);
+
+                    totalNow = totalNow + pItem.Total;
+                }
+
+                FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
+                medicalRecords.Total = totalNow;
+                await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
+
+                return prescriptionData;
+            }
+            return default(List<MedicalRecordsPrescriptions>);
         }
 
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
@@ -411,13 +462,29 @@ namespace Application.Services.Implementations
                 var medicalRecord = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.OrderId);
                 if (medicalRecord == null) throw new Exception("MedicalRecord not found");
 
+                var totalPrice = medicalRecord.Total;
+                if (request.DiscountTotal.HasValue)
+                {
+                    medicalRecord.DiscountMethod = request.DiscountMethod;
+                    medicalRecord.DiscountValue = request.DiscountValue;
+                    medicalRecord.DiscountTotal = request.DiscountTotal;
+                    medicalRecord.TotalDiscounted = medicalRecord.Total - request.DiscountTotal;
+
+                    totalPrice = medicalRecord.Total - request.DiscountTotal.Value;
+
+                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
+                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
+                }
+
+                //update status
                 var paymentStatus = "Paid";
                 entity.Status = paymentStatus;
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
-                //update status
+
+
                 var totalPayments = getTotalLastPayment + request.Total;
-                if ((totalPayments) >= medicalRecord.Total)
+                if ((totalPayments) >= totalPrice)
                 {
                     medicalRecord.PaymentStatus = paymentStatus;
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
@@ -456,7 +523,7 @@ namespace Application.Services.Implementations
                     OrderId = request.OrderId,
                     PaymentMethodId = request.PaymentMethodId,
                     Total = request.Total,
-                    LessTotal = medicalRecord.Total - totalPayments,
+                    LessTotal = totalPrice - totalPayments,
                     Status = paymentStatus,
                     Type = entity.Type
                 };

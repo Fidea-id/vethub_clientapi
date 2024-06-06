@@ -186,18 +186,26 @@ namespace Application.Services.Implementations
             }
         }
 
+        public async Task UpdateTables(string dbName, int version)
+        {
+            try
+            {
+                var checkVersionExist = await _generateTableRepository.CheckSchemaVersion(dbName, version);
+                if (!checkVersionExist) //not exist. add it
+                {
+                    await _generateTableRepository.UpdateTable(dbName, version);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
         public async Task GenerateTables(string dbName, int? version = null)
         {
             try
             {
-                if (version.HasValue)
-                {
-                    await _generateTableRepository.UpdateTable(dbName, version.Value);
-                }
-                else
-                {
-                    await _generateTableRepository.GenerateAllTable(dbName);
-                }
+                await _generateTableRepository.GenerateAllTable(dbName);
             }
             catch (Exception ex)
             {

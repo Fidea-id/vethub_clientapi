@@ -29,6 +29,16 @@ namespace Infrastructure.Repositories
             bool dataExists = !string.IsNullOrEmpty(result); // Check if result is not null or empty
             return dataExists;
         }
+        
+        public async Task<bool> CheckSchemaVersion(string dbName, int version)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName, true);
+            var query = $"SELECT Version FROM SchemaVersion Where Note = 'update_scheme' AND Version = '{version}'";
+
+            var result = await _db.QueryFirstOrDefaultAsync<string>(query);
+            bool dataExists = !string.IsNullOrEmpty(result); // Check if result is not null or empty
+            return dataExists;
+        }
 
         public async Task GenerateAllTable(string dbName)
         {
@@ -123,73 +133,55 @@ namespace Infrastructure.Repositories
             await _db.ExecuteAsync(query, parameters);
         }
 
-        public async Task UpdateTable(string dbName, int expectedVersion)
+        public async Task UpdateTable(string dbName, int newVersion)
         {
+            // Construct the connection string
+            string conn = _dbFactory.GetConnectionString(dbName);
+
+            XPDictionary dict = new ReflectionDictionary();
+
+            var entityTypes = new List<Type>
+            {
+                typeof(SchemaVersionXPO),
+                typeof(ProfileXPO),
+                typeof(ServicesXPO),
+                typeof(AnimalsXPO),
+                typeof(BreedsXPO),
+                typeof(OwnersXPO),
+                typeof(PatientsXPO),
+                typeof(ProductsXPO),
+                typeof(ProductStocksXPO),
+                typeof(ProductBundlesXPO),
+                typeof(ProductDiscountsXPO),
+                typeof(ProductCategoriesXPO),
+                typeof(AppointmentsXPO),
+                typeof(AppointmentsActivityXPO),
+                typeof(AppointmentsStatusXPO),
+                typeof(PatientsStatisticXPO),
+                typeof(DiagnosesXPO),
+                typeof(OrdersXPO),
+                typeof(OrdersDetailXPO),
+                typeof(OrdersPaymentXPO),
+                typeof(ClinicsXPO),
+                typeof(PaymentMethodXPO),
+                typeof(MedicalRecordsXPO),
+                typeof(MedicalRecordsDiagnosesXPO),
+                typeof(MedicalRecordsNotesXPO),
+                typeof(MedicalRecordsPrescriptionsXPO),
+                typeof(PrescriptionFrequentsXPO),
+                typeof(NotificationsXPO),
+                typeof(ProductStockHistoricalXPO),
+                // Add more model types here
+            };
+            using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))
+            {
+                updateDataLayer.UpdateSchema(false, dict.CollectClassInfos(entityTypes));
+            }
+
             var _db = _dbFactory.GetDbConnection(dbName, true);
-
-            var currentVersion = await GetCurrentSchemaVersion(_db);
-
-            if (currentVersion < expectedVersion)
-            {
-                var migrationScript = GenerateMigrationScript(currentVersion, expectedVersion);
-                await _db.ExecuteAsync(migrationScript);
-
-                // Update the schema version in the database
-                await UpdateSchemaVersion(_db, expectedVersion);
-            }
-        }
-
-        private string GenerateMigrationScript(int currentVersion, int expectedVersion)
-        {
-            var migrationScript = new StringBuilder();
-
-            if (currentVersion < expectedVersion)
-            {
-                // Generate migration script based on the differences between the current and expected versions
-                if (currentVersion == 0)
-                {
-                    // If the current version is 0, it means the schema is being created for the first time
-                    migrationScript.AppendLine("CREATE TABLE IF NOT EXISTS MyTable (");
-                    migrationScript.AppendLine("    Id INT PRIMARY KEY AUTO_INCREMENT,");
-                    migrationScript.AppendLine("    Name VARCHAR(50) NOT NULL");
-                    migrationScript.AppendLine(");");
-                }
-
-                // Example: Adding a new column 'Age' to the existing schema
-                if (currentVersion < 2 && expectedVersion >= 2)
-                {
-                    migrationScript.AppendLine("ALTER TABLE MyTable ADD COLUMN Age INT;");
-                }
-
-                // Example: Modifying an existing column 'Name' in the schema
-                if (currentVersion < 3 && expectedVersion >= 3)
-                {
-                    migrationScript.AppendLine("ALTER TABLE MyTable MODIFY COLUMN Name VARCHAR(100);");
-                }
-
-                // ... Add more migration steps as needed ...
-
-                // Update the schema version to the expected version
-                migrationScript.AppendLine($"UPDATE Version SET SchemaVersion = {expectedVersion};");
-            }
-
-            return migrationScript.ToString();
-        }
-
-        private async Task<int> GetCurrentSchemaVersion(IDbConnection dbConnection)
-        {
-            // Retrieve the current schema version from the table
-            var query = $"SELECT Version FROM SchemaVersion";
-            var currentVersion = await dbConnection.ExecuteScalarAsync<int>(query);
-            return currentVersion;
-        }
-
-        private async Task UpdateSchemaVersion(IDbConnection dbConnection, int version)
-        {
-            // Update the existing schema version in the table
-            var query = $"UPDATE SchemaVersion SET Version = @Version";
-            var parameters = new { Version = version };
-            await dbConnection.ExecuteAsync(query, parameters);
+            var query = "INSERT INTO SchemaVersion (Version, Note) VALUES (@Version, @Note)";
+            var parameters = new { Version = newVersion, Note = "update_scheme" };
+            await _db.ExecuteAsync(query, parameters);
         }
     }
 }

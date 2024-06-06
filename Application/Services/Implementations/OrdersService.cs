@@ -79,8 +79,13 @@ namespace Application.Services.Implementations
                 //update status
                 var getTotalLastPayment = orderDetail.OrderPayments.Sum(x => x.Total);
                 var totalPayments = getTotalLastPayment + request.Total;
+                var totalMustPay = orderDetail.TotalPrice;
+                if(orderDetail.TotalDiscountedPrice > 0)
+                {
+                    totalMustPay = orderDetail.TotalDiscountedPrice;
+                }
                 _logger.LogInformation("Last payment is " + getTotalLastPayment);
-                if ((totalPayments) >= orderDetail.TotalPrice)
+                if ((totalPayments) >= totalMustPay)
                 {
                     var order = await _unitOfWork.OrdersRepository.GetById(dbName, request.OrderId);
                     order.Status = paymentStatus;
@@ -142,7 +147,7 @@ namespace Application.Services.Implementations
                     OrderId = orderDetail.Id,
                     PaymentMethodId = request.PaymentMethodId,
                     Total = request.Total,
-                    LessTotal = orderDetail.TotalPrice - totalPayments,
+                    LessTotal = totalMustPay - totalPayments,
                     Status = paymentStatus,
                     Type = entity.Type
                 };
@@ -217,7 +222,8 @@ namespace Application.Services.Implementations
                     Status = "Unpaid",
                     StaffId = request.StaffId,
                     TotalQuantity = countQty,
-                    TotalDiscountedPrice = countDiscounted ?? 0,
+                    TotalDiscount = countDiscounted ?? 0,
+                    TotalDiscountedPrice = countTotal - (countDiscounted ?? 0),
                     TotalPrice = countTotal
                 };
 
@@ -261,6 +267,7 @@ namespace Application.Services.Implementations
                     StaffName = staff.Name,
                     Status = newOrders.Status,
                     TotalQuantity = newOrders.TotalQuantity,
+                    TotalDiscount = newOrders.TotalDiscount,
                     TotalDiscountedPrice = newOrders.TotalDiscountedPrice,
                     TotalPrice = newOrders.TotalPrice,
                     OrderProducts = detailResponse,

@@ -131,7 +131,7 @@ namespace Infrastructure.Repositories
                     var propertyNames = QueryGenerator.GetPropertyNames(item);
                     var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
-                    var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id ";
+                    var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id;";
                     query += subquery;
                 }
 
@@ -226,6 +226,12 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName); 
             string sql = $"SELECT SUM({columnName}) FROM {_tableName} WHERE {query}";
             return await _db.ExecuteScalarAsync<int>(sql);
+        }
+        public async Task<double> SumDoubleWithQuery(string dbName, string columnName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName); 
+            string sql = $"SELECT SUM({columnName}) FROM {_tableName} WHERE {query}";
+            return await _db.ExecuteScalarAsync<double>(sql);
         }
     }
 }

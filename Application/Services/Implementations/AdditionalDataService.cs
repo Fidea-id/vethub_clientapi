@@ -41,11 +41,10 @@ namespace Application.Services.Implementations
                 dateFilter = $"CreatedAt >= '{date}'";
             }
 
-            var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
-            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumWithQuery(dbName, "Total", $"{dateFilter} AND PaymentStatus = '{statusPaid}'");
-            var revenueOrderAll = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
-            var revenueOrderMonth = await _uow.OrdersRepository.SumWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}'");
-
+            var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"{dateFilter} AND PaymentStatus = '{statusPaid}'");
+            var revenueOrderAll = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
+            var revenueOrderMonth = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}'");
             var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName);
 
             var visitYearlyConverted = visitYearly.Select(item => new MonthlyDataChart()
@@ -68,11 +67,11 @@ namespace Application.Services.Implementations
             appointment.Percentage = FormatUtil.CountPercentageMonth(appointment.Total, appointment.TotalAll);
             result.Appointments = appointment;
 
-            result.Revenues = new CardDashboard()
+            result.Revenues = new DoubleCardDashboard()
             {
                 Total = revenueMonth,
                 TotalAll = revenueAll,
-                Percentage = FormatUtil.CountPercentageMonth(revenueMonth, revenueAll)
+                Percentage = FormatUtil.CountDoublePercentageMonth(revenueMonth, revenueAll)
             };
 
             //appointment activity & order activity

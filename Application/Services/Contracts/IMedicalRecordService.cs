@@ -8,7 +8,7 @@ namespace Application.Services.Contracts
 {
     public interface IMedicalRecordService : IGenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>
     {
-        Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName);
+        Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null);
         Task<IEnumerable<PatientDiagnosesResponse>> GetPatientDiagnose(int patientId, string dbName);
         Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName);
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName); //seperti detail medical records, tapi lebih ringkas
@@ -18,6 +18,7 @@ namespace Application.Services.Contracts
         Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName);
         Task<MedicalRecordsNotesResponse> PutMedicalRecordsNotes(int id, MedicalRecordsNotesRequest request, string email, string dbName);
         Task<MedicalDocsRequirementResponse> GetMedicalRecordRequirement(int medicalRecordId, string dbName);
+        Task<IEnumerable<MedicalRecordsPrescriptions>> EditMedicalRecordPrescription(int medicalRecordId, IEnumerable<MedicalRecordsPrescriptionsRequest> request, string dbName);
         Task<IEnumerable<MedicalRecordsNotes>> GetMedicalRecordsNotes(int id, string dbName);
         Task DeleteMedicalRecordsNotes(int id, string dbName);
     }

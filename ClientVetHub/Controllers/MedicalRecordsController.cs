@@ -135,12 +135,12 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet("Detail/{id}")]
-        public async Task<IActionResult> GetDetail(int id)
+        public async Task<IActionResult> GetDetail(int id, [FromQuery] string? flag = null)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var create = await _medicalRecordService.GetDetailMedicalRecords(id, dbName);
+                var create = await _medicalRecordService.GetDetailMedicalRecords(id, dbName, flag);
                 return Ok(create);
             }
             catch
@@ -206,6 +206,27 @@ namespace ClientVetHub.Controllers
                 //create notif
                 var url = "";
                 var notif = NotificationUtil.SetUpdateNotifRequest(create.Staff.Id, "Update Medical Record", $"Medical Record updated", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpPut("Prescription/{id}")]
+        public async Task<IActionResult> PutPrescription(int id, [FromBody] IEnumerable<MedicalRecordsPrescriptionsRequest> request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.EditMedicalRecordPrescription(id, request, dbName);
+
+                var userId = User.FindFirstValue("Id");
+
+                //create notif
+                var url = "";
+                var notif = NotificationUtil.SetUpdateNotifRequest(int.Parse(userId), "Update Medical Record Prescription", $"Medical Record Prescription updated", url);
                 await _notificationService.CreateRequestAsync(notif, dbName);
                 return Ok(create);
             }
