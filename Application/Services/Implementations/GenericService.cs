@@ -2,6 +2,7 @@
 using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.DTOs;
+using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.AspNetCore.Http;
@@ -17,11 +18,13 @@ namespace Application.Services.Implementations
     {
         protected readonly IUnitOfWork _unitOfWork;
         protected readonly IGenericRepository<T, TFilter> _repository;
+        protected readonly ICurrentUserService _currentUser;
 
-        public GenericService(IUnitOfWork unitOfWork, IGenericRepository<T, TFilter> repository)
+        public GenericService(IUnitOfWork unitOfWork, IGenericRepository<T, TFilter> repository, ICurrentUserService currentUser)
         {
             _unitOfWork = unitOfWork;
             _repository = repository;
+            _currentUser = currentUser;
         }
 
         public async Task<TResponse> CreateAsync(T entity, string dbName)
@@ -35,6 +38,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _repository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "Generic-CreateAsync", MethodType.Create, typeof(T).Name);
                 return Mapping.Mapper.Map<TResponse>(entity);
             }
             catch (Exception ex)
@@ -53,6 +60,9 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _repository.Remove(dbName, id);
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "Generic-DeleteAsync", MethodType.Delete, typeof(T).Name);
             }
             catch (Exception ex)
             {
@@ -74,6 +84,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<T, T>(entity, checkedEntity);
                 FormatUtil.SetIsActive<T>(checkedEntity, true);
                 await _repository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "Generic-UpdateAsync", MethodType.Update, typeof(T).Name);
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -228,6 +242,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetOppositeActive<T>(checkedEntity);
                 FormatUtil.SetDateBaseEntity<T>(checkedEntity, true);
                 await _repository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "Generic-DeactiveAsync", MethodType.Update, typeof(T).Name);
             }
             catch (Exception ex)
             {
@@ -248,6 +266,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _repository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "Generic-CreateRequestAsync", MethodType.Create, typeof(T).Name);
                 return Mapping.Mapper.Map<TResponse>(entity);
             }
             catch (Exception ex)

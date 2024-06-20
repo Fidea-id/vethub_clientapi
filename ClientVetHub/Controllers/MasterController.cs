@@ -1,12 +1,10 @@
 ﻿using Application.Services.Contracts;
-using Application.Services.Implementations;
 using Domain.Entities.Requests.Masters;
 using Domain.Entities.Responses;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using static Dapper.SqlMapper;
 
 namespace ClientVetHub.Controllers
 {
@@ -53,7 +51,7 @@ namespace ClientVetHub.Controllers
                 _logger.LogInformation("Done create profile and clinic data");
                 return Ok(create);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError("Error GenerateInitDBClient-" + ex.Message);
                 throw;

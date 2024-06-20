@@ -21,7 +21,7 @@ namespace ClientVetHub.Controllers
         {
             _productsService = productsService;
         }
-        
+
         [HttpGet("ProductStockHistorical")]
         public async Task<IActionResult> ProductStockHistorical()
         {

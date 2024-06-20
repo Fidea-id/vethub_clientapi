@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.Emails;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -15,8 +16,8 @@ namespace Application.Services.Implementations
     public class ProfileService : GenericService<Profile, ProfileRequest, Profile, ProfileFilter>, IProfileService
     {
         private readonly IEmailSender _emailsender;
-        public ProfileService(IUnitOfWork unitOfWork, IGenericRepository<Profile, ProfileFilter> repository, IEmailSender emailsender)
-        : base(unitOfWork, repository)
+        public ProfileService(IUnitOfWork unitOfWork, IGenericRepository<Profile, ProfileFilter> repository, IEmailSender emailsender, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         {
             _emailsender = emailsender;
         }
@@ -39,6 +40,10 @@ namespace Application.Services.Implementations
             FormatUtil.ConvertUpdateObject<ProfileRequest, Profile>(request, checkedEntity);
             FormatUtil.SetDateBaseEntity<Profile>(checkedEntity, true);
             await _repository.Update(dbName, checkedEntity);
+
+            //add event log
+            var currentUserId = await _currentUser.UserId;
+            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateUserProfileByGlobalIdAsync", MethodType.Update, nameof(Profile));
 
             var result = Mapping.Mapper.Map<UserProfileResponse>(checkedEntity);
             return result;

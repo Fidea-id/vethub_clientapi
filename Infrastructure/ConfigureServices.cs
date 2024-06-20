@@ -41,6 +41,9 @@ namespace Infrastructure
             services.AddScoped<IPrescriptionFrequentsRepository, PrescriptionFrequentsRepository>();
             services.AddScoped<INotificationsRepository, NotificationsRepository>();
             services.AddScoped<IProductStockHistoricalRepository, ProductStockHistoricalRepository>();
+            services.AddScoped<IOpnamesRepository, OpnamesRepository>();
+            services.AddScoped<IOpnamePatientsRepository, OpnamePatientsRepository>();
+            services.AddScoped<IEventLogRepository, EventLogRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();

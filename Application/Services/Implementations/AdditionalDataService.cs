@@ -8,11 +8,10 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using Domain.Entities.Filters.Clients;
-
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Domain.Entities.Requests.Masters;
 using Microsoft.Extensions.Logging;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics.Eventing.Reader;
+using Domain.Entities;
 
 namespace Application.Services.Implementations
 {
@@ -20,9 +19,11 @@ namespace Application.Services.Implementations
     {
         private readonly IUnitOfWork _uow;
         private readonly ILogger<AdditionalDataService> _logger;
+        private readonly ICurrentUserService _currentUser;
 
-        public AdditionalDataService(IUnitOfWork unitOfWork, ILoggerFactory loggerFactory)
+        public AdditionalDataService(ICurrentUserService currentUser, IUnitOfWork unitOfWork, ILoggerFactory loggerFactory)
         {
+            _currentUser = currentUser;
             _uow = unitOfWork;
             _logger = loggerFactory.CreateLogger<AdditionalDataService>();
         }
@@ -78,7 +79,7 @@ namespace Application.Services.Implementations
             var listActivities = new List<ActivityDashboard>();
             var appointmentDetail = await _uow.AppointmentRepository.GetAllDetailList(dbName, null);
             var latestAppointment = appointmentDetail.Data.OrderByDescending(x => x.Date).Take(10);
-            foreach(var item in latestAppointment)
+            foreach (var item in latestAppointment)
             {
                 var newActivity = new ActivityDashboard()
                 {
@@ -109,14 +110,18 @@ namespace Application.Services.Implementations
         {
             try
             {
+
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
                 var entity = Mapping.Mapper.Map<Clinics>(request);
                 FormatUtil.SetIsActive<Clinics>(entity, true);
                 FormatUtil.SetDateBaseEntity<Clinics>(entity);
-
                 var newId = await _uow.ClinicsRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateClinicsAsync", MethodType.Create, nameof(Clinics));
                 return entity;
             }
             catch (Exception ex)
@@ -151,6 +156,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<Clinics, Clinics>(entity, checkedEntity);
                 FormatUtil.SetIsActive<Clinics>(checkedEntity, true);
                 await _uow.ClinicsRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateClinicsAsync", MethodType.Update, nameof(Clinics));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -178,6 +187,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _uow.AnimalRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateAnimalAsync", MethodType.Create, nameof(Animals));
                 return entity;
             }
             catch (Exception ex)
@@ -225,6 +238,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<Animals, Animals>(entity, checkedEntity);
                 FormatUtil.SetIsActive<Animals>(checkedEntity, true);
                 await _uow.AnimalRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateAnimalAsync", MethodType.Update, nameof(Animals));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -242,6 +259,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.AnimalRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteAnimalAsync", MethodType.Delete, nameof(Animals));
             }
             catch (Exception ex)
             {
@@ -268,6 +289,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _uow.BreedRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateBreedAsync", MethodType.Create, nameof(Breeds));
                 return entity;
             }
             catch (Exception ex)
@@ -330,6 +355,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<Breeds, Breeds>(entity, checkedEntity);
                 FormatUtil.SetIsActive<Breeds>(checkedEntity, true);
                 await _uow.BreedRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateBreedAsync", MethodType.Update, nameof(Breeds));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -347,6 +376,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.BreedRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteBreedAsync", MethodType.Delete, nameof(Breeds));
             }
             catch (Exception ex)
             {
@@ -369,6 +402,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _uow.DiagnoseRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateDiagnoseAsync", MethodType.Create, nameof(Diagnoses));
                 return entity;
             }
             catch (Exception ex)
@@ -416,6 +453,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<Diagnoses, Diagnoses>(entity, checkedEntity);
                 FormatUtil.SetIsActive<Diagnoses>(checkedEntity, true);
                 await _uow.DiagnoseRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateDiagnoseAsync", MethodType.Update, nameof(Diagnoses));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -433,6 +474,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.DiagnoseRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteDiagnoseAsync", MethodType.Delete, nameof(Diagnoses));
             }
             catch (Exception ex)
             {
@@ -455,6 +500,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _uow.PaymentMethodRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePaymentMethodAsync", MethodType.Create, nameof(PaymentMethod));
                 return entity;
             }
             catch (Exception ex)
@@ -502,6 +551,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<PaymentMethod, PaymentMethod>(entity, checkedEntity);
                 FormatUtil.SetIsActive<PaymentMethod>(checkedEntity, true);
                 await _uow.PaymentMethodRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdatePaymentMethodAsync", MethodType.Update, nameof(PaymentMethod));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -519,6 +572,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.PaymentMethodRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeletePaymentMethodAsync", MethodType.Delete, nameof(PaymentMethod));
             }
             catch (Exception ex)
             {
@@ -541,6 +598,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _uow.PrescriptionFrequentsRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePrescriptionFrequentsAsync", MethodType.Create, nameof(PrescriptionFrequents));
                 return entity;
             }
             catch (Exception ex)
@@ -575,6 +636,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<PrescriptionFrequents, PrescriptionFrequents>(entity, checkedEntity);
                 FormatUtil.SetIsActive<PrescriptionFrequents>(checkedEntity, true);
                 await _uow.PrescriptionFrequentsRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdatePrescriptionFrequentsAsync", MethodType.Update, nameof(PrescriptionFrequents));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -592,6 +657,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.PrescriptionFrequentsRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeletePrescriptionFrequentsAsync", MethodType.Delete, nameof(PrescriptionFrequents));
             }
             catch (Exception ex)
             {
@@ -599,7 +668,6 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-
         #endregion
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Requests.Masters;
@@ -15,12 +16,14 @@ namespace Application.Services.Implementations
         private readonly IGenerateTableRepository _generateTableRepository;
         private ILogger<MasterService> _logger;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICurrentUserService _currentUser;
 
         public MasterService(IGenerateTableRepository generateTableRepository, IUnitOfWork unitOfWork,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUserService)
         {
             _generateTableRepository = generateTableRepository;
             _unitOfWork = unitOfWork;
+            _currentUser = currentUserService;
             _logger = loggerFactory.CreateLogger<MasterService>();
         }
 
@@ -226,6 +229,11 @@ namespace Application.Services.Implementations
 
                 var newId = await _unitOfWork.ClinicsRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateClinicsProfileAsync", MethodType.Create, nameof(Clinics));
+
                 _logger.LogInformation("Success create clinic");
 
                 var profileData = data.ProfileData;
@@ -237,6 +245,10 @@ namespace Application.Services.Implementations
                 }
 
                 await _unitOfWork.ProfileRepository.AddRange(dbName, profileData);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateClinicsProfileAsync", MethodType.Create, nameof(Clinics), JsonConvert.SerializeObject(profileData));
+
                 _logger.LogInformation("Success create profiles");
 
                 return entity;

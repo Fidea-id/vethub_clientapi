@@ -2,15 +2,11 @@
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Models.Masters;
 using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace Infrastructure.Repositories
 {
@@ -252,7 +248,7 @@ namespace Infrastructure.Repositories
                         p.Id = @CategoryId;";
                 var category = await _db.QueryFirstAsync<ProductCategories>(query, new { CategoryId = item.categoryId });
 
-                if(category == null)
+                if (category == null)
                 {
                     listMessage.Add($"Row {item.row}: Category is not found!");
                 }
@@ -301,5 +297,5 @@ namespace Infrastructure.Repositories
             return result;
         }
     }
-   
+
 }

@@ -72,7 +72,7 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = entity;
                 var list = new List<Profile>();
-                foreach(var item in request)
+                foreach (var item in request)
                 {
                     _logger.LogInformation("Client create profile : " + JsonConvert.SerializeObject(item));
                     var create = await _profileService.CreateAsync(item, dbName);

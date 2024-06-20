@@ -3,7 +3,6 @@ using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
-using System.Xml.Linq;
 
 namespace Infrastructure.Repositories
 {

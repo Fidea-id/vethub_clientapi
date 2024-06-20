@@ -1,9 +1,4 @@
 ﻿using Domain.Entities.Models.Clients;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Utils
 {
@@ -19,7 +14,7 @@ namespace Application.Utils
             var stockMin = Math.Floor(newVolumeMin / stocksNow.Volume);
             stocksNow.Stock = newStockCalc;
             stocksNow.VolumeRemaining = newVolumeRemaining;
-            
+
             var newProductHistorical = new ProductStockHistorical()
             {
                 ProductId = stocksNow.ProductId,
@@ -28,7 +23,7 @@ namespace Application.Utils
                 StockBefore = stockBefore,
                 VolumeRemaining = newVolumeRemaining,
             };
-            return Tuple.Create(stocksNow,newProductHistorical);
+            return Tuple.Create(stocksNow, newProductHistorical);
         }
         public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockMin(ProductStocks stocksNow, double stock)
         {
@@ -41,7 +36,7 @@ namespace Application.Utils
             var stockMin = Math.Floor(newVolumeMin / stocksNow.Volume);
             stocksNow.Stock = newStockCalc;
             stocksNow.VolumeRemaining = newVolumeRemaining;
-            
+
             var newProductHistorical = new ProductStockHistorical()
             {
                 ProductId = stocksNow.ProductId,
@@ -50,7 +45,7 @@ namespace Application.Utils
                 StockBefore = stockBefore,
                 VolumeRemaining = newVolumeRemaining,
             };
-            return Tuple.Create(stocksNow,newProductHistorical);
+            return Tuple.Create(stocksNow, newProductHistorical);
         }
     }
 }

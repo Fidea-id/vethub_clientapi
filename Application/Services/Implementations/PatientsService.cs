@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -12,8 +13,8 @@ namespace Application.Services.Implementations
 {
     public class PatientsService : GenericService<Patients, PatientsRequest, Patients, PatientsFilter>, IPatientsService
     {
-        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository)
-        : base(unitOfWork, repository)
+        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         { }
 
         public async Task<IEnumerable<Patients>> ReadByOwnerIdAsync(int id, string dbName)
@@ -53,6 +54,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _unitOfWork.PatientsStatisticRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddPatientStatistic", MethodType.Create, nameof(PatientsStatistic));
                 return entity;
             }
             catch (Exception ex)
@@ -118,9 +123,13 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Patients>(entity, true);
                 FormatUtil.SetDateBaseEntity<Patients>(entity);
                 entity.IsAlive = true;
-                
+
                 var newId = await _repository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePatientsAsync", MethodType.Create, nameof(Patients));
 
                 var species = await _unitOfWork.AnimalRepository.GetByName(dbName, entity.Species);
                 if (species == null)
@@ -134,6 +143,9 @@ namespace Application.Services.Implementations
                     FormatUtil.SetDateBaseEntity<Animals>(newSpecies);
                     var newSpeciesId = await _unitOfWork.AnimalRepository.Add(dbName, newSpecies);
 
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newSpeciesId, "CreatePatientsAsync", MethodType.Create, nameof(Animals));
+
                     //add breed
                     var newBreed = new Breeds
                     {
@@ -142,7 +154,10 @@ namespace Application.Services.Implementations
                     };
                     FormatUtil.SetIsActive<Breeds>(newBreed, true);
                     FormatUtil.SetDateBaseEntity<Breeds>(newBreed);
-                    await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+                    var newBreedId = await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newBreedId, "CreatePatientsAsync", MethodType.Create, nameof(Breeds));
                 }
                 else
                 {
@@ -157,7 +172,10 @@ namespace Application.Services.Implementations
                         };
                         FormatUtil.SetIsActive<Breeds>(newBreed, true);
                         FormatUtil.SetDateBaseEntity<Breeds>(newBreed);
-                        await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+                        var newBreedId = await _unitOfWork.BreedRepository.Add(dbName, newBreed);
+
+                        //add event log
+                        await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newBreedId, "CreatePatientsAsync", MethodType.Create, nameof(Breeds));
                     }
                 }
 

@@ -1,12 +1,10 @@
 ﻿using Dapper;
 using Domain.Entities;
 using Domain.Entities.DTOs;
-using Domain.Entities.Models.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data;
 
 namespace Infrastructure.Repositories
@@ -122,21 +120,19 @@ namespace Infrastructure.Repositories
 
         public async Task RemoveRange(string dbName, IEnumerable<T> entity)
         {
-            using (var _db = _dbFactory.GetDbConnection(dbName))
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var query = "";
+
+            foreach (var item in entity)
             {
-                var query = "";
+                var propertyNames = QueryGenerator.GetPropertyNames(item);
+                var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
 
-                foreach (var item in entity)
-                {
-                    var propertyNames = QueryGenerator.GetPropertyNames(item);
-                    var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
-
-                    var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id;";
-                    query += subquery;
-                }
-
-                await _db.ExecuteAsync(query, entity);
+                var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id;";
+                query += subquery;
             }
+
+            await _db.ExecuteAsync(query, entity);
         }
 
         public async Task<int> CountWithFilter(string dbName, TFilter filters)
@@ -217,19 +213,19 @@ namespace Infrastructure.Repositories
         }
         public async Task<int> Sum(string dbName, string columnName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName); 
+            var _db = _dbFactory.GetDbConnection(dbName);
             string sql = $"SELECT SUM({columnName}) FROM {_tableName}";
             return await _db.ExecuteScalarAsync<int>(sql);
         }
         public async Task<int> SumWithQuery(string dbName, string columnName, string query)
         {
-            var _db = _dbFactory.GetDbConnection(dbName); 
+            var _db = _dbFactory.GetDbConnection(dbName);
             string sql = $"SELECT SUM({columnName}) FROM {_tableName} WHERE {query}";
             return await _db.ExecuteScalarAsync<int>(sql);
         }
         public async Task<double> SumDoubleWithQuery(string dbName, string columnName, string query)
         {
-            var _db = _dbFactory.GetDbConnection(dbName); 
+            var _db = _dbFactory.GetDbConnection(dbName);
             string sql = $"SELECT SUM({columnName}) FROM {_tableName} WHERE {query}";
             return await _db.ExecuteScalarAsync<double>(sql);
         }

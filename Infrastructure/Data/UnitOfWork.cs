@@ -358,5 +358,41 @@ namespace Infrastructure.Data
                 return _ProductStockHistoricalRepository;
             }
         }
+        private IOpnamePatientsRepository _OpnamePatientsRepository;
+        public IOpnamePatientsRepository OpnamePatientsRepository
+        {
+            get
+            {
+                if (_OpnamePatientsRepository == null)
+                {
+                    _OpnamePatientsRepository = new OpnamePatientsRepository(_dbFactory);
+                }
+                return _OpnamePatientsRepository;
+            }
+        }
+        private IOpnamesRepository _OpnamesRepository;
+        public IOpnamesRepository OpnamesRepository
+        {
+            get
+            {
+                if (_OpnamesRepository == null)
+                {
+                    _OpnamesRepository = new OpnamesRepository(_dbFactory);
+                }
+                return _OpnamesRepository;
+            }
+        }
+        private IEventLogRepository _EventLogRepository;
+        public IEventLogRepository EventLogRepository
+        {
+            get
+            {
+                if (_EventLogRepository == null)
+                {
+                    _EventLogRepository = new EventLogRepository(_dbFactory);
+                }
+                return _EventLogRepository;
+            }
+        }
     }
 }

@@ -7,8 +7,6 @@ using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Utils;
 using Newtonsoft.Json.Linq;
-using System.Data;
-using System.Text;
 
 namespace Infrastructure.Repositories
 {
@@ -29,7 +27,7 @@ namespace Infrastructure.Repositories
             bool dataExists = !string.IsNullOrEmpty(result); // Check if result is not null or empty
             return dataExists;
         }
-        
+
         public async Task<bool> CheckSchemaVersion(string dbName, int version)
         {
             var _db = _dbFactory.GetDbConnection(dbName, true);
@@ -42,53 +40,12 @@ namespace Infrastructure.Repositories
 
         public async Task GenerateAllTable(string dbName)
         {
-            // Construct the connection string
-            string conn = _dbFactory.GetConnectionString(dbName);
+            AutoCreateDB(dbName);
 
-            XPDictionary dict = new ReflectionDictionary();
-
-            var entityTypes = new List<Type>
-            {
-                typeof(SchemaVersionXPO),
-                typeof(ProfileXPO),
-                typeof(ServicesXPO),
-                typeof(AnimalsXPO),
-                typeof(BreedsXPO),
-                typeof(OwnersXPO),
-                typeof(PatientsXPO),
-                typeof(ProductsXPO),
-                typeof(ProductStocksXPO),
-                typeof(ProductBundlesXPO),
-                typeof(ProductDiscountsXPO),
-                typeof(ProductCategoriesXPO),
-                typeof(AppointmentsXPO),
-                typeof(AppointmentsActivityXPO),
-                typeof(AppointmentsStatusXPO),
-                typeof(PatientsStatisticXPO),
-                typeof(DiagnosesXPO),
-                typeof(OrdersXPO),
-                typeof(OrdersDetailXPO),
-                typeof(OrdersPaymentXPO),
-                typeof(ClinicsXPO),
-                typeof(PaymentMethodXPO),
-                typeof(MedicalRecordsXPO),
-                typeof(MedicalRecordsDiagnosesXPO),
-                typeof(MedicalRecordsNotesXPO),
-                typeof(MedicalRecordsPrescriptionsXPO),
-                typeof(PrescriptionFrequentsXPO),
-                typeof(NotificationsXPO),
-                typeof(ProductStockHistoricalXPO),
-                // Add more model types here
-            };
-            using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))
-            {
-                updateDataLayer.UpdateSchema(false, dict.CollectClassInfos(entityTypes));
-            }
-
-            //var _db = _dbFactory.GetDbConnection(dbName, true);
-
-            //var batchQueries = "CREATE TABLE IF NOT EXISTS SchemaVersion (Version INT, Note VARCHAR(255)); CREATE TABLE IF NOT EXISTS Profile (Id INT PRIMARY KEY AUTO_INCREMENT, GlobalId INT, Name VARCHAR(255), Entity VARCHAR(255), Email VARCHAR(255), Photo VARCHAR(255), Roles VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Services (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Duration INT, DurationType VARCHAR(255), IsActive TINYINT(1), Price DOUBLE, CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Animals (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Breeds (Id INT PRIMARY KEY AUTO_INCREMENT, AnimalsId INT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Owners (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Photo VARCHAR(255), Email VARCHAR(255), Title VARCHAR(255), Address VARCHAR(255), PhoneNumber VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Patients (Id INT PRIMARY KEY AUTO_INCREMENT, OwnersId INT, Name VARCHAR(255), Photo VARCHAR(255), Species VARCHAR(255), Breed VARCHAR(255), Gender VARCHAR(255), DateOfBirth DATETIME, Vaccinated TINYINT(1), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Products (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Description VARCHAR(255), CategoryId INT, Price DOUBLE, IsBundle TINYINT(1), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductStocks (Id INT PRIMARY KEY AUTO_INCREMENT, ProductId INT, Stock DOUBLE, Volume VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductBundles (Id INT PRIMARY KEY AUTO_INCREMENT, BundleId INT, ItemId INT, Quantity DOUBLE, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductDiscounts (Id INT PRIMARY KEY AUTO_INCREMENT, ProductId INT, Description VARCHAR(255), DiscountValue DOUBLE, DiscountType ENUM('Percentage', 'Amount'), StartDate DATETIME DEFAULT NULL, EndDate DATETIME DEFAULT NULL, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS ProductCategories (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS Appointments (Id INT PRIMARY KEY AUTO_INCREMENT, OwnersId INT, PatientsId INT, Date DATETIME, StaffId INT, ServiceId INT, StatusId INT, Notes VARCHAR(255), IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME); CREATE TABLE IF NOT EXISTS AppointmentsStatus (Id INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), Description VARCHAR(255), Weight INT, IsActive TINYINT(1), CreatedAt DATETIME, UpdatedAt DATETIME);";
-            //await _db.ExecuteAsync(batchQueries);
+            var _db = _dbFactory.GetDbConnection(dbName, true);
+            var query = "INSERT INTO SchemaVersion (Version, Note) VALUES (@Version, @Note)";
+            var parameters = new { Version = 1, Note = "init_scheme" };
+            await _db.ExecuteAsync(query, parameters);
         }
 
         public async Task GenerateTableField(string dbName, JObject fields)
@@ -135,6 +92,16 @@ namespace Infrastructure.Repositories
 
         public async Task UpdateTable(string dbName, int newVersion)
         {
+            AutoCreateDB(dbName);
+
+            var _db = _dbFactory.GetDbConnection(dbName, true);
+            var query = "INSERT INTO SchemaVersion (Version, Note) VALUES (@Version, @Note)";
+            var parameters = new { Version = newVersion, Note = "update_scheme" };
+            await _db.ExecuteAsync(query, parameters);
+        }
+
+        private void AutoCreateDB(string dbName)
+        {
             // Construct the connection string
             string conn = _dbFactory.GetConnectionString(dbName);
 
@@ -171,17 +138,15 @@ namespace Infrastructure.Repositories
                 typeof(PrescriptionFrequentsXPO),
                 typeof(NotificationsXPO),
                 typeof(ProductStockHistoricalXPO),
+                typeof(OpnamePatientsXPO),
+                typeof(OpnamesXPO),
+                typeof(EventLogsXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))
             {
                 updateDataLayer.UpdateSchema(false, dict.CollectClassInfos(entityTypes));
             }
-
-            var _db = _dbFactory.GetDbConnection(dbName, true);
-            var query = "INSERT INTO SchemaVersion (Version, Note) VALUES (@Version, @Note)";
-            var parameters = new { Version = newVersion, Note = "update_scheme" };
-            await _db.ExecuteAsync(query, parameters);
         }
     }
 }

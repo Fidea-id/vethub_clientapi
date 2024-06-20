@@ -1,11 +1,10 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
-using AutoMapper;
+using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Models.Masters;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
@@ -13,16 +12,14 @@ using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations
 {
     public class ProductsService : GenericService<Products, ProductsRequest, Products, ProductsFilter>, IProductsService
     {
         private ILogger<ProductsService> _logger;
-        public ProductsService(IUnitOfWork unitOfWork, IGenericRepository<Products, ProductsFilter> repository, ILoggerFactory loggerFactory)
-        : base(unitOfWork, repository)
+        public ProductsService(IUnitOfWork unitOfWork, IGenericRepository<Products, ProductsFilter> repository, ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<ProductsService>();
         }
@@ -71,6 +68,10 @@ namespace Application.Services.Implementations
                 var newId = await _repository.Add(dbName, newProducts);
                 newProducts.Id = newId;
 
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddProducts", MethodType.Create, nameof(Products));
+
                 //add stock
                 var newStock = new ProductStocks
                 {
@@ -81,7 +82,10 @@ namespace Application.Services.Implementations
                 };
                 FormatUtil.SetIsActive<ProductStocks>(newStock, true);
                 FormatUtil.SetDateBaseEntity<ProductStocks>(newStock);
-                await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+                var newIdStock = await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdStock, "AddProducts", MethodType.Create, nameof(ProductStocks));
 
                 //create new historical stock
                 var newHistorical = new ProductStockHistorical()
@@ -96,8 +100,10 @@ namespace Application.Services.Implementations
                 };
                 FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                 FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
-                await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+                var newIdPSH = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
 
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProducts", MethodType.Create, nameof(ProductStockHistorical));
                 return newProducts;
             }
             catch (Exception ex)
@@ -122,6 +128,10 @@ namespace Application.Services.Implementations
                 //add product
                 var newId = await _repository.Add(dbName, newProducts);
 
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddProductAsBundle", MethodType.Create, nameof(Products));
+
                 if (request.BundleItem != null)
                 {
 
@@ -141,6 +151,9 @@ namespace Application.Services.Implementations
                             FormatUtil.SetDateBaseEntity<ProductBundles>(newBundle);
 
                             var newBundleId = await _unitOfWork.ProductBundlesRepository.Add(dbName, newBundle);
+
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newBundleId, "AddProductAsBundle", MethodType.Create, nameof(ProductBundles));
                         }
                     }
                 }
@@ -156,7 +169,10 @@ namespace Application.Services.Implementations
                 };
                 FormatUtil.SetIsActive<ProductStocks>(newStock, true);
                 FormatUtil.SetDateBaseEntity<ProductStocks>(newStock);
-                await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+                var newIdPS = await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPS, "AddProductAsBundle", MethodType.Create, nameof(ProductStocks));
 
                 //create new historical stock
                 var newHistorical = new ProductStockHistorical()
@@ -171,7 +187,10 @@ namespace Application.Services.Implementations
                 };
                 FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                 FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
-                await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+                var newIdPSH = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProductAsBundle", MethodType.Create, nameof(ProductStockHistorical));
 
                 return newProducts;
             }
@@ -195,6 +214,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _unitOfWork.ProductCategoriesRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddProductCategoriesAsync", MethodType.Create, nameof(ProductCategories));
                 return entity;
             }
             catch (Exception ex)
@@ -213,6 +236,9 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _unitOfWork.ProductCategoriesRepository.Remove(dbName, id);
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteProductCategoriesAsync", MethodType.Delete, nameof(ProductCategories));
             }
             catch (Exception ex)
             {
@@ -253,6 +279,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<ProductCategories, ProductCategories>(entity, checkedEntity);
                 FormatUtil.SetIsActive<ProductCategories>(checkedEntity, true);
                 await _unitOfWork.ProductCategoriesRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateProductCategoriesAsync", MethodType.Update, nameof(ProductCategories));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -276,6 +306,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _unitOfWork.ProductDiscountsRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddProductDiscountsAsync", MethodType.Create, nameof(ProductDiscounts));
                 return entity;
             }
             catch (Exception ex)
@@ -294,6 +328,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _unitOfWork.ProductDiscountsRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteProductDiscountsAsync", MethodType.Delete, nameof(ProductDiscounts));
             }
             catch (Exception ex)
             {
@@ -334,6 +372,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<ProductDiscounts, ProductDiscounts>(entity, checkedEntity);
                 FormatUtil.SetIsActive<ProductDiscounts>(checkedEntity, true);
                 await _unitOfWork.ProductDiscountsRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateProductDiscountsAsync", MethodType.Update, nameof(ProductDiscounts));
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -350,6 +392,10 @@ namespace Application.Services.Implementations
                 //convert entity
                 FormatUtil.SetOppositeActive<ProductDiscounts>(checkedEntity);
                 await _unitOfWork.ProductDiscountsRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeactiveDiscountAsync", MethodType.Update, nameof(ProductDiscounts));
             }
             catch (Exception ex)
             {
@@ -375,6 +421,10 @@ namespace Application.Services.Implementations
 
                 //update product
                 await _repository.Update(dbName, checkedEntity);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateBundleAsync", MethodType.Update, nameof(Products));
 
                 //if (request.BundleItem != null)
                 //{
@@ -402,13 +452,14 @@ namespace Application.Services.Implementations
 
                 //update stock
                 _logger.LogInformation("Product Stock : " + JsonConvert.SerializeObject(request));
-                if(request.Stock != null)
+                if (request.Stock != null)
                 {
                     _logger.LogInformation("Update Product Stock");
                     var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, "ProductId = " + id);
                     var stockBefore = productStock.Stock;
                     productStock.Stock = request.Stock;
-                    if (!string.IsNullOrEmpty(request.VolumeUnit)){
+                    if (!string.IsNullOrEmpty(request.VolumeUnit))
+                    {
                         productStock.VolumeUnit = request.VolumeUnit;
                     }
                     if (request.Volume != null || request.Volume != 0)
@@ -417,6 +468,9 @@ namespace Application.Services.Implementations
                     }
                     FormatUtil.SetDateBaseEntity<ProductStocks>(productStock, true);
                     await _unitOfWork.ProductStockRepository.Update(dbName, productStock);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, productStock.Id, "UpdateBundleAsync", MethodType.Update, nameof(Products), "Update stock to " + request.Stock);
 
                     //create new historical stock
                     var newHistorical = new ProductStockHistorical()
@@ -431,7 +485,10 @@ namespace Application.Services.Implementations
                     };
                     FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                     FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
-                    await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+                    var newIdPSH = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "UpdateBundleAsync", MethodType.Create, nameof(ProductStockHistorical));
                 }
 
                 return entity;
@@ -480,6 +537,10 @@ namespace Application.Services.Implementations
                             var newId = await _repository.Add(dbName, productData);
                             productData.Id = newId;
 
+                            //add event log
+                            var currentUserId = await _currentUser.UserId;
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddProductAsBulk", MethodType.Create, nameof(Products));
+
                             //add stock
                             var newStock = new ProductStocks
                             {
@@ -491,7 +552,10 @@ namespace Application.Services.Implementations
                             FormatUtil.SetIsActive<ProductStocks>(newStock, true);
                             FormatUtil.SetDateBaseEntity<ProductStocks>(newStock);
                             _logger.LogInformation("new product stock");
-                            await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+                            var newIdStock = await _unitOfWork.ProductStockRepository.Add(dbName, newStock);
+
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdStock, "AddProductAsBulk", MethodType.Create, nameof(ProductStocks));
 
                             //create new historical stock
                             var newHistorical = new ProductStockHistorical()
@@ -507,11 +571,13 @@ namespace Application.Services.Implementations
                             FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                             FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
                             _logger.LogInformation("new product stock historical");
-                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
-                            
+                            var newIdPSH = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProductAsBulk", MethodType.Create, nameof(ProductStockHistorical));
                             counter++;
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             checkedGroups.ValidationMessage = new List<string>();
                             checkedGroups.ValidationMessage.Add($"Row {item.row}: cannot be saved. Please report to our tech for further process");
@@ -546,7 +612,7 @@ namespace Application.Services.Implementations
         {
             var getAll = await _unitOfWork.ProductStockHistoricalRepository.GetAll(dbName);
             var result = new List<ProductStockHistoricalResponse>();
-            foreach(var item in getAll)
+            foreach (var item in getAll)
             {
                 var product = await _unitOfWork.ProductsRepository.GetById(dbName, item.ProductId);
                 var profile = await _unitOfWork.ProfileRepository.GetById(dbName, item.ProfileId);
@@ -555,7 +621,8 @@ namespace Application.Services.Implementations
                     Stock = item.Stock,
                     VolumeRemaining = item.VolumeRemaining,
                     Date = item.CreatedAt,
-                    StockAfter = item.StockAfter, StockBefore = item.StockBefore,
+                    StockAfter = item.StockAfter,
+                    StockBefore = item.StockBefore,
                     ProductId = item.ProductId,
                     ProfileId = item.ProfileId,
                     Type = item.Type,

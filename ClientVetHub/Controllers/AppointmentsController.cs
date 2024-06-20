@@ -1,5 +1,4 @@
 ﻿using Application.Services.Contracts;
-using Application.Services.Implementations;
 using Application.Utils;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -8,7 +7,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ClientVetHub.Controllers
 {
@@ -108,7 +106,7 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        
+
         [HttpPost("Reschedule/{id}")]
         public async Task<IActionResult> Post(int id, [FromBody] AppointmentsRequest request)
         {
@@ -181,9 +179,6 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 await _appointmentService.DeleteAsync(id, dbName);
-
-                //create notif
-                var url = "";
                 var notif = NotificationUtil.SetDeleteNotifRequest(0, "Appointment Deleted", $"Appointment deleted");
                 await _iNotificationService.CreateRequestAsync(notif, dbName);
                 return Ok(default(Patients));

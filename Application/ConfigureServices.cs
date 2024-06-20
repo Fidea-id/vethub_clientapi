@@ -1,7 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Services.Implementations;
 using Application.Utils;
-using Domain.Interfaces.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -27,6 +26,9 @@ namespace Application
             services.AddScoped<IMedicalRecordService, MedicalRecordService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IReportService, ReportService>();
+            services.AddScoped<IOpnameService, OpnameService>();
+
+            services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

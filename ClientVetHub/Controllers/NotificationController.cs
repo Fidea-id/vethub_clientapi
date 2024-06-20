@@ -1,5 +1,4 @@
 ﻿using Application.Services.Contracts;
-using Domain.Interfaces.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +13,13 @@ namespace ClientVetHub.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly INotificationService _notificationService;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly ILogger<NotificationController> _logger;
 
-        public NotificationController(IProfileService profileService, INotificationService notificationService)
+        public NotificationController(IProfileService profileService, INotificationService notificationService, ICurrentUserService currentUserService, ILogger<NotificationController> logger)
         {
+            _currentUserService = currentUserService;
+            _logger = logger;
             _profileService = profileService;
             _notificationService = notificationService;
         }
@@ -25,9 +28,9 @@ namespace ClientVetHub.Controllers
         public async Task<IActionResult> GetAllListNotif()
         {
             var dbName = User.FindFirstValue("Entity");
-            var id = User.FindFirstValue("Id");
-            var profile = await _profileService.GetUserProfileByGlobalIdAsync(dbName, int.Parse(id));
-            var notif = await _notificationService.GetAll(dbName, profile.Id);
+
+            var profileId = await _currentUserService.UserId;
+            var notif = await _notificationService.GetAll(dbName, profileId);
             return Ok(notif);
         }
         [HttpGet("GetRecentNotif")]

@@ -1,15 +1,12 @@
 ﻿using Application.Services.Contracts;
 using Domain.Entities.Filters;
+using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
-using Domain.Entities.Responses.Clients;
-using Domain.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Domain.Entities.Filters.Clients;
-using Domain.Entities.Requests.Masters;
 
 namespace ClientVetHub.Controllers
 {

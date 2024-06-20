@@ -18,6 +18,7 @@ services.AddInfrastructureServices();
 services.AddApplicationServices();
 
 services.AddControllers();
+services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen(c =>

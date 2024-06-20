@@ -11,8 +11,8 @@ namespace Application.Services.Implementations
 {
     public class NotificationService : GenericService<Notifications, NotificationsRequest, Notifications, NotificationsFilter>, INotificationService
     {
-        public NotificationService(IUnitOfWork unitOfWork, IGenericRepository<Notifications, NotificationsFilter> repository)
-        : base(unitOfWork, repository)
+        public NotificationService(IUnitOfWork unitOfWork, IGenericRepository<Notifications, NotificationsFilter> repository, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         { }
         public async Task CreateNotification(string dbName, NotificationsRequest request)
         {
@@ -60,7 +60,7 @@ namespace Application.Services.Implementations
             try
             {
                 var data = await _unitOfWork.NotificationsRepository.TakeRecent(dbName, profile);
-                return data; 
+                return data;
             }
             catch (Exception ex)
             {
@@ -74,7 +74,7 @@ namespace Application.Services.Implementations
             try
             {
                 var data = await _repository.WhereQuery(dbName, $"ProfileId = {profile} AND IsRead = FALSE");
-                foreach(var notification in data)
+                foreach (var notification in data)
                 {
                     notification.IsRead = true;
                     await _repository.Update(dbName, notification);

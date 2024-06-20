@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -9,7 +10,6 @@ using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System;
 using System.Globalization;
 
 namespace Application.Services.Implementations
@@ -19,8 +19,8 @@ namespace Application.Services.Implementations
         private readonly ILogger<OrdersService> _logger;
 
         public OrdersService(IUnitOfWork unitOfWork, IGenericRepository<Orders, OrdersFilter> repository,
-            ILoggerFactory loggerFactory)
-        : base(unitOfWork, repository)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<OrdersService>();
         }
@@ -50,6 +50,10 @@ namespace Application.Services.Implementations
 
                 var newId = await _unitOfWork.OrdersDetailRepository.Add(dbName, entity);
                 entity.Id = newId;
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersDetailAsync", MethodType.Create, nameof(OrdersDetail));
                 return entity;
             }
             catch (Exception ex)
@@ -76,11 +80,16 @@ namespace Application.Services.Implementations
                 entity.Status = paymentStatus;
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
+                
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPayment));
+
                 //update status
                 var getTotalLastPayment = orderDetail.OrderPayments.Sum(x => x.Total);
                 var totalPayments = getTotalLastPayment + request.Total;
                 var totalMustPay = orderDetail.TotalPrice;
-                if(orderDetail.TotalDiscountedPrice > 0)
+                if (orderDetail.TotalDiscountedPrice > 0)
                 {
                     totalMustPay = orderDetail.TotalDiscountedPrice;
                 }
@@ -91,6 +100,9 @@ namespace Application.Services.Implementations
                     order.Status = paymentStatus;
                     FormatUtil.SetDateBaseEntity<Orders>(order, true);
                     await _unitOfWork.OrdersRepository.Update(dbName, order);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, order.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(Orders), "Update Payment Status to: " + paymentStatus);
 
                     //update stock
                     if (orderDetail.Type == "Incomes")
@@ -108,7 +120,14 @@ namespace Application.Services.Implementations
                             FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
                             FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
                             await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
-                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                            
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, tuple.Item1.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(ProductStocks), "Update Product Stock-" + orderDetail.Type);
+                            
+                            var pshId = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, pshId, "AddOrdersPaymentAsync", MethodType.Create, nameof(ProductStockHistorical));
                         }
                     }
                     else
@@ -124,10 +143,16 @@ namespace Application.Services.Implementations
 
                             _logger.LogInformation("Start update stock of " + item.ProductId + " by amount " + item.Quantity);
                             await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, tuple.Item1.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(ProductStocks), "Update Product Stock-" + orderDetail.Type);
+
                             FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
                             FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
-                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                            var pshId = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
 
+                            //add event log
+                            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, pshId, "AddOrdersPaymentAsync", MethodType.Create, nameof(ProductStockHistorical));
                         }
                     }
                 }
@@ -138,6 +163,9 @@ namespace Application.Services.Implementations
                     order.Status = paymentStatus;
                     FormatUtil.SetDateBaseEntity<Orders>(order, true);
                     await _unitOfWork.OrdersRepository.Update(dbName, order);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, order.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(Orders),"Update Status Payment to:" + paymentStatus);
                 }
 
 
@@ -233,6 +261,10 @@ namespace Application.Services.Implementations
                 var newId = await _unitOfWork.OrdersRepository.Add(dbName, newOrders);
                 newOrders.Id = newId;
 
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateOrderFullAsync", MethodType.Create, nameof(Orders));
+
                 //add orders detail
                 var detailList = new List<OrdersDetail>();
                 foreach (var item in request.OrderDetailItem)
@@ -252,6 +284,9 @@ namespace Application.Services.Implementations
                     detailList.Add(newOrdersDetail);
                 }
                 await _unitOfWork.OrdersDetailRepository.AddRange(dbName, detailList);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateOrderFullAsync", MethodType.Create, nameof(OrdersDetail), "Count order detail item :" + detailList.Count());
 
                 var detailResponse = Mapping.Mapper.Map<List<OrdersDetailResponse>>(detailList);
 
@@ -293,7 +328,7 @@ namespace Application.Services.Implementations
 
                 if (medicalPayment.Data.Count() > 0)
                 {
-                    foreach(var item in medicalPayment.Data)
+                    foreach (var item in medicalPayment.Data)
                     {
                         var detail = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, item.Id);
                         result.Add(new RevenueResponse { Id = item.Id, Code = item.Code, Type = "Medical Record", Status = item.PaymentStatus, Total = item.Total, Date = item.StartDate, Details = JsonConvert.SerializeObject(detail) });
@@ -310,7 +345,7 @@ namespace Application.Services.Implementations
 
                 return result;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ex.Source = $"OrderService.GetRevenueLogAsync";
                 throw;

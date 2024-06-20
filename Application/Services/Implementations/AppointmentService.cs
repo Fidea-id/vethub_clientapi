@@ -1,4 +1,5 @@
 ﻿using Application.Services.Contracts;
+using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -6,14 +7,16 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations
 {
     public class AppointmentService : GenericService<Appointments, AppointmentsRequest, Appointments, AppointmentsFilter>, IAppointmentService
     {
-        public AppointmentService(IUnitOfWork unitOfWork, IGenericRepository<Appointments, AppointmentsFilter> repository)
-        : base(unitOfWork, repository)
-        { }
+        public AppointmentService(IUnitOfWork unitOfWork, IGenericRepository<Appointments, AppointmentsFilter> repository, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
+        {
+        }
 
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
         {
@@ -40,7 +43,7 @@ namespace Application.Services.Implementations
             var data = await _unitOfWork.AppointmentRepository.GetAllStatus(dbName);
             return data;
         }
-        
+
         public async Task<InvoiceResponse> GetDetailMedicalInvoice(int medicalId, string dbName)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalId);
@@ -54,6 +57,28 @@ namespace Application.Services.Implementations
             var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
             var totalLastPayment = lastPayments.Sum(x => x.Total);
+            var opnamePatients = await _unitOfWork.OpnamePatientsRepository.GetByMedId(dbName, medicalRecords.Id);
+            var dataOpnamePatients = opnamePatients.Data.FirstOrDefault();
+
+            var opnameDetail = new OpnameDetailResponse();
+            if (dataOpnamePatients != null)
+            {
+                var dataOpname = await _unitOfWork.OpnamesRepository.GetById(dbName, dataOpnamePatients.OpnameId);
+                var _opnameDetail = new OpnameDetailResponse()
+                {
+                    OpnameName = dataOpname.Name,
+                    StartTime = dataOpnamePatients.StartTime,
+                    EstimatedDays = dataOpnamePatients.EstimateDays,
+                    EndTime = dataOpnamePatients.EndTime,
+                    OpnameId = dataOpnamePatients.OpnameId,
+                    OpnamePatientsId = dataOpnamePatients.Id,
+                    Price = dataOpnamePatients.Price,
+                    Status = dataOpnamePatients.Status,
+                    TotalPrice = dataOpnamePatients.TotalPrice
+                };
+
+                opnameDetail = _opnameDetail;
+            }
 
             var medicalDetail = new MedicalRecordsDetailResponse
             {
@@ -74,7 +99,8 @@ namespace Application.Services.Implementations
                 TotalPaid = totalLastPayment,
                 Prescriptions = presciptions,
                 Diagnoses = diagnoses,
-                Notes = notes
+                Notes = notes,
+                OpnameDetail = opnameDetail
             };
             var clinicData = await _unitOfWork.ClinicsRepository.GetAll(dbName);
             var response = new InvoiceResponse
@@ -87,6 +113,7 @@ namespace Application.Services.Implementations
 
         public async Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName)
         {
+            var currentUserId = await _currentUser.UserId;
             var data = await _repository.GetById(dbName, request.Id.Value);
             if (data == null)
                 throw new Exception("Appointment not found");
@@ -97,6 +124,10 @@ namespace Application.Services.Implementations
             data.StatusId = statusId;
             FormatUtil.SetDateBaseEntity<Appointments>(data, true);
             await _repository.Update(dbName, data);
+
+            //add event log
+            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, data.Id, "ChangeAppointmentStatus", MethodType.Update, nameof(Appointments),"Update Status to: " + statusId);
+
             var now = DateTime.Now;
 
             if (statusId == 3) //buat medical record
@@ -117,7 +148,10 @@ namespace Application.Services.Implementations
                 };
 
                 FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
-                await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
+                var newId = await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "ChangeAppointmentStatus", MethodType.Create, nameof(MedicalRecords));
             }
 
             // add appointment activity
@@ -141,6 +175,10 @@ namespace Application.Services.Implementations
                 item.StatusId = 7; //expired booking
                 FormatUtil.SetDateBaseEntity<Appointments>(item, true);
                 await _unitOfWork.AppointmentRepository.Update(dbName, item);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, item.Id, "SetExpiredBooking", MethodType.Update, nameof(Appointments), "Update Status to: " + item.StatusId);
             }
         }
     }

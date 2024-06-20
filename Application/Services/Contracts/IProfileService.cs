@@ -2,7 +2,6 @@
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
-using System.Xml.Linq;
 
 namespace Application.Services.Contracts
 {

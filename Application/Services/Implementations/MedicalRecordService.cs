@@ -1,12 +1,11 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
-using AutoMapper;
+using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
-using Domain.Entities.Models.Masters;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
@@ -20,8 +19,8 @@ namespace Application.Services.Implementations
     {
         private readonly ILogger<MedicalRecordService> _logger;
         public MedicalRecordService(IUnitOfWork unitOfWork, IGenericRepository<MedicalRecords, MedicalRecordsFilter> repository,
-            ILoggerFactory loggerFactory)
-        : base(unitOfWork, repository)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<MedicalRecordService>();
         }
@@ -35,7 +34,7 @@ namespace Application.Services.Implementations
             var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
             var owner = await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId);
             IEnumerable<MedicalRecordsNotes> notes = null;
-            if(flag != "no_notes")
+            if (flag != "no_notes")
             {
                 notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             }
@@ -44,13 +43,36 @@ namespace Application.Services.Implementations
             var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
             var totalLastPayment = lastPayments.Sum(x => x.Total);
             string statusPayment = "Paid";
-            if(lastPayments.Count() < 1)
+            if (lastPayments.Count() < 1)
             {
                 statusPayment = "Unpaid";
             }
-            else if(totalLastPayment < medicalRecords.Total)
+            else if (totalLastPayment < medicalRecords.Total)
             {
                 statusPayment = "Paid Less";
+            }
+
+            var opnamePatients = await _unitOfWork.OpnamePatientsRepository.GetByMedId(dbName, medicalRecords.Id);
+            var dataOpnamePatients = opnamePatients.Data.FirstOrDefault();
+
+            var opnameDetail = new OpnameDetailResponse();
+            if (dataOpnamePatients != null)
+            {
+                var dataOpname = await _unitOfWork.OpnamesRepository.GetById(dbName, dataOpnamePatients.OpnameId);
+                var _opnameDetail = new OpnameDetailResponse()
+                {
+                    OpnameName = dataOpname.Name,
+                    StartTime = dataOpnamePatients.StartTime,
+                    EstimatedDays = dataOpnamePatients.EstimateDays,
+                    EndTime = dataOpnamePatients.EndTime,
+                    OpnameId = dataOpnamePatients.OpnameId,
+                    OpnamePatientsId = dataOpnamePatients.Id,
+                    Price = dataOpnamePatients.Price,
+                    Status = dataOpnamePatients.Status,
+                    TotalPrice = dataOpnamePatients.TotalPrice
+                };
+
+                opnameDetail = _opnameDetail;
             }
 
             var response = new MedicalRecordsDetailResponse
@@ -73,16 +95,17 @@ namespace Application.Services.Implementations
                 Prescriptions = presciptions,
                 Diagnoses = diagnoses,
                 StatusPayment = statusPayment,
-                Notes = notes
+                Notes = notes,
+                OpnameDetail = opnameDetail
             };
             return response;
         }
         public async Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName)
         {
             var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryOwner(dbName, ownerId);
-            if(data.Count() > 0)
+            if (data.Count() > 0)
             {
-                foreach(var item in data)
+                foreach (var item in data)
                 {
                     var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, item.MedicalRecordsId);
                     item.Diagnoses = diagnoses;
@@ -90,7 +113,7 @@ namespace Application.Services.Implementations
             }
             return new DataResultDTO<BookingHistoryResponse> { Data = data, TotalData = data.Count() };
         }
-        
+
         public async Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByPatient(int patientId, string dbName)
         {
             var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryPatient(dbName, patientId);
@@ -109,10 +132,11 @@ namespace Application.Services.Implementations
         {
             if (request.Count() > 0)
             {
+                var currentUserId = await _currentUser.UserId;
                 var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
                 var medicalRecordsPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecordId);
                 double currentTotal = 0;
-                if(medicalRecordsPrescriptions.Count() > 0)
+                if (medicalRecordsPrescriptions.Count() > 0)
                 {
                     foreach (var pItem in medicalRecordsPrescriptions)
                     {
@@ -136,6 +160,9 @@ namespace Application.Services.Implementations
                     entity.Id = newId;
                     prescriptionData.Add(entity);
 
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "EditMedicalRecordPrescription", MethodType.Create, nameof(MedicalRecordsPrescriptions));
+
                     totalNow = totalNow + pItem.Total;
                 }
 
@@ -143,120 +170,293 @@ namespace Application.Services.Implementations
                 medicalRecords.Total = totalNow;
                 await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
 
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, medicalRecords.Id, "EditMedicalRecordPrescription", MethodType.Update, nameof(MedicalRecords));
+
                 return prescriptionData;
             }
             return default(List<MedicalRecordsPrescriptions>);
         }
 
+        //public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
+        //{
+        //    var currentUserId = await _currentUser.UserId;
+        //    var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
+        //    var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+        //    var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
+        //    //update appointment status to pharmacy
+        //    if (appointment.StatusId == 3)// check if the appointment is not edited
+        //    {
+        //        var currentStatus = 4; //update status to Pharmachy
+        //        appointment.StatusId = currentStatus;
+        //        FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords, true);
+        //        await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
+
+        //        // add appointment activity
+        //        var newAppointment = new AppointmentsActivity()
+        //        {
+        //            AppointmentId = appointment.Id,
+        //            CurrentDate = DateTime.Now,
+        //            CurrentStatusId = currentStatus,
+        //            StaffId = medicalRecords.StaffId,
+        //            Note = ""
+        //        };
+        //        FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
+        //        await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
+
+        //        //add event log
+        //        await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, appointment.Id, "PostAllMedicalRecords", MethodType.Update, nameof(Appointments), "Update status to : " + currentStatus);
+        //    }
+
+        //    var prescriptionData = new List<MedicalRecordsPrescriptions>();
+        //    var diagnoseData = new List<MedicalRecordsDiagnoses>();
+
+        //    // update data medical records
+        //    medicalRecords.EndDate = DateTime.Now;
+        //    if (request.Prescriptions.Count() > 0)
+        //    {
+        //        var currentTotal = medicalRecords.Total;
+        //        if (appointment.StatusId != 3)// check if the appointment is edited
+        //        {
+        //            var currentPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+        //            var currentPresTotal = currentPrescriptions.Sum(x => x.Total);
+        //            //kurangi nilai total medical records saat ini dengan total prescription
+        //            currentTotal = medicalRecords.Total - currentPresTotal;
+
+        //            //delete current presc
+        //            await _unitOfWork.MedicalRecordsPrescriptionsRepository.RemoveRange(dbName, currentPrescriptions);
+        //        }
+
+        //        var totalPrescription = request.Prescriptions.Sum(x => x.Total);
+        //        medicalRecords.Total = currentTotal + totalPrescription;
+
+        //        // add data prescription
+        //        foreach (var pItem in request.Prescriptions)
+        //        {
+        //            //trim all string
+        //            FormatUtil.TrimObjectProperties(pItem);
+        //            var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
+        //            FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
+        //            FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+        //            entity.MedicalRecordsId = medicalRecords.Id;
+        //            var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+        //            entity.Id = newId;
+        //            prescriptionData.Add(entity);
+        //        }
+        //    }
+        //    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
+        //    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
+
+        //    // add data notes
+        //    if (request.Notes != null)
+        //    {
+        //        if (appointment.StatusId != 3)// check if the appointment is edited
+        //        {
+        //            var currentNotes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+        //            //delete current notes
+        //            await _unitOfWork.MedicalRecordsNotesRepository.RemoveRange(dbName, currentNotes);
+        //        }
+
+        //        //trim all string
+        //        FormatUtil.TrimObjectProperties(request.Notes);
+        //        var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request.Notes);
+        //        FormatUtil.SetIsActive<MedicalRecordsNotes>(entity, true);
+        //        FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
+        //        entity.MedicalRecordsId = medicalRecords.Id;
+        //        entity.StaffId = medicalRecords.StaffId;
+        //        var newId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
+        //        entity.Id = newId;
+        //    }
+
+        //    var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+
+        //    if (appointment.StatusId != 3)// check if the appointment is edited
+        //    {
+        //        var currentDiagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+        //        //delete current diagnoses
+        //        await _unitOfWork.MedicalRecordsDiagnosesRepository.RemoveRange(dbName, currentDiagnoses);
+        //    }
+
+        //    // add data diagnoses
+        //    foreach (var dItem in request.Diagnoses)
+        //    {
+        //        //trim all string
+        //        FormatUtil.TrimObjectProperties(dItem);
+        //        var entity = Mapping.Mapper.Map<MedicalRecordsDiagnoses>(dItem);
+        //        FormatUtil.SetIsActive<MedicalRecordsDiagnoses>(entity, true);
+        //        FormatUtil.SetDateBaseEntity<MedicalRecordsDiagnoses>(entity);
+        //        entity.MedicalRecordsId = medicalRecords.Id;
+        //        var newId = await _unitOfWork.MedicalRecordsDiagnosesRepository.Add(dbName, entity);
+        //        entity.Id = newId;
+        //        diagnoseData.Add(entity);
+
+        //        //check new diagnose
+        //        var existDiagnose = await _unitOfWork.DiagnoseRepository.GetByFilter(dbName, new NameBaseEntityFilter() { Name = dItem.Diagnose });
+        //        if (existDiagnose.TotalData < 1)
+        //        {
+        //            var newDiagnose = new Diagnoses()
+        //            {
+        //                Name = dItem.Diagnose,
+        //            };
+        //            _logger.LogInformation("Try add new diagnose : " + JsonConvert.SerializeObject(newDiagnose));
+        //            FormatUtil.SetIsActive<Diagnoses>(newDiagnose, true);
+        //            FormatUtil.SetDateBaseEntity<Diagnoses>(newDiagnose);
+
+        //            var newDiagnoseId = await _unitOfWork.DiagnoseRepository.Add(dbName, newDiagnose);
+        //            newDiagnose.Id = newDiagnoseId;
+        //        }
+        //    }
+
+        //    var response = new MedicalRecordsDetailResponse
+        //    {
+        //        Id = medicalRecords.Id,
+        //        Code = medicalRecords.Code,
+        //        Staff = staff,
+        //        Notes = notes,
+        //        StartDate = medicalRecords.StartDate,
+        //        EndDate = medicalRecords.EndDate.Value,
+        //        TotalPrice = medicalRecords.Total,
+        //        Prescriptions = prescriptionData,
+        //        Diagnoses = diagnoseData
+        //    };
+
+        //    //add event log
+        //    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, response.Id, "PostAllMedicalRecords", MethodType.Update, nameof(MedicalRecordsDetailResponse), JsonConvert.SerializeObject(response));
+        //    return response;
+        //}
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
         {
+            var currentUserId = await _currentUser.UserId;
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
             var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
             var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
-            //update appointment status to pharmacy
-            var currentStatus = 4;
-            appointment.StatusId = currentStatus;
-            FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords, true);
-            await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
 
+            bool isAppointmentEdited = appointment.StatusId != 3;
+
+            if (!isAppointmentEdited)
+            {
+                appointment.StatusId = 4; // Update status to Pharmacy
+                FormatUtil.SetDateBaseEntity(appointment, true);
+                await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
+
+                var newAppointmentActivity = new AppointmentsActivity
+                {
+                    AppointmentId = appointment.Id,
+                    CurrentDate = DateTime.Now,
+                    CurrentStatusId = appointment.StatusId,
+                    StaffId = medicalRecords.StaffId,
+                    Note = string.Empty
+                };
+                FormatUtil.SetDateBaseEntity(newAppointmentActivity);
+                await _unitOfWork.AppointmentRepository.AddActivity(newAppointmentActivity, dbName);
+
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, appointment.Id, "PostAllMedicalRecords", MethodType.Update, nameof(Appointments), $"Update status to : {appointment.StatusId}");
+            }
 
             var prescriptionData = new List<MedicalRecordsPrescriptions>();
             var diagnoseData = new List<MedicalRecordsDiagnoses>();
 
-            // add appointment activity
-            var newAppointment = new AppointmentsActivity()
-            {
-                AppointmentId = appointment.Id,
-                CurrentDate = DateTime.Now,
-                CurrentStatusId = currentStatus,
-                StaffId = medicalRecords.StaffId,
-                Note = ""
-            };
-            FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
-            await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
-
-            // update data medical records
             medicalRecords.EndDate = DateTime.Now;
-            var currentTotal = medicalRecords.Total;
-            if(request.Prescriptions.Count() > 0)
+
+            if (request.Prescriptions.Any())
             {
+                var currentTotal = medicalRecords.Total;
+
+                if (isAppointmentEdited)
+                {
+                    var currentPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+                    var currentPresTotal = currentPrescriptions.Sum(x => x.Total);
+
+                    currentTotal -= currentPresTotal;
+                    await _unitOfWork.MedicalRecordsPrescriptionsRepository.RemoveRange(dbName, currentPrescriptions);
+                }
+
                 var totalPrescription = request.Prescriptions.Sum(x => x.Total);
                 medicalRecords.Total = currentTotal + totalPrescription;
 
-                // add data prescription
                 foreach (var pItem in request.Prescriptions)
                 {
-                    //trim all string
                     FormatUtil.TrimObjectProperties(pItem);
                     var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(pItem);
-                    FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
-                    FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                    FormatUtil.SetIsActive(entity, true);
+                    FormatUtil.SetDateBaseEntity(entity);
                     entity.MedicalRecordsId = medicalRecords.Id;
                     var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
                     entity.Id = newId;
                     prescriptionData.Add(entity);
                 }
             }
-            FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
+
+            FormatUtil.SetDateBaseEntity(medicalRecords);
             await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
 
-            // add data notes
-            if(request.Notes != null)
+            if (request.Notes != null)
             {
-                //trim all string
+                if (isAppointmentEdited)
+                {
+                    var currentNotes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+                    await _unitOfWork.MedicalRecordsNotesRepository.RemoveRange(dbName, currentNotes);
+                }
+
                 FormatUtil.TrimObjectProperties(request.Notes);
-                var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request.Notes);
-                FormatUtil.SetIsActive<MedicalRecordsNotes>(entity, true);
-                FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
-                entity.MedicalRecordsId = medicalRecords.Id;
-                entity.StaffId = medicalRecords.StaffId;
-                var newId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
-                entity.Id = newId;
+                var notesEntity = Mapping.Mapper.Map<MedicalRecordsNotes>(request.Notes);
+                FormatUtil.SetIsActive(notesEntity, true);
+                FormatUtil.SetDateBaseEntity(notesEntity);
+                notesEntity.MedicalRecordsId = medicalRecords.Id;
+                notesEntity.StaffId = medicalRecords.StaffId;
+                var newId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, notesEntity);
+                notesEntity.Id = newId;
             }
 
             var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
 
-            // add data diagnoses
+            if (isAppointmentEdited)
+            {
+                var currentDiagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
+                await _unitOfWork.MedicalRecordsDiagnosesRepository.RemoveRange(dbName, currentDiagnoses);
+            }
+
             foreach (var dItem in request.Diagnoses)
             {
-                //trim all string
                 FormatUtil.TrimObjectProperties(dItem);
                 var entity = Mapping.Mapper.Map<MedicalRecordsDiagnoses>(dItem);
-                FormatUtil.SetIsActive<MedicalRecordsDiagnoses>(entity, true);
-                FormatUtil.SetDateBaseEntity<MedicalRecordsDiagnoses>(entity);
+                FormatUtil.SetIsActive(entity, true);
+                FormatUtil.SetDateBaseEntity(entity);
                 entity.MedicalRecordsId = medicalRecords.Id;
                 var newId = await _unitOfWork.MedicalRecordsDiagnosesRepository.Add(dbName, entity);
                 entity.Id = newId;
                 diagnoseData.Add(entity);
 
-                //check new diagnose
-                var existDiagnose = await _unitOfWork.DiagnoseRepository.GetByFilter(dbName, new NameBaseEntityFilter() { Name = dItem.Diagnose });
+                var existDiagnose = await _unitOfWork.DiagnoseRepository.GetByFilter(dbName, new NameBaseEntityFilter { Name = dItem.Diagnose });
                 if (existDiagnose.TotalData < 1)
                 {
-                    var newDiagnose = new Diagnoses() 
-                    { 
-                        Name = dItem.Diagnose,
-                    };
-                    _logger.LogInformation("Try add new diagnose : " + JsonConvert.SerializeObject(newDiagnose));
-                    FormatUtil.SetIsActive<Diagnoses>(newDiagnose, true);
-                    FormatUtil.SetDateBaseEntity<Diagnoses>(newDiagnose);
-
+                    var newDiagnose = new Diagnoses { Name = dItem.Diagnose };
+                    _logger.LogInformation($"Try add new diagnose: {JsonConvert.SerializeObject(newDiagnose)}");
+                    FormatUtil.SetIsActive(newDiagnose, true);
+                    FormatUtil.SetDateBaseEntity(newDiagnose);
                     var newDiagnoseId = await _unitOfWork.DiagnoseRepository.Add(dbName, newDiagnose);
                     newDiagnose.Id = newDiagnoseId;
                 }
             }
+
             var response = new MedicalRecordsDetailResponse
             {
                 Id = medicalRecords.Id,
                 Code = medicalRecords.Code,
                 Staff = staff,
                 Notes = notes,
+                DiscountMethod = medicalRecords.DiscountMethod,
+                DiscountValue = medicalRecords.DiscountValue,
+                DiscountTotal = medicalRecords.DiscountTotal,
+                TotalDiscounted = medicalRecords.TotalDiscounted,
                 StartDate = medicalRecords.StartDate,
                 EndDate = medicalRecords.EndDate.Value,
                 TotalPrice = medicalRecords.Total,
                 Prescriptions = prescriptionData,
                 Diagnoses = diagnoseData
             };
+
+            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, response.Id, "PostAllMedicalRecords", MethodType.Update, nameof(MedicalRecordsDetailResponse), JsonConvert.SerializeObject(response));
             return response;
         }
 
@@ -264,6 +464,7 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var currentUserId = await _currentUser.UserId;
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
                 var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request);
@@ -277,6 +478,9 @@ namespace Application.Services.Implementations
                 {
                     FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity);
                     noteId = await _unitOfWork.MedicalRecordsNotesRepository.Add(dbName, entity);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, noteId, "PostMedicalRecordsNotes", MethodType.Create, nameof(MedicalRecordsNotes));
                 }
                 else
                 {
@@ -284,6 +488,9 @@ namespace Application.Services.Implementations
                     entity.Id = checkType.Id;
                     FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity, true);
                     await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, entity);
+
+                    //add event log
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, entity.Id, "PostMedicalRecordsNotes", MethodType.Update, nameof(MedicalRecordsNotes));
                 }
 
                 var response = new MedicalRecordsNotesResponse
@@ -308,6 +515,7 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var currentUserId = await _currentUser.UserId;
                 var staff = await _unitOfWork.ProfileRepository.GetByEmail(dbName, email);
 
                 var checkType = await _unitOfWork.MedicalRecordsNotesRepository.CheckRecordType(dbName, request.MedicalRecordsId, request.Type);
@@ -324,6 +532,9 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<MedicalRecordsNotes, MedicalRecordsNotes>(entity, checkedEntity);
                 FormatUtil.SetIsActive<MedicalRecordsNotes>(checkedEntity, true);
                 await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, checkedEntity);
+
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, checkedEntity.Id, "PutMedicalRecordsNotes", MethodType.Update, nameof(MedicalRecordsNotes));
 
                 var response = new MedicalRecordsNotesResponse
                 {
@@ -367,6 +578,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _unitOfWork.MedicalRecordsNotesRepository.Remove(dbName, id);
+
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "DeleteMedicalRecordsNotes", MethodType.Delete, nameof(MedicalRecordsNotes));
             }
             catch (Exception ex)
             {
@@ -450,6 +665,7 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var currentUserId = await _currentUser.UserId;
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
                 var entity = Mapping.Mapper.Map<OrdersPayment>(request);
@@ -482,6 +698,7 @@ namespace Application.Services.Implementations
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPayment));
 
                 var totalPayments = getTotalLastPayment + request.Total;
                 if ((totalPayments) >= totalPrice)
@@ -494,7 +711,7 @@ namespace Application.Services.Implementations
 
                     foreach (var item in prescriptions)
                     {
-                        if(item.Type == "Product")
+                        if (item.Type == "Product")
                         {
                             var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
                             var tuple = StockUtil.CalculateProductStockMinVolume(productStock, item.PrescriptionAmount);
@@ -517,6 +734,9 @@ namespace Application.Services.Implementations
                     await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
                 }
 
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, request.OrderId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPaymentRequest), JsonConvert.SerializeObject(request));
+                
                 var result = new OrdersPaymentResponse
                 {
                     Date = request.Date,
@@ -566,7 +786,7 @@ namespace Application.Services.Implementations
                     mapData.AddRange(diagnoses.Select(x => x.Diagnose));
                 }
 
-                if(mapData.Count() > 0)
+                if (mapData.Count() > 0)
                 {
                     result = mapData.GroupBy(x => x).Select(g => new PatientDiagnosesResponse
                     {

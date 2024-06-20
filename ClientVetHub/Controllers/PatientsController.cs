@@ -87,9 +87,9 @@ namespace ClientVetHub.Controllers
         {
             try
             {
-                var dbName = User.FindFirstValue("Entity"); 
-                int speciesId; 
-                int breedId; 
+                var dbName = User.FindFirstValue("Entity");
+                int speciesId;
+                int breedId;
 
                 if (int.TryParse(request.Species, out speciesId))
                 {

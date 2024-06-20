@@ -1,10 +1,9 @@
 ﻿using Domain.Entities.DTOs;
 using Domain.Entities.Filters;
+using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
-using Domain.Entities.Filters.Clients;
-using Domain.Entities.Requests.Masters;
 
 namespace Application.Services.Contracts
 {

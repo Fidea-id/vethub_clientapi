@@ -1,18 +1,20 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Newtonsoft.Json;
 
 namespace Application.Services.Implementations
 {
     public class OwnersService : GenericService<Owners, OwnersRequest, Owners, OwnersFilter>, IOwnersService
     {
-        public OwnersService(IUnitOfWork unitOfWork, IGenericRepository<Owners, OwnersFilter> repository)
-        : base(unitOfWork, repository)
+        public OwnersService(IUnitOfWork unitOfWork, IGenericRepository<Owners, OwnersFilter> repository, ICurrentUserService currentUser)
+        : base(unitOfWork, repository, currentUser)
         { }
 
         public async Task<Owners> CreateOwnersPetsAsync(OwnersPetsRequest request, string dbName)
@@ -32,6 +34,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetDateBaseEntity<Owners>(ownerAdd);
                 var ownerId = await _repository.Add(dbName, ownerAdd);
 
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, ownerId, "CreateOwnersPetsAsync", MethodType.Create, nameof(Owners));
+
                 //create patients range
                 foreach (var pet in petsAdd)
                 {
@@ -42,6 +48,8 @@ namespace Application.Services.Implementations
                 }
                 await _unitOfWork.PatientsRepository.AddRange(dbName, petsAdd);
 
+                //add event log
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, ownerId, "CreateOwnersPetsAsync", MethodType.Create, nameof(Patients), JsonConvert.SerializeObject(petsAdd));
                 //return owner data
                 ownerAdd.Id = ownerId;
                 return ownerAdd;
