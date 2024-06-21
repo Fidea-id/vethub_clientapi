@@ -160,9 +160,6 @@ namespace Application.Services.Implementations
                     entity.Id = newId;
                     prescriptionData.Add(entity);
 
-                    //add event log
-                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "EditMedicalRecordPrescription", MethodType.Create, nameof(MedicalRecordsPrescriptions));
-
                     totalNow = totalNow + pItem.Total;
                 }
 
@@ -171,7 +168,7 @@ namespace Application.Services.Implementations
                 await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
 
                 //add event log
-                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, medicalRecords.Id, "EditMedicalRecordPrescription", MethodType.Update, nameof(MedicalRecords));
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, medicalRecords.Id, "EditMedicalRecordPrescription", MethodType.Update, nameof(MedicalRecords), JsonConvert.SerializeObject(request));
 
                 return prescriptionData;
             }
