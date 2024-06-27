@@ -8,6 +8,8 @@ namespace Application.Services.Contracts
 {
     public interface IMedicalRecordService : IGenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>
     {
+        Task<OpnamePatients> PostCloseOpname(int medId, string dbName);
+        Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName);
         Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null);
         Task<IEnumerable<PatientDiagnosesResponse>> GetPatientDiagnose(int patientId, string dbName);
         Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName);

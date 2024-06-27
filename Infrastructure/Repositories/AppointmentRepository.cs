@@ -77,13 +77,21 @@ namespace Infrastructure.Repositories
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
-                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total
+                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total,
+                CASE 
+                    WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS IsOpname
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                 JOIN Patients p ON p.Id = a.PatientsId 
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id ";
+                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                LEFT JOIN (
+                    SELECT DISTINCT MedicalRecordId
+                    FROM OpnamePatients
+                ) op ON op.MedicalRecordId = mr.Id ";
             if (filter != null)
             {
                 var whereClause = new List<string>();
@@ -154,13 +162,21 @@ namespace Infrastructure.Repositories
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
-                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total
+                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total,
+                CASE 
+                    WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS IsOpname
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                 JOIN Patients p ON p.Id = a.PatientsId 
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId 
                 LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id 
+                LEFT JOIN (
+                    SELECT DISTINCT MedicalRecordId
+                    FROM OpnamePatients
+                ) op ON op.MedicalRecordId = mr.Id 
                 WHERE DATE(a.Date) = @CurrentDate", new { CurrentDate = currentDate });
         }
 
@@ -171,13 +187,21 @@ namespace Infrastructure.Repositories
                 a.ServiceId, s.Name AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, COALESCE(mr.Id, 0)  AS MedicalRecordId,
                 CASE WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
-                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total
+                WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) ELSE NULL END AS EndDateEstimate, s.Price AS Total,
+                CASE 
+                    WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS IsOpname
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                 JOIN Patients p ON p.Id = a.PatientsId 
                 JOIN Services s ON s.Id = a.ServiceId 
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId 
-                LEFT JOIN MedicalRecords AS mr ON mr.AppointmentId = a.Id
+                LEFT JOIN MedicalRecords AS mr ON mr.AppointmentId = a.Id 
+                LEFT JOIN (
+                    SELECT DISTINCT MedicalRecordId
+                    FROM OpnamePatients
+                ) op ON op.MedicalRecordId = mr.Id 
                 WHERE a.Id = @id", new { id = id });
         }
 

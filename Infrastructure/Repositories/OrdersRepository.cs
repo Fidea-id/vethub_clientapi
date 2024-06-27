@@ -141,7 +141,8 @@ namespace Infrastructure.Repositories
                     o.Type,
                     o.Status,
                     o.TotalPrice,
-                    o.TotalDiscountedPrice
+                    o.TotalDiscountedPrice,
+                    o.TotalDiscount
                 FROM Orders o
                 LEFT JOIN Profile p ON o.StaffId = p.Id
                 LEFT JOIN Owners c ON o.ClientId = c.Id

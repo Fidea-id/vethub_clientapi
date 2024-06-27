@@ -191,6 +191,21 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        
+        [HttpGet("Detail/History/{medId}")]
+        public async Task<IActionResult> GetDetailHistory(int medId)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _medicalRecordService.GetMedicalRecordHistory(medId, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpPost("Detail")]
         public async Task<IActionResult> PostDetail([FromBody] MedicalRecordsDetailRequest request)
@@ -262,6 +277,21 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 await _medicalRecordService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("CloseOpname/{medId}")]
+        public async Task<IActionResult> PostCloseOpname(int medId)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.PostCloseOpname(medId, dbName);
+                return Ok(create);
             }
             catch
             {

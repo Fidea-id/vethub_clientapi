@@ -44,23 +44,25 @@ namespace Infrastructure.Repositories
             return entity;
         }
 
-        public async Task<DataResultDTO<EventLogs>> GetEventLogByObjectId(string dbName, int recordId, string objectName)
+        public async Task<DataResultDTO<EventLogs>> GetEventLogByObjectId(string dbName, int recordId, string objectName, string methodName)
         {
             var filter = new EventLogFilter()
             {
                 RecordId = recordId,
                 ObjectName = objectName,
+                MethodName = methodName
             };
             var data = await base.GetByFilter(dbName, filter);
             return data;
         }
 
-        public async Task<DataResultDTO<EventLogs>> GetEventLogByObjectUser(string dbName, int userId, string objectName)
+        public async Task<DataResultDTO<EventLogs>> GetEventLogByObjectUser(string dbName, int userId, string objectName, string methodName)
         {
             var filter = new EventLogFilter()
             {
                 UserId = userId,
                 ObjectName = objectName,
+                MethodName= methodName
             };
             var data = await base.GetByFilter(dbName, filter);
             return data;
