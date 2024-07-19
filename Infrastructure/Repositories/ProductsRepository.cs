@@ -23,6 +23,7 @@ namespace Infrastructure.Repositories
             SELECT
                 p.Id,
                 p.Name,
+                p.Alias,
                 p.Description,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,
@@ -116,6 +117,7 @@ namespace Infrastructure.Repositories
             SELECT
                 p.Id,
                 p.Name,
+                p.Alias,
                 p.Description,
                 p.CategoryId,
                 pc.Name AS Category,

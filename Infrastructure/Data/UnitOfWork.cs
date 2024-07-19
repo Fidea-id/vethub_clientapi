@@ -394,5 +394,18 @@ namespace Infrastructure.Data
                 return _EventLogRepository;
             }
         }
+
+        private IClinicConfigRepository _ClinicConfigRepository;
+        public IClinicConfigRepository ClinicConfigRepository
+        {
+            get
+            {
+                if (_ClinicConfigRepository == null)
+                {
+                    _ClinicConfigRepository = new ClinicConfigRepository(_dbFactory);
+                }
+                return _ClinicConfigRepository;
+            }
+        }
     }
 }

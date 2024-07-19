@@ -141,6 +141,7 @@ namespace Infrastructure.Repositories
                 typeof(OpnamePatientsXPO),
                 typeof(OpnamesXPO),
                 typeof(EventLogsXPO),
+                typeof(ClinicConfigXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))

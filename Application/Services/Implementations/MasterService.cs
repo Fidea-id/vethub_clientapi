@@ -156,6 +156,21 @@ namespace Application.Services.Implementations
                                     _logger.LogInformation("Success map " + kvp.Key);
                                     await _unitOfWork.DiagnoseRepository.AddRange(dbName, map);
                                 }
+                                else if (kvp.Key == "ClinicConfig")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<ClinicConfig>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<ClinicConfig>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<ClinicConfig>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<ClinicConfig>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.ClinicConfigRepository.AddRange(dbName, map);
+                                }
                                 //else if (kvp.Key == "PrescriptionFrequents")
                                 //{
                                 //    _logger.LogInformation("Try to map " + kvp.Key);

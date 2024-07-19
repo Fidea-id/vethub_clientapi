@@ -51,5 +51,10 @@ namespace Application.Services.Contracts
         Task<DataResultDTO<PrescriptionFrequents>> ReadPrescriptionFrequentsAllAsync(PrescriptionFrequentsFilter filter, string dbName);
         Task<PrescriptionFrequents> UpdatePrescriptionFrequentsAsync(int id, PrescriptionFrequentsRequest entity, string dbName);
         Task DeletePrescriptionFrequentsAsync(int id, string dbName);
+
+        //ClinicConfig
+        Task<IEnumerable<ClinicConfig>> ReadAllClinicConfigAsync(string dbName);
+        Task<ClinicConfig> ReadClinicConfigAsync(string dbName, string key);
+        Task<ClinicConfig> UpdateClinicConfigAsync(string key, string newValue, string dbName);
     }
 }

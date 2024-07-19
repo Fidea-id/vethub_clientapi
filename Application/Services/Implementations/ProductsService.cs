@@ -525,6 +525,7 @@ namespace Application.Services.Implementations
                                 Description = item.description,
                                 IsBundle = false,
                                 Name = item.productName,
+                                Alias = item.aliasName,
                                 Price = item.price
                             };
                             FormatUtil.SetIsActive<Products>(productData, true);

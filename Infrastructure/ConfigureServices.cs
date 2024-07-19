@@ -44,6 +44,7 @@ namespace Infrastructure
             services.AddScoped<IOpnamesRepository, OpnamesRepository>();
             services.AddScoped<IOpnamePatientsRepository, OpnamePatientsRepository>();
             services.AddScoped<IEventLogRepository, EventLogRepository>();
+            services.AddScoped<IClinicConfigRepository, ClinicConfigRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();

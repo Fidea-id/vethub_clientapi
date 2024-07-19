@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Diagnostics.Eventing.Reader;
 using Domain.Entities;
+using Newtonsoft.Json;
 
 namespace Application.Services.Implementations
 {
@@ -665,6 +666,102 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeletePrescriptionFrequentsAsync";
+                throw;
+            }
+        }
+        #endregion
+
+        #region Clinic Config
+        public async Task<IEnumerable<ClinicConfig>> ReadAllClinicConfigAsync(string dbName)
+        {
+            try
+            {
+                var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
+                var existingData = await _uow.ClinicConfigRepository.GetAll(dbName);
+                bool isSynced = true;
+
+                if (File.Exists(filePath))
+                {
+                    string json = File.ReadAllText(filePath);
+                    var deserializedObjects = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    if (deserializedObjects != null && deserializedObjects.ContainsKey("ClinicConfig"))
+                    {
+                        var clinicConfigJson = deserializedObjects["ClinicConfig"].ToString();
+                        var dataTemplate = JsonConvert.DeserializeObject<IEnumerable<ClinicConfig>>(clinicConfigJson);
+
+                        foreach (var config in dataTemplate)
+                        {
+                            var existingConfig = existingData.FirstOrDefault(x => x.Key == config.Key);
+                            if (existingConfig == null)
+                            {
+                                // If the config does not exist, add it to the database
+                                var newConfig = new ClinicConfig
+                                {
+                                    Key = config.Key,
+                                    Value = config.Value,
+                                };
+                                FormatUtil.SetIsActive<ClinicConfig>(newConfig, true);
+                                FormatUtil.SetDateBaseEntity<ClinicConfig>(newConfig);
+
+                                await _uow.ClinicConfigRepository.AddConfig(dbName, newConfig);
+                                isSynced = false;
+                            }
+                            //else if (existingConfig.Value != config.Value)
+                            //{
+                            //    // If the config exists but the value is different, update it
+                            //    existingConfig.Value = config.Value;
+                            //    await _uow.ClinicConfigRepository.UpdateConfig(dbName, existingConfig);
+                            //    isSynced = false;
+                            //}
+                        }
+                    }
+                }
+
+                if (isSynced)
+                {
+                    return existingData;
+                }
+                else
+                {
+                    return await _uow.ClinicConfigRepository.GetAll(dbName);
+                }
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicConfigAsync";
+                throw;
+            }
+        }
+        public async Task<ClinicConfig> ReadClinicConfigAsync(string dbName, string key)
+        {
+            try
+            {
+                var data = await _uow.ClinicConfigRepository.GetConfigByKey(dbName, key);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicConfigAsync";
+                throw;
+            }
+        }
+        public async Task<ClinicConfig> UpdateClinicConfigAsync(string key, string newValue, string dbName)
+        {
+            try
+            {
+
+                ClinicConfig checkedEntity = await _uow.ClinicConfigRepository.GetConfigByKey(dbName, key);
+                if (checkedEntity == null)
+                {
+                    throw new Exception($"No ClinicConfig found with Key = {key}");
+                }
+                checkedEntity.Value = newValue;
+                await _uow.ClinicConfigRepository.UpdateConfig(dbName, checkedEntity);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.UpdateClinicConfigAsync";
                 throw;
             }
         }

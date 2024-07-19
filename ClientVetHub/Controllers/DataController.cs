@@ -514,5 +514,50 @@ namespace ClientVetHub.Controllers
             }
         }
         #endregion
+
+        #region ClinicConfig
+        [HttpGet("ClinicConfig/{key}")]
+        public async Task<IActionResult> GetClinicConfig(string key)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadClinicConfigAsync(dbName, key);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("ClinicConfig")]
+        public async Task<IActionResult> GetClinicConfig()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _additionalDataService.ReadAllClinicConfigAsync(dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpPut("ClinicConfig/{key}")]
+        public async Task<IActionResult> PutClinicConfig(string key, [FromBody] ClinicConfig value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _additionalDataService.UpdateClinicConfigAsync(value.Key, value.Value, dbName);
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
     }
 }

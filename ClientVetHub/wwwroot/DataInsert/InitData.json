@@ -178,6 +178,12 @@
       "Name": "Medicine"
     }
   ],
+  "ClinicConfig": [
+    {
+      "Key": "ShowAliasInvoice",
+      "Value": "0"
+    }
+  ],
   "PaymentMethod": [
     {
       "Name": "Cash"
