@@ -24,7 +24,7 @@ namespace ClientVetHub.Controllers
 
         #region Dashboard
         [HttpGet("DashboardData")]
-        [Authorize(Roles = "Owner")]
+        [Authorize(Roles = "Owner, Admin")]
         public async Task<IActionResult> GetDashboard(string? date)
         {
             try

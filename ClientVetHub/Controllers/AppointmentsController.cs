@@ -1,8 +1,10 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Constants;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +18,13 @@ namespace ClientVetHub.Controllers
     public class AppointmentsController : Controller
     {
         private readonly IAppointmentService _appointmentService;
+        private readonly IProfileService _profileService;
         private readonly INotificationService _iNotificationService;
-        public AppointmentsController(IAppointmentService appointmentService, INotificationService iNotificationService)
+        public AppointmentsController(IAppointmentService appointmentService, INotificationService iNotificationService, IProfileService profileService)
         {
             _appointmentService = appointmentService;
             _iNotificationService = iNotificationService;
+            _profileService = profileService;
         }
 
         [HttpGet("Today")]
@@ -107,6 +111,22 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("InvoiceEmail/{id}")]
+        public async Task<IActionResult> PostInvoiceEmail(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _appointmentService.SendInvoiceEmail(dbName, id);
+
+                return Ok();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("Reschedule/{id}")]
         public async Task<IActionResult> Post(int id, [FromBody] AppointmentsRequest request)
         {
@@ -181,7 +201,7 @@ namespace ClientVetHub.Controllers
                 await _appointmentService.DeleteAsync(id, dbName);
                 var notif = NotificationUtil.SetDeleteNotifRequest(0, "Appointment Deleted", $"Appointment deleted");
                 await _iNotificationService.CreateRequestAsync(notif, dbName);
-                return Ok(default(Patients));
+                return Ok(default(Appointments));
             }
             catch
             {
@@ -195,7 +215,36 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                if (User.IsInRole(RoleUserConstant.DOCTOR))
+                {
+                    var id = User.FindFirstValue("Id");
+                    int idglobal = 0;
+                    var tryParseId = int.TryParse(id, out idglobal);
+                    if (tryParseId)
+                    {
+                        var userClient = await _profileService.GetUserProfileByGlobalIdAsync(dbName, idglobal);
+                        if (userClient != null)
+                        {
+                            filter.StaffId = userClient.Id;
+                        }
+                    }
+                }
                 var entities = await _appointmentService.GetDetailAppointmentList(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        
+        [HttpGet("Detail/Medical")]
+        public async Task<IActionResult> GetDetailMedical([FromQuery] AppointmentDetailFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _appointmentService.GetDetailAppointmentMedicalList(filter, dbName);
                 return Ok(entities);
             }
             catch
@@ -227,6 +276,83 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var data = await _appointmentService.GetDetailAppointment(id, dbName);
                 return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+        [HttpGet("Type")]
+        public async Task<IActionResult> GetTypes()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _appointmentService.ReadAllAppointmentsTypeAsync(dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("Type")]
+        public async Task<IActionResult> PostType([FromBody] AppointmentsType request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _appointmentService.AddAppointmentsTypeAsync(dbName, request);
+
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpPut("Type/{id}")]
+        public async Task<IActionResult> PutType(int id, [FromBody] AppointmentsType value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var newData = await _appointmentService.UpdateAppointmentsTypeAsync(dbName, id, value);
+
+                return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("Type/{id}")]
+        public async Task<IActionResult> DeleteType(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _appointmentService.DeleteAppointmentsTypeAsync(dbName, id);
+                return Ok(default(AppointmentsType));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("PublicInvoice")]
+        public async Task<IActionResult> GetPublicInvoice(string e, int d)
+        {
+            try
+            {
+                var entities = await _appointmentService.GetDetailMedicalInvoice(d, e);
+                return Ok(entities);
             }
             catch
             {

@@ -331,5 +331,16 @@
       "Description": "Canceled booking",
       "Weight": 8
     }
+  ],
+  "AppointmentsType": [
+    {
+      "Name": "Vet Checkup"
+    },
+    {
+      "Name": "Grooming"
+    },
+    {
+      "Name": "House Call"
+    }
   ]
 }

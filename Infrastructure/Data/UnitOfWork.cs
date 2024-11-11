@@ -407,5 +407,18 @@ namespace Infrastructure.Data
                 return _ClinicConfigRepository;
             }
         }
+
+        private IAppointmentsTypeRepository _AppointmentsTypeRepository;
+        public IAppointmentsTypeRepository AppointmentsTypeRepository
+        {
+            get
+            {
+                if (_AppointmentsTypeRepository == null)
+                {
+                    _AppointmentsTypeRepository = new AppointmentsTypeRepository(_dbFactory);
+                }
+                return _AppointmentsTypeRepository;
+            }
+        }
     }
 }

@@ -122,6 +122,7 @@ namespace Infrastructure.Repositories
                 p.CategoryId,
                 pc.Name AS Category,
                 p.Price,
+                p.BoughtPrice,
                 p.IsBundle,
                 COALESCE(Sum(ps.Stock), 0) AS Stock, 
                 ps.Volume,

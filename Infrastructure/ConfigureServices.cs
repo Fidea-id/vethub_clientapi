@@ -45,20 +45,21 @@ namespace Infrastructure
             services.AddScoped<IOpnamePatientsRepository, OpnamePatientsRepository>();
             services.AddScoped<IEventLogRepository, EventLogRepository>();
             services.AddScoped<IClinicConfigRepository, ClinicConfigRepository>();
+            services.AddScoped<IAppointmentsTypeRepository, AppointmentsTypeRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            //EmailSender
-            services.AddScoped<IEmailSender, EmailSender>();
-            services.AddFluentEmail("no-reply@vethub.id", "Vethub").AddRazorRenderer()
-                .AddSmtpSender(new SmtpClient("sandbox.smtp.mailtrap.io", 587)
-                {
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential("c1e821993e0969", "b07a3bfd12ed78"),
-                    EnableSsl = true
-                });
-            return services;
+			//EmailSender
+			services.AddScoped<IEmailSender, EmailSender>();
+			services.AddFluentEmail("info@vethub.id", "VetHub").AddRazorRenderer()
+				.AddSmtpSender(new SmtpClient("live.smtp.mailtrap.io", 587)
+				{
+					UseDefaultCredentials = false,
+					Credentials = new NetworkCredential("api", "0f874589507aa1da9c4f8da918698233"),
+					EnableSsl = true
+				});
+			return services;
         }
     }
 }

@@ -146,6 +146,20 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        [HttpGet("DetailMin/{id}")]
+        public async Task<IActionResult> GetDetailMin(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.GetMinMedicalRecords(id, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpGet("Payment/{id}")]
         public async Task<IActionResult> GetMedicalPayment(int id)

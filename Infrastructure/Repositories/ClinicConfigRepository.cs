@@ -65,5 +65,25 @@ namespace Infrastructure.Repositories
             var value = await _db.QueryFirstOrDefaultAsync<ClinicConfig>($"SELECT * FROM ClinicConfig WHERE `Key` = @Key", new { Key = key });
             return value;
         }
+
+        public async Task AddConfigRange(string dbName, IEnumerable<ClinicConfig> request)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            foreach (var config in request)
+            {
+                var query = "INSERT INTO ClinicConfig (`Key`, `Value`, Id, IsActive, CreatedAt, UpdatedAt) VALUES (@Key, @Value, @Id, @IsActive, @CreatedAt, @UpdatedAt)";
+
+                var parameters = new
+                {
+                    Key = config.Key,
+                    Value = config.Value,
+                    Id = config.Id,
+                    IsActive = config.IsActive,
+                    CreatedAt = config.CreatedAt,
+                    UpdatedAt = config.UpdatedAt
+                };
+                await _db.ExecuteAsync(query, parameters);
+            }
+        }
     }
 }

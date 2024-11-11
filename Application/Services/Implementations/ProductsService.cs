@@ -522,6 +522,7 @@ namespace Application.Services.Implementations
                             var productData = new Products()
                             {
                                 CategoryId = item.categoryId,
+                                BoughtPrice = item.boughtPrice ?? 0,
                                 Description = item.description,
                                 IsBundle = false,
                                 Name = item.productName,

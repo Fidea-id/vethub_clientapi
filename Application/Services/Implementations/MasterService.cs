@@ -169,7 +169,22 @@ namespace Application.Services.Implementations
                                         FormatUtil.SetDateBaseEntity<ClinicConfig>(itm);
                                     }
                                     _logger.LogInformation("Success map " + kvp.Key);
-                                    await _unitOfWork.ClinicConfigRepository.AddRange(dbName, map);
+                                    await _unitOfWork.ClinicConfigRepository.AddConfigRange(dbName, map);
+                                }
+                                else if (kvp.Key == "AppointmentsType")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<AppointmentsType>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<AppointmentsType>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<AppointmentsType>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<AppointmentsType>(itm);
+                                    }
+                                    _logger.LogInformation("Success map " + kvp.Key);
+                                    await _unitOfWork.AppointmentsTypeRepository.AddRange(dbName, map);
                                 }
                                 //else if (kvp.Key == "PrescriptionFrequents")
                                 //{

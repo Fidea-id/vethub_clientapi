@@ -13,6 +13,13 @@ namespace Infrastructure.Repositories
         {
         }
 
+        public async Task<MedicalRecords> GetByAppointmentId(string dbName, int appointmentId)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var data = await _db.QueryFirstAsync<MedicalRecords>($"SELECT * FROM MedicalRecords WHERE AppointmentId = @Id", new { Id = appointmentId });
+            return data;
+        }
+
         public async Task<string> GetLatestCode(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);

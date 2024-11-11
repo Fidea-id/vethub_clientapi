@@ -3,27 +3,36 @@ using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
+using Domain.Entities.Emails;
 using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
+using Domain.Interfaces;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using FluentEmail.Core.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System;
+using System.Security.Policy;
+using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations
 {
     public class MedicalRecordService : GenericService<MedicalRecords, MedicalRecordsRequest, MedicalRecordsResponse, MedicalRecordsFilter>, IMedicalRecordService
-    {
-        private readonly ILogger<MedicalRecordService> _logger;
+	{
+		private readonly IEmailSender _emailsender;
+		private readonly ILogger<MedicalRecordService> _logger;
         public MedicalRecordService(IUnitOfWork unitOfWork, IGenericRepository<MedicalRecords, MedicalRecordsFilter> repository,
-            ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser, IEmailSender emailSender)
         : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<MedicalRecordService>();
+            _emailsender = emailSender;
         }
 
         public async Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName)
@@ -50,10 +59,17 @@ namespace Application.Services.Implementations
             return new DataResultDTO<MedicalRecordsHistoryResponse> { Data = result, TotalData = result.Count() };
         }
 
+
         public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
             var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+
+            //TODO: coba cek comment ini
+            if (appointments == null)
+            {
+                return default(MedicalRecordsDetailResponse);
+            }
             var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointments.ServiceId);
             var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
             var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
@@ -125,6 +141,61 @@ namespace Application.Services.Implementations
             };
             return response;
         }
+
+        public async Task<MedicalRecordsMinResponse> GetMinMedicalRecords(int id, string dbName)
+        {
+            var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
+            var diagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+            var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
+
+            var diagnoseTextList = new List<string>();
+            var presciptionTextList = new List<string>();
+            var serviceTextList = new List<string>();
+
+            foreach(var diagnose in diagnoses)
+            {
+                var text = $"{diagnose.Diagnose}({diagnose.Prognose})";
+                diagnoseTextList.Add(text);
+            }
+
+            foreach(var presciption in presciptions)
+            {
+                if(presciption.Type == "Product")
+                {
+                    var text = $"{presciption.ProductName}({presciption.PrescriptionFrequency})";
+                    presciptionTextList.Add(text);
+                }
+                else
+                {
+                    var text = $"{presciption.ProductName}({presciption.PrescriptionFrequency})";
+                    serviceTextList.Add(text);
+                }
+            }
+
+            var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
+            var totalLastPayment = lastPayments.Sum(x => x.Total);
+            string statusPayment = "Paid";
+            if (lastPayments.Count() < 1)
+            {
+                statusPayment = "Unpaid";
+            }
+            else if (totalLastPayment < medicalRecords.Total)
+            {
+                statusPayment = "Paid Less";
+            }
+
+            var response = new MedicalRecordsMinResponse
+            {
+                Id = medicalRecords.Id,
+                Code = medicalRecords.Code,
+                Prescriptions = string.Join(",", presciptionTextList),
+                Diagnoses = string.Join(",", diagnoseTextList),
+                StatusPayment = statusPayment,
+                Services = string.Join(",", serviceTextList)
+            };
+            return response;
+        }
+
         public async Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName)
         {
             var data = await _unitOfWork.AppointmentRepository.GetBookingHistoryOwner(dbName, ownerId);
@@ -758,7 +829,45 @@ namespace Application.Services.Implementations
 
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, request.OrderId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPaymentRequest), JsonConvert.SerializeObject(request));
-                
+
+                ////send email to owner pet
+                //var owner = await _unitOfWork.OwnersRepository.ReadByPatientIdAsync(medicalRecord.PatientId, dbName);
+                //if (owner != null)
+                //{
+                //    if (!string.IsNullOrEmpty(owner.Email))
+                //    {
+                //        var clinics = await _unitOfWork.ClinicsRepository.GetAll(dbName);
+                //        var clinic = clinics.FirstOrDefault();
+
+                //        var baseurl = "https://app.vethub.id/Appointment/PubInvoice";
+
+                //        var code = EncryptionHelper.EncryptString(dbName);
+                //        var urlId = EncryptionHelper.EncryptString(medicalRecord.Id.ToString());
+                //        var queryUrl = $"?e={code}&d={urlId}";
+                //        var data = new EmailSenderData
+                //        {
+                //            Subject = "Appointment Invoice",
+                //            To = owner.Email,
+                //            CC = new List<Address>()
+                //            {
+                //            },
+                //            EmailData = new InvoiceEmailData()
+                //            {
+                //                ClinicName = clinic.Name,
+                //                OwnerName = owner.Name,
+                //                Url = baseurl + queryUrl,
+                //                Date = DateTime.Now
+                //            }
+                //        };
+
+                //        await _emailsender.Send(data);
+                //    }
+                //}
+                //else
+                //{
+                //    _logger.LogInformation("Owner null");
+                //}
+
                 var result = new OrdersPaymentResponse
                 {
                     Date = request.Date,

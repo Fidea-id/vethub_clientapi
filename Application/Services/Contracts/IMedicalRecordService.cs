@@ -23,5 +23,6 @@ namespace Application.Services.Contracts
         Task<IEnumerable<MedicalRecordsPrescriptions>> EditMedicalRecordPrescription(int medicalRecordId, IEnumerable<MedicalRecordsPrescriptionsRequest> request, string dbName);
         Task<IEnumerable<MedicalRecordsNotes>> GetMedicalRecordsNotes(int id, string dbName);
         Task DeleteMedicalRecordsNotes(int id, string dbName);
+        Task<MedicalRecordsMinResponse> GetMinMedicalRecords(int id, string dbName);
     }
 }
