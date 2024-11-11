@@ -113,6 +113,20 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+        [HttpGet("OpnamePatients/Detail")]
+        public async Task<IActionResult> GetOpnamePatientsDetail([FromQuery] OpnamePatientsFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _opnameService.ReadOpnamePatientsDetailAsync(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
         [HttpGet("OpnamePatients/{id}")]
         public async Task<IActionResult> GetOpnamePatients(int id)

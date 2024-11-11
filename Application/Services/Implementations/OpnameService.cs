@@ -5,6 +5,7 @@ using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 
@@ -122,6 +123,46 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"OpnameService.ReadOpnamePatientsByOpnameIdAsync";
+                throw;
+            }
+        }
+
+        public async Task<DataResultDTO<OpnamePatientsDetailResponse>> ReadOpnamePatientsDetailAsync(OpnamePatientsFilter filter, string dbName)
+        {
+            try
+            {
+                var dataResult = new List<OpnamePatientsDetailResponse>();
+                var data = await _unitOfWork.OpnamePatientsRepository.GetByFilter(dbName, filter);
+                foreach(var item in data.Data)
+                {
+                    var opname = await _unitOfWork.OpnamesRepository.GetById(dbName, item.OpnameId);
+                    var medical = await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, item.MedicalRecordId, null);
+
+                    var itemResult = new OpnamePatientsDetailResponse();
+                    itemResult.Id = item.Id;
+                    itemResult.OpnameId = item.OpnameId;
+                    itemResult.MedicalRecordId = item.MedicalRecordId;
+                    itemResult.Status = item.Status;
+                    itemResult.StartTime = item.StartTime;
+                    itemResult.EndTime = item.EndTime;
+                    itemResult.EstimatedDays = item.EstimateDays;
+                    itemResult.Price = item.Price;
+                    itemResult.TotalPrice = item.TotalPrice;
+                    itemResult.OpnameName = opname.Name;
+                    itemResult.PatientName = medical.Patients.Name;
+                    itemResult.PatientId = medical.Patients.Id;
+                    dataResult.Add(itemResult);
+                }
+                var result = new DataResultDTO<OpnamePatientsDetailResponse>
+                {
+                    Data = dataResult,
+                    TotalData = dataResult.Count
+                };
+                return result;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OpnameService.ReadOpnamePatientsDetailAsync";
                 throw;
             }
         }

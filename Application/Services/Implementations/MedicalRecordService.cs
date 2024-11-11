@@ -59,7 +59,6 @@ namespace Application.Services.Implementations
             return new DataResultDTO<MedicalRecordsHistoryResponse> { Data = result, TotalData = result.Count() };
         }
 
-
         public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
@@ -140,6 +139,11 @@ namespace Application.Services.Implementations
                 OpnameDetail = opnameDetail
             };
             return response;
+        }
+
+        public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecordsV2(int id, string dbName, string flag = null)
+        {
+            return await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, id, flag);
         }
 
         public async Task<MedicalRecordsMinResponse> GetMinMedicalRecords(int id, string dbName)

@@ -11,6 +11,7 @@ namespace Application.Services.Contracts
         Task<OpnamePatients> PostCloseOpname(int medId, string dbName);
         Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName);
         Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null);
+        Task<MedicalRecordsDetailResponse> GetDetailMedicalRecordsV2(int id, string dbName, string flag = null);
         Task<IEnumerable<PatientDiagnosesResponse>> GetPatientDiagnose(int patientId, string dbName);
         Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName);
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName); //seperti detail medical records, tapi lebih ringkas
