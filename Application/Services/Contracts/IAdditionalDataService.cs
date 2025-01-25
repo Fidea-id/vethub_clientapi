@@ -10,7 +10,7 @@ namespace Application.Services.Contracts
     public interface IAdditionalDataService
     {
         //Dashboard
-        Task<DashboardResponse> ReadDashboardAsync(string dbName, string date);
+        Task<DashboardResponse> ReadDashboardAsync(string dbName, string startDate, string endDate);
 
         //Clinics
         Task<Clinics> CreateClinicsAsync(ClinicsRequest entity, string dbName);

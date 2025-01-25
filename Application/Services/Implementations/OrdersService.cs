@@ -136,7 +136,7 @@ namespace Application.Services.Implementations
                         foreach (var item in orderDetail.OrderProducts)
                         {
                             var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
-                            var tuple = StockUtil.CalculateProductStockMin(productStock, item.Quantity);
+                            var tuple = StockUtil.CalculateProductStockUp(productStock, item.Quantity);
                             tuple.Item2.Type = "Order.Outcomes";
                             var getProfile = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, order.StaffId);
                             tuple.Item2.ProfileId = getProfile.Id;

@@ -224,9 +224,59 @@ namespace Application.Services.Implementations
             try
             {
                 var checkVersionExist = await _generateTableRepository.CheckSchemaVersion(dbName, version);
+                
                 if (!checkVersionExist) //not exist. add it
                 {
                     await _generateTableRepository.UpdateTable(dbName, version);
+
+                    if (version == 11)
+                    {
+                        var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
+                        // Read the contents of the file
+                        string json = File.ReadAllText(filePath);
+
+                        // Deserialize the JSON data into an object
+                        var jsonData = JsonConvert.DeserializeObject(json);
+                        var deserializedObjects = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                        if (deserializedObjects != null)
+                        {
+                            foreach (var kvp in deserializedObjects)
+                            {
+                                if (kvp.Key == "AppointmentsType")
+                                {
+                                    _logger.LogInformation("Try to map " + kvp.Key);
+                                    var data = JsonConvert.DeserializeObject<IEnumerable<AppointmentsType>>(kvp.Value.ToString());
+                                    //map items
+                                    var map = Mapping.Mapper.Map<IEnumerable<AppointmentsType>>(data);
+                                    foreach (var itm in map)
+                                    {
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<AppointmentsType>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<AppointmentsType>(itm);
+                                        // Check if the item already exists in the database
+                                        var existingItem = await _unitOfWork.AppointmentsTypeRepository
+                                            .WhereFirstQuery(dbName, $"Name = '{itm.Name}'");
+
+                                        if (existingItem != null)
+                                        {
+                                            // Update the existing item
+                                            existingItem.Name = itm.Name; // Map fields you need to update
+                                            existingItem.Color = itm.Color; // Adjust based on your model
+                                            FormatUtil.SetDateBaseEntity<AppointmentsType>(existingItem); // Update entity dates, if required
+                                            await _unitOfWork.AppointmentsTypeRepository.Update(dbName, existingItem);
+                                        }
+                                        else
+                                        {
+                                            // Add the new item
+                                            await _unitOfWork.AppointmentsTypeRepository.Add(dbName, itm);
+                                        }
+                                    }
+                                    _logger.LogInformation("Success update " + kvp.Key + " at version 11");
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)

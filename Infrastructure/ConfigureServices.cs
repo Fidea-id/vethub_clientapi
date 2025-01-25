@@ -56,7 +56,7 @@ namespace Infrastructure
 				.AddSmtpSender(new SmtpClient("live.smtp.mailtrap.io", 587)
 				{
 					UseDefaultCredentials = false,
-					Credentials = new NetworkCredential("api", "0f874589507aa1da9c4f8da918698233"),
+					Credentials = new NetworkCredential("api", "eb649b68f5ad386f9ccd1971ba8c04c5"),
 					EnableSsl = true
 				});
 			return services;

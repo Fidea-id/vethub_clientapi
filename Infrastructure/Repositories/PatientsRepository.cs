@@ -43,5 +43,48 @@ namespace Infrastructure.Repositories
             };
             return result;
         }
+        public async Task<IEnumerable<MonthlyDataChart>> GetPatientChart(string dbName, string dateFilter)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            if (dateFilter != null)
+            {
+                filterQuery = dateFilter;
+            }
+            string query = @"SELECT
+                                DATE_FORMAT(CreatedAt, '%d') AS Date,
+                                DATE_FORMAT(CreatedAt, '%m') AS Month,
+                                DATE_FORMAT(CreatedAt, '%Y') AS Year,
+                                COUNT(*) AS Total
+                            FROM
+                                Patients
+                            WHERE 
+            ";
+            query += filterQuery;
+            query += " GROUP BY Date, Month, Year ORDER BY Date, Year, Month;";
+            return await _db.QueryAsync<MonthlyDataChart>(query);
+        }
+        public async Task<IEnumerable<MonthlyDataChart>> GetPatientTypeChart(string dbName, string dateFilter)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            if (dateFilter != null)
+            {
+                filterQuery = dateFilter;
+            }
+            string query = @"SELECT
+                                DATE_FORMAT(CreatedAt, '%d') AS Date,
+                                DATE_FORMAT(CreatedAt, '%m') AS Month,
+                                DATE_FORMAT(CreatedAt, '%Y') AS Year,
+                                Species AS Type,
+                                COUNT(*) AS Total
+                            FROM
+                                Patients
+                            WHERE 
+            ";
+            query += filterQuery;
+            query += " GROUP BY Species, Date, Month, Year ORDER BY Date, Year, Month;";
+            return await _db.QueryAsync<MonthlyDataChart>(query);
+        }
     }
 }

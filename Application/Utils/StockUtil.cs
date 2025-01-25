@@ -47,5 +47,27 @@ namespace Application.Utils
             };
             return Tuple.Create(stocksNow, newProductHistorical);
         }
+        public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockUp(ProductStocks stocksNow, double stock)
+        {
+            var volumeStock = (stocksNow.Stock * stocksNow.Volume) + stocksNow.VolumeRemaining;
+            var stockBefore = stocksNow.Stock;
+            var newVolumeMin = stock * stocksNow.Volume;
+            var volumeNow = volumeStock + newVolumeMin;
+            var newVolumeRemaining = volumeNow % stocksNow.Volume;
+            var newStockCalc = Math.Floor(volumeNow / stocksNow.Volume);
+            var stockMin = Math.Floor(newVolumeMin / stocksNow.Volume);
+            stocksNow.Stock = newStockCalc;
+            stocksNow.VolumeRemaining = newVolumeRemaining;
+
+            var newProductHistorical = new ProductStockHistorical()
+            {
+                ProductId = stocksNow.ProductId,
+                Stock = stockMin,
+                StockAfter = newStockCalc,
+                StockBefore = stockBefore,
+                VolumeRemaining = newVolumeRemaining,
+            };
+            return Tuple.Create(stocksNow, newProductHistorical);
+        }
     }
 }

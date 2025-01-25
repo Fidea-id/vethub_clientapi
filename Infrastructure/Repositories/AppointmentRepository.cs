@@ -47,7 +47,7 @@ namespace Infrastructure.Repositories
                  JOIN Profile pr ON pr.Id = a.StaffId 
                  JOIN AppointmentsStatus st ON st.Id = a.StatusId
                  Left JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
-                WHERE a.OwnersId = @ownerId", new { ownerId = ownerId });
+                WHERE a.OwnersId = @ownerId AND IsActive = true", new { ownerId = ownerId });
             return data;
         }
 
@@ -155,6 +155,78 @@ namespace Infrastructure.Repositories
             }
             // Execute the SQL query
             var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
+
+            var result = new DataResultDTO<AppointmentsDetailResponse>
+            {
+                Data = data,
+                TotalData = data.Count()
+            };
+            return result;
+        }
+
+        public async Task<DataResultDTO<AppointmentsDetailResponse>> GetLastDetailList(string dbName, AppointmentDetailFilter filter, int take)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+
+            // Start building the SQL query
+            var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+        a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
+        s.DurationType AS DurationTypeEstimate, 
+        CASE 
+            WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
+            WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
+            WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) 
+            WHEN s.DurationType IS NULL THEN a.Date
+            ELSE NULL 
+        END AS EndDateEstimate, s.Price AS Total,
+        CASE 
+            WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+            ELSE FALSE 
+        END AS IsOpname,
+        CASE
+            WHEN a.Type IS NOT NULL THEN a.Type
+            WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+            ELSE NULL
+        END AS Type
+        FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+        JOIN Patients p ON p.Id = a.PatientsId 
+        LEFT JOIN Services s ON s.Id = a.ServiceId 
+        JOIN Profile pr ON pr.Id = a.StaffId 
+        JOIN AppointmentsStatus st ON st.Id = a.StatusId
+        LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+        LEFT JOIN (
+            SELECT DISTINCT MedicalRecordId
+            FROM OpnamePatients
+        ) op ON op.MedicalRecordId = mr.Id ";
+
+            if (filter != null)
+            {
+                var whereClause = new List<string>();
+
+                // Check and add StatusId filter
+                if (filter.StatusId.HasValue)
+                {
+                    whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                }
+
+                // Check and add StaffId filter
+                if (filter.StaffId.HasValue)
+                {
+                    whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
+                }
+
+                // Combine all where conditions
+                if (whereClause.Count > 0)
+                {
+                    sqlQuery += " WHERE " + string.Join(" AND ", whereClause);
+                }
+            }
+
+            // Add ORDER BY and LIMIT clause
+            sqlQuery += " ORDER BY a.Date DESC LIMIT @Take";
+
+            // Execute the SQL query
+            var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery, new { Take = take });
 
             var result = new DataResultDTO<AppointmentsDetailResponse>
             {
@@ -355,6 +427,30 @@ namespace Infrastructure.Repositories
                 Data = data,
                 TotalData = data.Count()
             };
+            return result;
+        }
+
+        public async Task<IEnumerable<DataPoint>> GetClientWeek(string dbName)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+
+            // Modify your query to filter by the current week's start and end
+            string query = $@"
+                        SELECT 
+                            DAYOFWEEK(Date) AS W,
+                            HOUR(Date) AS X,
+                            FLOOR(AVG(COUNT(Id)) OVER (PARTITION BY DAYOFWEEK(Date), HOUR(DATE))) AS Y
+                        FROM 
+                            Appointments
+                        WHERE 
+                            StatusId IN (2, 3, 4, 5, 6)
+                        GROUP BY 
+                            DAYOFWEEK(Date), HOUR(Date)
+                        ORDER BY 
+                            W, X;
+            ";
+
+            var result = await _db.QueryAsync<DataPoint>(query);
             return result;
         }
     }

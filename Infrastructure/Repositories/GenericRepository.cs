@@ -21,13 +21,13 @@ namespace Infrastructure.Repositories
         public async Task<T> GetById(string dbName, int id)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<T>($"SELECT * FROM {_tableName} WHERE Id = @Id", new { Id = id });
+            return await _db.QueryFirstOrDefaultAsync<T>($"SELECT * FROM {_tableName} WHERE Id = @Id AND IsActive = true", new { Id = id });
         }
 
         public async Task<IEnumerable<T>> GetAll(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<T>($"SELECT * FROM {_tableName}");
+            return await _db.QueryAsync<T>($"SELECT * FROM {_tableName} where IsActive = true");
         }
         public async Task<IEnumerable<T>> GetAllActive(string dbName)
         {
@@ -112,29 +112,49 @@ namespace Infrastructure.Repositories
             }
         }
 
+        //public async Task Remove(string dbName, int id)
+        //{
+        //    var _db = _dbFactory.GetDbConnection(dbName);
+        //    await _db.ExecuteAsync($"DELETE FROM {_tableName} WHERE Id = @Id", new { Id = id });
+        //}
+
+        //public async Task RemoveRange(string dbName, IEnumerable<T> entity)
+        //{
+        //    var _db = _dbFactory.GetDbConnection(dbName);
+        //    var query = "";
+
+        //    foreach (var item in entity)
+        //    {
+        //        var propertyNames = QueryGenerator.GetPropertyNames(item);
+        //        var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
+
+        //        var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id;";
+        //        query += subquery;
+        //    }
+
+        //    await _db.ExecuteAsync(query, entity);
+        //}
+
         public async Task Remove(string dbName, int id)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            await _db.ExecuteAsync($"DELETE FROM {_tableName} WHERE Id = @Id", new { Id = id });
+            await _db.ExecuteAsync($"UPDATE {_tableName} SET IsActive = 0 WHERE Id = @Id", new { Id = id });
         }
 
-        public async Task RemoveRange(string dbName, IEnumerable<T> entity)
+        public async Task RemoveRange(string dbName, IEnumerable<T> entities)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
             var query = "";
 
-            foreach (var item in entity)
+            foreach (var item in entities)
             {
-                var propertyNames = QueryGenerator.GetPropertyNames(item);
-                var setClause = string.Join(", ", propertyNames.Select(name => $"{name} = @{name}"));
-
-                var subquery = $"DELETE FROM {_tableName} WHERE Id = @Id;";
+                // Assuming each entity has an `Id` property
+                var subquery = $"UPDATE {_tableName} SET IsActive = 0 WHERE Id = @Id;";
                 query += subquery;
             }
 
-            await _db.ExecuteAsync(query, entity);
+            await _db.ExecuteAsync(query, entities);
         }
-
         public async Task<int> CountWithFilter(string dbName, TFilter filters)
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))
@@ -174,7 +194,7 @@ namespace Infrastructure.Repositories
         public async Task<T> WhereFirstQuery(string dbName, string query)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstAsync<T>($"SELECT * FROM {_tableName} WHERE {query}");
+            return await _db.QueryFirstOrDefaultAsync<T>($"SELECT * FROM {_tableName} WHERE {query}");
         }
         public async Task<bool> AnyQuery(string dbName, string query)
         {

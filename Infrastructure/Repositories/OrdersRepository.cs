@@ -197,5 +197,43 @@ namespace Infrastructure.Repositories
             results.ClinicData = clinicData;
             return results;
         }
+
+        public async Task<CardDashboard> CountInvoiceToCard(string dbName, string query)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filter = "";
+            if (!string.IsNullOrEmpty(query))
+            {
+                filter = $"And {query}";
+            }
+
+            var queryOrder = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Orders WHERE `Status` = 'Paid' AND `Type` = 'Incomes' {filter}";
+            var queryAppointment = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Appointments WHERE `StatusId` = 6 {filter}";
+
+            var resultQuery = $"SELECT SUM(TotalAll) AS `TotalAll`, SUM(Total) AS `Total` FROM ({queryOrder} UNION ALL {queryAppointment}) AS CombinedCounts;";
+            return await _db.QueryFirstAsync<CardDashboard>(resultQuery);
+        }
+
+        public async Task<IEnumerable<MonthlyDataChart>> GetTotalOrderSales(string dbName, string dateFilter)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            if (dateFilter != null)
+            {
+                filterQuery = dateFilter;
+            }
+            string query = @"SELECT
+                                DATE_FORMAT(CreatedAt, '%d') AS Date,
+                                DATE_FORMAT(CreatedAt, '%m') AS Month,
+                                DATE_FORMAT(CreatedAt, '%Y') AS Year,
+                                SUM(TotalPrice) AS Total
+                            FROM
+                                Orders
+                            WHERE Type = 'Incomes' AND `Status` = 'Paid' AND 
+            ";
+            query += filterQuery;
+            query += " GROUP BY DATE_FORMAT(CreatedAt, '%d'), DATE_FORMAT(CreatedAt, '%m'), DATE_FORMAT(CreatedAt, '%Y') ORDER BY Date, Year, Month;";
+            return await _db.QueryAsync<MonthlyDataChart>(query);
+        }
     }
 }

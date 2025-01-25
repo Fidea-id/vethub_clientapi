@@ -136,6 +136,7 @@ namespace Application.Services.Implementations
                 foreach(var item in data.Data)
                 {
                     var opname = await _unitOfWork.OpnamesRepository.GetById(dbName, item.OpnameId);
+                    if(opname == null) continue;
                     var medical = await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, item.MedicalRecordId, null);
 
                     var itemResult = new OpnamePatientsDetailResponse();

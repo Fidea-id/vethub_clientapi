@@ -59,7 +59,7 @@ namespace Application.Services.Implementations
                         }
                     };
 
-                    await _emailsender.Send(data);
+                    //await _emailsender.Send(data);
                 }
             }
             else
@@ -208,7 +208,7 @@ namespace Application.Services.Implementations
 
                 FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
                 var newId = await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
-
+                    
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "ChangeAppointmentStatus", MethodType.Create, nameof(MedicalRecords));
             }
@@ -222,6 +222,7 @@ namespace Application.Services.Implementations
                 StaffId = staff.Id,
                 Note = request.Notes
             };
+            FormatUtil.SetIsActive<AppointmentsActivity>(newAppointment, true);
             FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
             await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
         }

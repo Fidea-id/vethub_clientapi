@@ -117,6 +117,21 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                int speciesId;
+                int breedId;
+
+                // Attempt to parse and replace Species and Breed with their names
+                if (int.TryParse(value.Species, out speciesId))
+                {
+                    var species = await _additionalService.ReadAnimalByIdAsync(speciesId, dbName);
+                    value.Species = species.Name;
+                }
+
+                if (int.TryParse(value.Breed, out breedId))
+                {
+                    var breed = await _additionalService.ReadBreedByIdAsync(breedId, dbName);
+                    value.Breed = breed.Name;
+                }
                 await _patientsService.UpdateAsync(id, value, dbName);
                 return Ok(value);
             }

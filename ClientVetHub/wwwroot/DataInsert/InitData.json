@@ -334,13 +334,20 @@
   ],
   "AppointmentsType": [
     {
-      "Name": "Vet Checkup"
+      "Name": "Vet Checkup",
+      "Color": "#1761fd"
     },
     {
-      "Name": "Grooming"
+      "Name": "Grooming",
+      "Color": "#ff1e1e"
     },
     {
-      "Name": "House Call"
+      "Name": "House Call",
+      "Color": "#000000"
+    },
+    {
+      "Name": "Pet Hotel",
+      "Color": "#ff05b0"
     }
   ]
 }

@@ -444,6 +444,7 @@ namespace Application.Services.Implementations
                     StaffId = medicalRecords.StaffId,
                     Note = string.Empty
                 };
+                FormatUtil.SetIsActive<AppointmentsActivity>(newAppointmentActivity, true);
                 FormatUtil.SetDateBaseEntity(newAppointmentActivity);
                 await _unitOfWork.AppointmentRepository.AddActivity(newAppointmentActivity, dbName);
 
@@ -997,6 +998,7 @@ namespace Application.Services.Implementations
                 StaffId = getMedical.StaffId,
                 Note = string.Empty
             };
+            FormatUtil.SetIsActive<AppointmentsActivity>(newAppointmentActivity, true);
             FormatUtil.SetDateBaseEntity(newAppointmentActivity);
             await _unitOfWork.AppointmentRepository.AddActivity(newAppointmentActivity, dbName);
 

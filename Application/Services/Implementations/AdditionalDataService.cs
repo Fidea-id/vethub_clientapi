@@ -13,6 +13,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Diagnostics.Eventing.Reader;
 using Domain.Entities;
 using Newtonsoft.Json;
+using Infrastructure.Utils;
 
 namespace Application.Services.Implementations
 {
@@ -30,34 +31,101 @@ namespace Application.Services.Implementations
         }
 
         #region Dashboard
-        public async Task<DashboardResponse> ReadDashboardAsync(string dbName, string date)
+        public async Task<DashboardResponse> ReadDashboardAsync(string dbName, string startDate, string endDate)
         {
             var statusPaid = "Paid";
-            var clients = await _uow.OwnersRepository.CountToCard(dbName, date, null);
-            var pets = await _uow.PatientsRepository.CountToCard(dbName, date, null);
-            var appointment = await _uow.AppointmentRepository.CountToCard(dbName, date, null);
+            var defaultFilter = "CreatedAt >= '2023-01-01'";
+            var dateFilter = defaultFilter;
+            var dateFilterMR = "mr.CreatedAt >= '2023-01-01'";
 
-            var dateFilter = $"CreatedAt >= '2023-01-01'";
-            if (!string.IsNullOrEmpty(date))
+            // Handle single or range date filtering
+            if (!string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
             {
-                dateFilter = $"CreatedAt >= '{date}'";
+                dateFilter = $"CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
+                dateFilterMR = $"mr.CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
+            }
+            else if (!string.IsNullOrEmpty(startDate))
+            {
+                dateFilter = $"CreatedAt >= '{startDate}'";
+                dateFilterMR = $"mr.CreatedAt >= '{startDate}'";
             }
 
-            var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
-            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"{dateFilter} AND PaymentStatus = '{statusPaid}'");
-            var revenueOrderAll = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
-            var revenueOrderMonth = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}'");
-            var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName);
+            var clients = await _uow.OwnersRepository.CountToCard(dbName, null, dateFilter);
+            var pets = await _uow.PatientsRepository.CountToCard(dbName, null, dateFilter);
+            var appointment = await _uow.AppointmentRepository.CountToCard(dbName, null, dateFilter);
+            var product = await _uow.ProductsRepository.CountToCard(dbName, null, dateFilter);
+            var service = await _uow.ServicesRepository.CountToCard(dbName, null, dateFilter);
+            var invoice = await _uow.OrdersRepository.CountInvoiceToCard(dbName, dateFilter);
+            
+            var weekClientAppointment = await _uow.AppointmentRepository.GetClientWeek(dbName);
+
+            //var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
+            //var revenueOrderAll = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
+
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"mr.{dateFilter}");
+            var revenueOrderMonth = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}' AND Type = 'Incomes'");
+            var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName, dateFilter);
+            var ownerTotal = await _uow.OwnersRepository.GetOwnerChart(dbName, dateFilter);
+            var patientTotal = await _uow.PatientsRepository.GetPatientChart(dbName, dateFilter);
+            var patientTypes = await _uow.PatientsRepository.GetPatientTypeChart(dbName, defaultFilter);
+
+            var medicalRecordsSales = await _uow.MedicalRecordsRepository.GetTotalMedicalSales(dbName, dateFilterMR);
+            var orderSales = await _uow.OrdersRepository.GetTotalOrderSales(dbName, dateFilter);
+            var topMedFrequency = await _uow.MedicalRecordsPrescriptionsRepository.GetMedsFrequency(dbName, dateFilter);
 
             var visitYearlyConverted = visitYearly.Select(item => new MonthlyDataChart()
             {
+                Date = item.Date,
                 Month = DateTime.ParseExact(item.Month, "MM", null).ToString("MMM"),
                 Year = item.Year,
                 Total = item.Total
             });
 
-            var revenueAll = revenueOrderAll + revenueAppointmentAll;
-            var revenueMonth = revenueOrderMonth + revenueAppointmentMonth;
+            //combine med and order sales
+            var combinedSales = medicalRecordsSales.Concat(orderSales);
+            var combinedSalesFinal = combinedSales
+                .GroupBy(sale => new { sale.Date, sale.Month, sale.Year })
+                .Select(group => new MonthlyDataChart
+                {
+                    Date = group.Key.Date,
+                    Month = DateTime.ParseExact(group.Key.Month, "MM", null).ToString("MMM"),
+                    Year = group.Key.Year,
+                    Total = group.Sum(sale => sale.Total)
+                })
+                .OrderBy(sale => sale.Year)
+                .ThenBy(sale => sale.Month)
+                .ThenBy(sale => sale.Date)
+                .ToList();
+
+            var ownerTotalConverted = ownerTotal.Select(item => new MonthlyDataChart()
+            {
+                Date = item.Date,
+                Month = DateTime.ParseExact(item.Month, "MM", null).ToString("MMM"),
+                Year = item.Year,
+                Type = item.Type,
+                Total = item.Total
+            });
+
+            var patientTotalConverted = patientTotal.Select(item => new MonthlyDataChart()
+            {
+                Date = item.Date,
+                Month = DateTime.ParseExact(item.Month, "MM", null).ToString("MMM"),
+                Year = item.Year,
+                Type = item.Type,
+                Total = item.Total
+            });
+
+            var patientTypeConverted = patientTypes.Select(item => new MonthlyDataChart()
+            {
+                Date = item.Date,
+                Month = DateTime.ParseExact(item.Month, "MM", null).ToString("MMM"),
+                Year = item.Year,
+                Type = item.Type,
+                Total = item.Total
+            });
+
+            //var revenueAll = revenueOrderAll + revenueAppointmentAll;
+            var revenueMonth = revenueOrderMonth + revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal;
 
             var result = new DashboardResponse();
             clients.Percentage = FormatUtil.CountPercentageMonth(clients.Total, clients.TotalAll);
@@ -69,18 +137,42 @@ namespace Application.Services.Implementations
             appointment.Percentage = FormatUtil.CountPercentageMonth(appointment.Total, appointment.TotalAll);
             result.Appointments = appointment;
 
+            product.Percentage = FormatUtil.CountPercentageMonth(product.Total, product.TotalAll);
+            result.Products = product;
+
+            service.Percentage = FormatUtil.CountPercentageMonth(service.Total, service.TotalAll);
+            result.Services = service;
+
+            invoice.Percentage = FormatUtil.CountPercentageMonth(invoice.Total, invoice.TotalAll);
+            result.SalesInvoices = invoice;
+            
             result.Revenues = new DoubleCardDashboard()
             {
                 Total = revenueMonth,
-                TotalAll = revenueAll,
-                Percentage = FormatUtil.CountDoublePercentageMonth(revenueMonth, revenueAll)
+                TotalAll = 0,
+                Percentage = FormatUtil.CountDoublePercentageMonth(revenueMonth, 0)
+            };
+
+            //diganti ke revenue order
+            result.RevenuesProducts = new DoubleCardDashboard()
+            {
+                Total = revenueOrderMonth,
+                TotalAll = 0,
+                Percentage = FormatUtil.CountDoublePercentageMonth(revenueOrderMonth, 0)
+            };
+            //diganti ke revenue medical
+            result.RevenuesServices = new DoubleCardDashboard()
+            {
+                Total = revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal,
+                TotalAll = 0,
+                Percentage = FormatUtil.CountDoublePercentageMonth(revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal, 0)
             };
 
             //appointment activity & order activity
             var listActivities = new List<ActivityDashboard>();
-            var appointmentDetail = await _uow.AppointmentRepository.GetAllDetailList(dbName, null);
-            var latestAppointment = appointmentDetail.Data.OrderByDescending(x => x.Date).Take(10);
-            foreach (var item in latestAppointment)
+
+            var latestAppointment = await _uow.AppointmentRepository.GetLastDetailList(dbName, null, 10);
+            foreach (var item in latestAppointment.Data)
             {
                 var newActivity = new ActivityDashboard()
                 {
@@ -95,12 +187,52 @@ namespace Application.Services.Implementations
 
             //chart overview
             result.ChartClients = new List<ChartDataSeries>();
+            result.ChartSalesGrowth = new List<ChartDataSeries>();
+            result.ChartClientsGrowth = new List<ChartDataSeries>();
+            result.ChartPatientType = new List<ChartDataSeries>();
             var visitChart = new ChartDataSeries()
             {
                 Data = visitYearlyConverted,
                 Name = "Visits"
             };
+            var salesGrowthChart = new ChartDataSeries()
+            {
+                Data = combinedSalesFinal,
+                Name = "SalesGrowth"
+            };
+            var clientGrowthChart = new ChartDataSeries()
+            {
+                Data = ownerTotalConverted,//belum
+                Name = "ClientGrowth"
+            };
+            var patientGrowthChart = new ChartDataSeries()
+            {
+                Data = patientTotalConverted,//belum
+                Name = "PatientGrowth"
+            };
+            var patientTypeChart = new ChartDataSeries()
+            {
+                Data = patientTypeConverted,
+                Name = "Pets"
+            };
+
             result.ChartClients.Add(visitChart);
+            result.ChartSalesGrowth.Add(salesGrowthChart);
+            result.ChartClientsGrowth.Add(clientGrowthChart);
+            result.ChartClientsGrowth.Add(patientGrowthChart);
+            result.ChartPatientType.Add(patientTypeChart);
+            result.DateFilter = dateFilter;
+
+            var heatmap = weekClientAppointment
+                .GroupBy(r => r.W) // Group by day of the week
+                .Select(g => new ChartHeatmapSeries
+                {
+                    Name = EnumConvertor.GetDayName(g.Key), // Convert numeric day to day name (e.g., 1 = Sunday)
+                    Data = g.Select(r => new DataPoint { X = r.X, Y = r.Y })
+                })
+                .ToList();
+            result.WeeklyClient = heatmap;
+            result.FrequentDiagnoseMeds = topMedFrequency.ToList();
 
             return result;
         }

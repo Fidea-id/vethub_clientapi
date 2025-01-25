@@ -130,22 +130,65 @@ namespace Infrastructure.Repositories
             return await _db.QueryFirstOrDefaultAsync<string>(query);
         }
 
-        public async Task<IEnumerable<MonthlyDataChart>> GetVisitYearly(string dbName)
+        public async Task<RevenueDataResponse> GetSalesDetail(string dbName, string query)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
+            var filter = "";
+            if (!string.IsNullOrEmpty(query))
+            {
+                filter = $"And {query}";
+            }
+            string queryFinal = $"SELECT SUM(mrp.Total), SUM(CASE WHEN mrp.Type = 'Product' THEN mrp.Total ELSE 0 END) AS ProductsTotal, SUM(CASE WHEN mrp.Type = 'Service' THEN mrp.Total ELSE 0 END) AS ServicesTotal " +
+                $"FROM MedicalRecords mr " +
+                $"JOIN MedicalRecordsPrescriptions mrp ON mrp.MedicalRecordsId = mr.Id " +
+                $"WHERE mr.PaymentStatus = 'Paid' {filter}";
+            return await _db.QueryFirstOrDefaultAsync<RevenueDataResponse>(queryFinal);
+        }
+
+        public async Task<IEnumerable<MonthlyDataChart>> GetTotalMedicalSales(string dbName, string dateFilter)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filterQuery = "YEAR(mr.CreatedAt) = YEAR(CURRENT_DATE()) AND mr.CreatedAt <= CURRENT_DATE()";
+            if (dateFilter != null)
+            {
+                filterQuery = dateFilter;
+            }
             string query = @"SELECT
+                                DATE_FORMAT(mr.CreatedAt, '%d') AS Date,
+                                DATE_FORMAT(mr.CreatedAt, '%m') AS Month,
+                                DATE_FORMAT(mr.CreatedAt, '%Y') AS Year,
+                                SUM(mrp.Total) AS Total
+                            FROM
+                              MedicalRecords mr
+                            JOIN 
+                              MedicalRecordsPrescriptions mrp ON mrp.MedicalRecordsId = mr.Id
+                            WHERE
+                              mr.PaymentStatus = 'Paid' AND 
+            ";
+            query += filterQuery;
+            query += " GROUP BY Date, Month, Year ORDER BY Date, Year, Month;";
+            return await _db.QueryAsync<MonthlyDataChart>(query);
+        }
+
+        public async Task<IEnumerable<MonthlyDataChart>> GetVisitYearly(string dbName, string? dateFilter)
+        {
+            var _db = _dbFactory.GetDbConnection(dbName);
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            if(dateFilter != null)
+            {
+                filterQuery = dateFilter;
+            }
+            string query = @"SELECT
+                                DATE_FORMAT(CreatedAt, '%d') AS Date,
                                 DATE_FORMAT(CreatedAt, '%m') AS Month,
                                 DATE_FORMAT(CreatedAt, '%Y') AS Year,
                                 COUNT(*) AS Total
                             FROM
                                 MedicalRecords
-                            WHERE
-                                YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()
-                            GROUP BY
-                                Month, Year
-                            ORDER BY
-                                Year, Month;
+                            WHERE 
             ";
+            query += filterQuery;
+            query += " GROUP BY Date, Month, Year ORDER BY Date, Year, Month;";
             return await _db.QueryAsync<MonthlyDataChart>(query);
         }
     }

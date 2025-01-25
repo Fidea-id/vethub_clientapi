@@ -30,7 +30,30 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var data = await _additionalDataService.ReadDashboardAsync(dbName, date);
+
+                string startDate = null;
+                string endDate = null;
+                if (!string.IsNullOrEmpty(date))
+                {
+                    if (date.Contains(" - "))
+                    {
+                        var dateParts = date.Split(" - ");
+                        startDate = DateTime.ParseExact(dateParts[0].Trim(), "dd MMMM yyyy", null).ToString("yyyy-MM-dd");
+                        endDate = DateTime.ParseExact(dateParts[1].Trim(), "dd MMMM yyyy", null).ToString("yyyy-MM-dd");
+                    }
+                    else
+                    {
+                        startDate = DateTime.ParseExact(date.Trim(), "dd MMMM yyyy", null).ToString("yyyy-MM-dd");
+                        endDate = null;
+                    }
+                }
+                else
+                {
+                    startDate = "2023-01-01"; // Default start date
+                    endDate = null; // No end date
+                }
+
+                var data = await _additionalDataService.ReadDashboardAsync(dbName, startDate, endDate);
                 return Ok(data);
             }
             catch
