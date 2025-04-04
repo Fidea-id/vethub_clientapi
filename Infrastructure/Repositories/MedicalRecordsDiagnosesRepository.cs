@@ -15,7 +15,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<MedicalRecordsDiagnoses>> GetByMedicalRecordId(string dbName, int medicalRecordsId)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<MedicalRecordsDiagnoses>($"SELECT * FROM MedicalRecordsDiagnoses WHERE MedicalRecordsId = @Id", new { Id = medicalRecordsId });
+            return await _db.QueryAsync<MedicalRecordsDiagnoses>($"SELECT * FROM MedicalRecordsDiagnoses WHERE MedicalRecordsId = @Id AND IsActive = 1", new { Id = medicalRecordsId });
         }
     }
 }

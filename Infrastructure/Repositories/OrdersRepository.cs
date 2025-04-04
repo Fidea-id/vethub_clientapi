@@ -25,13 +25,13 @@ namespace Infrastructure.Repositories
                 SUM(CASE WHEN Type = 'Incomes' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS IncomesAmount,
                 SUM(CASE WHEN Type = 'Expenses' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS ExpensesAmount
             FROM Orders
-            WHERE MONTH(Date) = MONTH(CURRENT_DATE)";
+            WHERE MONTH(Date) = MONTH(CURRENT_DATE) AND IsActive = 1";
             return await _db.QueryFirstOrDefaultAsync<DashboardOrderResponse>(query);
         }
         public async Task<string> GetLatestCode(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            string query = "SELECT OrderNumber FROM Orders ORDER BY Id DESC";
+            string query = "SELECT OrderNumber FROM Orders Where IsActive = 1 ORDER BY Id DESC";
             return await _db.QueryFirstOrDefaultAsync<string>(query);
         }
         public async Task<DataResultDTO<OrdersResponse>> GetOrdersList(string dbName, OrdersFilter filter)
@@ -82,7 +82,11 @@ namespace Infrastructure.Repositories
                 LEFT JOIN Owners c ON o.ClientId = c.Id";
             if (thisMonth)
             {
-                query += " WHERE MONTH(o.Date) = MONTH(CURRENT_DATE()) AND YEAR(o.Date) = YEAR(CURRENT_DATE());";
+                query += " WHERE MONTH(o.Date) = MONTH(CURRENT_DATE()) AND YEAR(o.Date) = YEAR(CURRENT_DATE()) AND o.IsActive = 1;";
+            }
+            else
+            {
+                query += " WHERE o.IsActive = 1;";
             }
             var results = await _db.QueryAsync<OrderFullResponse>(query);
 
@@ -101,7 +105,7 @@ namespace Infrastructure.Repositories
                     FROM Orders o
                     LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                     LEFT JOIN Products pr ON od.ProductId = pr.Id
-                    WHERE o.Id = @OrderId";
+                    WHERE o.Id = @OrderId AND o.IsActive = 1";
                 item.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = item.Id });
 
                 const string paymentQuery = @"
@@ -115,7 +119,7 @@ namespace Infrastructure.Repositories
                     FROM Orders o
                     JOIN OrdersPayment op ON o.Id = op.OrderId
                     JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
-                    WHERE o.Id = @OrderId AND op.Type = @PaymentType";
+                    WHERE o.Id = @OrderId AND op.Type = @PaymentType AND o.IsActive = 1";
                 item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id, PaymentType = "Order" });
 
                 item.ClinicData = clinicData;
@@ -146,7 +150,7 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 LEFT JOIN Profile p ON o.StaffId = p.Id
                 LEFT JOIN Owners c ON o.ClientId = c.Id
-                WHERE o.Id = @OrderId";
+                WHERE o.Id = @OrderId AND o.IsActive = 1";
             var results = await _db.QueryFirstAsync<OrderFullResponse>(query, new { OrderId = id });
 
             const string clinicQuery = @"
@@ -178,7 +182,7 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                 LEFT JOIN Products pr ON od.ProductId = pr.Id
-                WHERE o.Id = @OrderId";
+                WHERE o.Id = @OrderId AND o.IsActive = 1";
             results.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
 
             const string paymentQuery = @"
@@ -192,7 +196,7 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 JOIN OrdersPayment op ON o.Id = op.OrderId
                 JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
-                WHERE o.Id = @OrderId AND op.Type = @PaymentType";
+                WHERE o.Id = @OrderId AND op.Type = @PaymentType AND o.IsActive = 1";
             results.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = id, PaymentType = "Order" });
             results.ClinicData = clinicData;
             return results;
@@ -207,8 +211,8 @@ namespace Infrastructure.Repositories
                 filter = $"And {query}";
             }
 
-            var queryOrder = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Orders WHERE `Status` = 'Paid' AND `Type` = 'Incomes' {filter}";
-            var queryAppointment = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Appointments WHERE `StatusId` = 6 {filter}";
+            var queryOrder = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Orders WHERE `Status` = 'Paid' AND `IsActive` = 1 AND `Type` = 'Incomes' {filter}";
+            var queryAppointment = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Appointments WHERE `StatusId` = 6 AND `IsActive` = 1 {filter}";
 
             var resultQuery = $"SELECT SUM(TotalAll) AS `TotalAll`, SUM(Total) AS `Total` FROM ({queryOrder} UNION ALL {queryAppointment}) AS CombinedCounts;";
             return await _db.QueryFirstAsync<CardDashboard>(resultQuery);
@@ -229,7 +233,7 @@ namespace Infrastructure.Repositories
                                 SUM(TotalPrice) AS Total
                             FROM
                                 Orders
-                            WHERE Type = 'Incomes' AND `Status` = 'Paid' AND 
+                            WHERE Type = 'Incomes' AND `Status` = 'Paid' AND `IsActive` = 1 AND 
             ";
             query += filterQuery;
             query += " GROUP BY DATE_FORMAT(CreatedAt, '%d'), DATE_FORMAT(CreatedAt, '%m'), DATE_FORMAT(CreatedAt, '%Y') ORDER BY Date, Year, Month;";

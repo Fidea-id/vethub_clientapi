@@ -28,7 +28,7 @@ namespace Infrastructure.Repositories
                     FROM Orders o
                     LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                     LEFT JOIN Products pr ON od.ProductId = pr.Id
-                    WHERE o.Id = @OrderId";
+                    WHERE o.Id = @OrderId AND o.IsActive = 1";
             return await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
         }
     }

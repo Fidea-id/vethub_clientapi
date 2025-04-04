@@ -8,7 +8,7 @@ namespace Application.Utils
         {
             var volumeStock = (stocksNow.Stock * stocksNow.Volume) + stocksNow.VolumeRemaining;
             var stockBefore = stocksNow.Stock;
-            var volumeNow = volumeStock - newVolumeMin;
+            var volumeNow = Math.Max(0, volumeStock - newVolumeMin);
             var newVolumeRemaining = volumeNow % stocksNow.Volume;
             var newStockCalc = Math.Floor(volumeNow / stocksNow.Volume);
             var stockMin = Math.Floor(newVolumeMin / stocksNow.Volume);
@@ -45,6 +45,29 @@ namespace Application.Utils
                 StockBefore = stockBefore,
                 VolumeRemaining = newVolumeRemaining,
             };
+            return Tuple.Create(stocksNow, newProductHistorical);
+        }
+        public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockPlusVolume(ProductStocks stocksNow, double returnVolume)
+        {
+            var volumeStock = (stocksNow.Stock * stocksNow.Volume) + stocksNow.VolumeRemaining;
+            var stockBefore = stocksNow.Stock;
+            var volumeNow = volumeStock + returnVolume; // Tambahkan kembali stok
+            var newVolumeRemaining = volumeNow % stocksNow.Volume;
+            var newStockCalc = Math.Floor(volumeNow / stocksNow.Volume);
+            var stockPlus = Math.Floor(returnVolume / stocksNow.Volume);
+
+            stocksNow.Stock = newStockCalc;
+            stocksNow.VolumeRemaining = newVolumeRemaining;
+
+            var newProductHistorical = new ProductStockHistorical()
+            {
+                ProductId = stocksNow.ProductId,
+                Stock = stockPlus,
+                StockAfter = newStockCalc,
+                StockBefore = stockBefore,
+                VolumeRemaining = newVolumeRemaining,
+            };
+
             return Tuple.Create(stocksNow, newProductHistorical);
         }
         public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockUp(ProductStocks stocksNow, double stock)

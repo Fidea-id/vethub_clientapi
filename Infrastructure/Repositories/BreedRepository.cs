@@ -18,7 +18,7 @@ namespace Infrastructure.Repositories
         public async Task<Breeds> GetByName(string dbName, int speciesId, string name)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<Breeds>($"SELECT * FROM Breeds WHERE AnimalsId = @AnimalsId AND Name = @Name", new { AnimalsId = speciesId, Name = name });
+            return await _db.QueryFirstOrDefaultAsync<Breeds>($"SELECT * FROM Breeds WHERE AnimalsId = @AnimalsId AND Name = @Name AND IsActive = true", new { AnimalsId = speciesId, Name = name });
         }
         public async Task<BreedAnimalResponse> GetBreedAnimal(int id, string dbName)
         {
@@ -27,7 +27,7 @@ namespace Infrastructure.Repositories
             SELECT b.*, a.Name AS AnimalName
             FROM Breeds b
             JOIN Animals a ON a.Id = b.AnimalsId
-            WHERE b.Id = @Id";
+            WHERE b.Id = @Id AND b.IsActive = true";
             var result = await _db.QueryFirstAsync<BreedAnimalResponse>(query, new { Id = id });
             return result;
         }
@@ -63,7 +63,7 @@ namespace Infrastructure.Repositories
             SELECT b.*, a.Name AS AnimalName
             FROM Breeds b
             JOIN Animals a ON a.Id = b.AnimalsId
-            WHERE a.Id = @Id";
+            WHERE a.Id = @Id AND a.IsActive = 1";
             var result = await _db.QueryAsync<BreedAnimalResponse>(query, new { Id = idAnimal });
             return result;
         }

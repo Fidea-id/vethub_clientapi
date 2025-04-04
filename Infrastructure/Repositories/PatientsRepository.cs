@@ -46,7 +46,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<MonthlyDataChart>> GetPatientChart(string dbName, string dateFilter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE() AND IsActive = 1";
             if (dateFilter != null)
             {
                 filterQuery = dateFilter;
@@ -67,7 +67,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<MonthlyDataChart>> GetPatientTypeChart(string dbName, string dateFilter)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE() AND IsActive = 1 ";
             if (dateFilter != null)
             {
                 filterQuery = dateFilter;

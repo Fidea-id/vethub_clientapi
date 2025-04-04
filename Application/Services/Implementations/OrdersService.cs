@@ -331,7 +331,8 @@ namespace Application.Services.Implementations
                     foreach (var item in medicalPayment.Data)
                     {
                         var detail = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, item.Id);
-                        result.Add(new RevenueResponse { Id = item.Id, Code = item.Code, Type = "Medical Record", Status = item.PaymentStatus, Total = item.Total, Date = item.StartDate, Details = JsonConvert.SerializeObject(detail) });
+                        var totalDiscounted = item.TotalDiscounted == null ? item.Total - (item.DiscountTotal == null ? 0 : item.DiscountTotal) : item.TotalDiscounted; 
+                        result.Add(new RevenueResponse { Id = item.Id, Code = item.Code, Type = "Medical Record", Status = item.PaymentStatus, Total = item.Total, Discount = item.DiscountTotal, TotalAfterDiscount = totalDiscounted, Date = item.StartDate, Details = JsonConvert.SerializeObject(detail) });
                     }
                 }
                 if (orderPayment.Data.Count() > 0)
@@ -339,7 +340,8 @@ namespace Application.Services.Implementations
                     foreach (var item in orderPayment.Data)
                     {
                         var detail = await _unitOfWork.OrdersDetailRepository.GetByOrderId(dbName, item.Id);
-                        result.Add(new RevenueResponse { Id = item.Id, Code = item.OrderNumber, Type = "Order", Status = item.Status, Total = item.TotalPrice, Date = item.Date, Details = JsonConvert.SerializeObject(detail) });
+                        var totalDiscounted = item.TotalDiscountedPrice == 0 ? item.TotalPrice - (item.TotalDiscount == 0 ? 0 : item.TotalDiscount) : item.TotalDiscountedPrice;
+                        result.Add(new RevenueResponse { Id = item.Id, Code = item.OrderNumber, Type = "Order", Status = item.Status, Total = item.TotalPrice, Discount = item.TotalDiscount, TotalAfterDiscount = totalDiscounted, Date = item.Date, Details = JsonConvert.SerializeObject(detail) });
                     }
                 }
 

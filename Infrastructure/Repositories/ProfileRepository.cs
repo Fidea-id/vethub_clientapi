@@ -15,18 +15,18 @@ namespace Infrastructure.Repositories
         public async Task<Profile> GetByGlobalId(string dbName, int id)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE GlobalId = @Id", new { Id = id });
+            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE GlobalId = @Id AND IsActive = 1", new { Id = id });
         }
         public async Task<Profile> GetByEmail(string dbName, string email)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Email = @Email", new { Email = email });
+            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Email = @Email AND IsActive = 1", new { Email = email });
         }
 
         public async Task<Profile> GetOwner(string dbName)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Roles = @Owner", new { Owner = "Owner" });
+            return await _db.QueryFirstOrDefaultAsync<Profile>($"SELECT * FROM {_tableName} WHERE Roles = @Owner AND IsActive = 1", new { Owner = "Owner" });
         }
     }
 }

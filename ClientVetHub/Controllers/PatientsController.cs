@@ -147,7 +147,8 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _patientsService.DeleteAsync(id, dbName);
+                await _patientsService.DeletePatientAsync(id, dbName);
+                //await _patientsService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
             catch

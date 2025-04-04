@@ -47,6 +47,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(T).Name}Service.CreateAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }
@@ -67,6 +68,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(T).Name}Service.DeleteAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }
@@ -93,6 +95,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(T).Name}Service.UpdateAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }
@@ -224,6 +227,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(T).Name}Service.UploadFileAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }
@@ -250,6 +254,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = typeof(T).Name;
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }
@@ -275,6 +280,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"{typeof(T).Name}Service.CreateRequestAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, typeof(T).Name, ex);
                 throw;
             }
         }

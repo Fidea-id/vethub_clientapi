@@ -43,7 +43,10 @@ namespace Infrastructure.Repositories
                 FROM
                     ProductDiscounts pd
                 JOIN
-                    Products p ON pd.ProductId = p.Id";
+                    Products p ON pd.ProductId = p.Id
+                WHERE
+                    pd.IsActive = true
+                ";
             var data = await _db.QueryAsync<ProductDiscountDetailResponse>(query);
             var result = new DataResultDTO<ProductDiscountDetailResponse>
             {

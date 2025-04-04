@@ -16,5 +16,6 @@ namespace Application.Services.Contracts
         Task<PatientsStatistic> AddPatientStatistic(PatientsStatisticRequest request, string dbName);
         Task<IEnumerable<PatientsStatisticResponse>> ReadPatientsStatisticAsync(int patientId, string dbName);
         Task<IEnumerable<PatientsStatisticHistoryResponse>> ReadPatientsStatisticHistoryAsync(string type, int patientId, string dbName);
+        Task DeletePatientAsync(int patientId, string dbName);
     }
 }

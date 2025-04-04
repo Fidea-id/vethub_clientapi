@@ -24,11 +24,11 @@ namespace Infrastructure.Repositories
                     a.Type,
                     MAX(a.Unit) AS Unit,
                     MAX(a.CreatedAt) AS CreatedAt,
-                    (SELECT MAX(Value) FROM PatientsStatistic c WHERE c.PatientId = a.PatientId AND c.Type = a.Type AND c.CreatedAt = MAX(a.CreatedAt)) AS Latest,
-                    (SELECT Value FROM PatientsStatistic d WHERE d.PatientId = a.PatientId AND d.Type = a.Type AND d.CreatedAt = (SELECT MAX(CreatedAt) 
+                    (SELECT MAX(Value) FROM PatientsStatistic c WHERE c.PatientId = a.PatientId AND a.IsActive = 1 AND c.Type = a.Type AND c.CreatedAt = MAX(a.CreatedAt)) AS Latest,
+                    (SELECT Value FROM PatientsStatistic d WHERE d.PatientId = a.PatientId  AND a.IsActive = 1 AND d.Type = a.Type AND d.CreatedAt = (SELECT MAX(CreatedAt) 
                         FROM PatientsStatistic e WHERE e.PatientId = a.PatientId AND e.Type = a.Type AND e.CreatedAt < MAX(a.CreatedAt))) AS `Before`
                 FROM PatientsStatistic a
-                WHERE a.PatientId = @patientId
+                WHERE a.PatientId = @patientId AND a.IsActive = 1
                 GROUP BY a.PatientId, a.Type;";
 
             return await _db.QueryAsync<PatientsStatisticDto>(query, new { patientId });

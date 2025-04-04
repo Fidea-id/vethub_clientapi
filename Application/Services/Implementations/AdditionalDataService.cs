@@ -14,6 +14,10 @@ using System.Diagnostics.Eventing.Reader;
 using Domain.Entities;
 using Newtonsoft.Json;
 using Infrastructure.Utils;
+using DevExpress.XtraReports.Native;
+using Domain.Entities.Models.Masters;
+using System.Reflection;
+using System;
 
 namespace Application.Services.Implementations
 {
@@ -34,20 +38,20 @@ namespace Application.Services.Implementations
         public async Task<DashboardResponse> ReadDashboardAsync(string dbName, string startDate, string endDate)
         {
             var statusPaid = "Paid";
-            var defaultFilter = "CreatedAt >= '2023-01-01'";
+            var defaultFilter = " CreatedAt >= '2023-01-01'";
             var dateFilter = defaultFilter;
-            var dateFilterMR = "mr.CreatedAt >= '2023-01-01'";
+            var dateFilterMR = " mr.StartDate >= '2023-01-01'";
 
             // Handle single or range date filtering
             if (!string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
             {
-                dateFilter = $"CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
-                dateFilterMR = $"mr.CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
+                dateFilter = $" CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
+                dateFilterMR = $" mr.StartDate BETWEEN '{startDate}' AND '{endDate}'";
             }
             else if (!string.IsNullOrEmpty(startDate))
             {
-                dateFilter = $"CreatedAt >= '{startDate}'";
-                dateFilterMR = $"mr.CreatedAt >= '{startDate}'";
+                dateFilter = $" CreatedAt >= '{startDate}'";
+                dateFilterMR = $" mr.StartDate >= '{startDate}'";
             }
 
             var clients = await _uow.OwnersRepository.CountToCard(dbName, null, dateFilter);
@@ -59,10 +63,7 @@ namespace Application.Services.Implementations
             
             var weekClientAppointment = await _uow.AppointmentRepository.GetClientWeek(dbName);
 
-            //var revenueAppointmentAll = await _uow.MedicalRecordsRepository.SumDoubleWithQuery(dbName, "Total", $"PaymentStatus = '{statusPaid}'");
-            //var revenueOrderAll = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"Status = '{statusPaid}'");
-
-            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"mr.{dateFilter}");
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"{dateFilterMR}");
             var revenueOrderMonth = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}' AND Type = 'Incomes'");
             var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName, dateFilter);
             var ownerTotal = await _uow.OwnersRepository.GetOwnerChart(dbName, dateFilter);
@@ -125,7 +126,8 @@ namespace Application.Services.Implementations
             });
 
             //var revenueAll = revenueOrderAll + revenueAppointmentAll;
-            var revenueMonth = revenueOrderMonth + revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal;
+            var revenueAppointmentTotal = (revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal) - revenueAppointmentMonth.TotalDiscount;
+            var revenueMonth = revenueOrderMonth + revenueAppointmentTotal;
 
             var result = new DashboardResponse();
             clients.Percentage = FormatUtil.CountPercentageMonth(clients.Total, clients.TotalAll);
@@ -163,9 +165,9 @@ namespace Application.Services.Implementations
             //diganti ke revenue medical
             result.RevenuesServices = new DoubleCardDashboard()
             {
-                Total = revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal,
+                Total = revenueAppointmentTotal,
                 TotalAll = 0,
-                Percentage = FormatUtil.CountDoublePercentageMonth(revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal, 0)
+                Percentage = FormatUtil.CountDoublePercentageMonth(revenueAppointmentTotal, 0)
             };
 
             //appointment activity & order activity
@@ -260,6 +262,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreateClinicsAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Clinics), ex);
                 throw;
             }
         }
@@ -298,6 +301,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdateClinicsAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Clinics), ex);
                 throw;
             }
         }
@@ -329,6 +333,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreateAnimalAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Animals), ex);
                 throw;
             }
         }
@@ -380,6 +385,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdateAnimalAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Animals), ex);
                 throw;
             }
         }
@@ -400,6 +406,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeleteAnimalAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Animals), ex);
                 throw;
             }
         }
@@ -431,6 +438,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreateBreedAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Breeds), ex);
                 throw;
             }
         }
@@ -497,6 +505,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdateBreedAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Breeds), ex);
                 throw;
             }
         }
@@ -517,6 +526,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeleteBreedAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Breeds), ex);
                 throw;
             }
         }
@@ -544,6 +554,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreateDiagnoseAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Diagnoses), ex);
                 throw;
             }
         }
@@ -595,6 +606,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdateDiagnoseAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Diagnoses), ex);
                 throw;
             }
         }
@@ -615,6 +627,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeleteDiagnoseAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Diagnoses), ex);
                 throw;
             }
         }
@@ -642,6 +655,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreatePaymentMethodAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PaymentMethod), ex);
                 throw;
             }
         }
@@ -693,6 +707,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdatePaymentMethodAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PaymentMethod), ex);
                 throw;
             }
         }
@@ -713,6 +728,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeletePaymentMethodAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PaymentMethod), ex);
                 throw;
             }
         }
@@ -740,6 +756,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.CreatePrescriptionFrequentsAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PrescriptionFrequents), ex);
                 throw;
             }
         }
@@ -778,6 +795,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.UpdatePrescriptionFrequentsAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PrescriptionFrequents), ex);
                 throw;
             }
         }
@@ -798,6 +816,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.DeletePrescriptionFrequentsAsync";
+                await _uow.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PrescriptionFrequents), ex);
                 throw;
             }
         }

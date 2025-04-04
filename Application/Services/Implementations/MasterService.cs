@@ -336,6 +336,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"MasterService.CreateClinicsProfileAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Clinics), ex);
                 throw;
             }
         }

@@ -1,4 +1,6 @@
 ﻿using Application.Services.Contracts;
+using Application.Services.Implementations;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -65,6 +67,23 @@ namespace ClientVetHub.Controllers
             }
         }
 
+
+        [HttpPost("bulk")]
+        public async Task<IActionResult> AddProductBulk(BulkOwnerPatients request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var idUser = User.FindFirstValue("Id");
+                var entities = await _ownersService.AddOwnersPatientsAsBulk(request.listData, dbName, idUser);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] OwnersPetsRequest request)
         {
@@ -101,7 +120,8 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                await _ownersService.DeleteAsync(id, dbName);
+                await _ownersService.DeleteOwnerAsync(id, dbName);
+                //await _ownersService.DeleteAsync(id, dbName);
                 return Ok(default(Patients));
             }
             catch

@@ -14,11 +14,19 @@ namespace Infrastructure.Utils
         {
             return isCount ? $"SELECT COUNT(*) {selectClause.Substring(selectClause.IndexOf("FROM"))}" : selectClause;
         }
-        public static Tuple<string, DynamicParameters> GenerateFilterQuery<TFilter>(TFilter filters, string mainTableName, string joinQuery = null, List<string> selectColumns = null) where TFilter : BaseEntityFilter
+        public static Tuple<string, DynamicParameters> GenerateFilterQuery<TFilter>(
+            TFilter filters,
+            string mainTableName,
+            string joinQuery = null,
+            List<string> selectColumns = null)
+            where TFilter : BaseEntityFilter
         {
             // Build the WHERE clause based on the filters
             var whereClause = "";
             var parameters = new DynamicParameters();
+
+            // Add default filter for IsActive = true
+            whereClause += $"{mainTableName}.IsActive = 1 AND ";
 
             // Get the properties of the filter object
             var filterProperties = typeof(TFilter).GetProperties();
@@ -30,17 +38,22 @@ namespace Infrastructure.Utils
                 var stringProperties = typeof(TFilter).GetProperties()
                              .Where(p => p.PropertyType == typeof(string) && p.DeclaringType == typeof(TFilter));
 
-                whereClause += "(";
-
-                foreach (var property in stringProperties)
+                if (stringProperties.Any())
                 {
-                    whereClause += $"{mainTableName}.{property.Name} LIKE @SearchValue OR ";
+                    whereClause += " (";
+
+                    foreach (var property in stringProperties)
+                    {
+                        whereClause += $"{mainTableName}.{property.Name} LIKE @SearchValue OR ";
+                    }
+
+                    // Remove the trailing "OR " and close the parentheses
+                    whereClause = whereClause.TrimEnd("OR ".ToCharArray()) + ")";
                     parameters.Add("@SearchValue", searchValue);
                 }
-
-                whereClause = whereClause.TrimEnd("OR ".ToCharArray()) + ")";
             }
 
+            // Add other filters
             foreach (var property in filterProperties)
             {
                 var value = property.GetValue(filters);
@@ -49,20 +62,22 @@ namespace Infrastructure.Utils
                     var paramName = $"@{property.Name}";
                     var propertyType = property.PropertyType;
 
-                    if (propertyType == typeof(int) || propertyType == typeof(bool))
+                    if (propertyType == typeof(int) || propertyType == typeof(bool) || propertyType == typeof(int?))
                     {
+                        // Use equality operator for integers and booleans
                         whereClause += $"{mainTableName}.{property.Name} = {paramName} AND ";
                         parameters.Add(paramName, value);
                     }
-                    else if (propertyType == typeof(DateTime))
+                    else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
                     {
                         whereClause += $"{mainTableName}.{property.Name} = {paramName} AND ";
                         parameters.Add(paramName, value, DbType.DateTime);
                     }
-                    else
+                    else if (propertyType == typeof(string))
                     {
+                        // Use LIKE for string properties
                         whereClause += $"{mainTableName}.{property.Name} LIKE {paramName} AND ";
-                        parameters.Add(paramName, $"%{value}%"); // Using wildcard '%' for exact matching
+                        parameters.Add(paramName, $"%{value}%");
                     }
                 }
             }
@@ -80,16 +95,6 @@ namespace Infrastructure.Utils
                 var sortMode = string.IsNullOrEmpty(filters.SortMode) ? "ASC" : filters.SortMode.ToUpper();
                 sortClause = $"ORDER BY {mainTableName}.{filters.SortProp} {sortMode}";
             }
-
-            //var limitClause = "";
-            //if (filters.Skip.HasValue && filters.Take.HasValue)
-            //{
-            //    limitClause = $"LIMIT {filters.Skip.Value}, {filters.Take.Value}";
-            //}
-            //else if (filters.Take.HasValue)
-            //{
-            //    limitClause = $"LIMIT {filters.Take.Value}";
-            //}
 
             // Construct the SELECT clause
             var selectClause = "SELECT ";

@@ -236,10 +236,27 @@ namespace Application.Services.Implementations
                 var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
                 var medicalRecordsPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecordId);
                 double currentTotal = 0;
+
                 if (medicalRecordsPrescriptions.Count() > 0)
                 {
                     foreach (var pItem in medicalRecordsPrescriptions)
                     {
+                        // **Step 1: Kembalikan stok untuk prescription yang akan dihapus**
+                        if (pItem.Type == "Product")
+                        {
+                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
+                            var tuple = StockUtil.CalculateProductStockPlusVolume(productStock, pItem.Quantity);
+                            tuple.Item2.Type = "Reserve Stock";
+                            tuple.Item2.ProfileId = medicalRecords.StaffId;
+
+                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+
+                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                        }
+
+                        // **Step 2: Hapus prescription lama**
                         await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
                     }
                     currentTotal = medicalRecordsPrescriptions.Sum(x => x.Total);
@@ -247,7 +264,6 @@ namespace Application.Services.Implementations
                 var totalNow = medicalRecords.Total - currentTotal;
                 var prescriptionData = new List<MedicalRecordsPrescriptions>();
 
-                // add data prescription
                 foreach (var pItem in request)
                 {
                     //trim all string
@@ -260,14 +276,29 @@ namespace Application.Services.Implementations
                     entity.Id = newId;
                     prescriptionData.Add(entity);
 
+                    // **Step 3: Tambahkan prescription baru & kurangi stoknya**
+                    if (pItem.Type == "Product")
+                    {
+                        var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
+                        var tuple = StockUtil.CalculateProductStockMinVolume(productStock, pItem.Quantity);
+                        tuple.Item2.Type = "Update Prescription";
+                        tuple.Item2.ProfileId = medicalRecords.StaffId;
+
+                        FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                        FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+
+                        await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                        await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                    }
                     totalNow = totalNow + pItem.Total;
                 }
 
+                // **Step 4: Update total harga prescription**
                 FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
                 medicalRecords.Total = totalNow;
                 await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
 
-                //add event log
+                // **Step 5: Simpan event log**
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, medicalRecords.Id, "EditMedicalRecordPrescription", MethodType.Update, nameof(MedicalRecords), JsonConvert.SerializeObject(request));
 
                 return prescriptionData;
@@ -423,14 +454,18 @@ namespace Application.Services.Implementations
         //}
         public async Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName)
         {
+            try
+            {
+
             var currentUserId = await _currentUser.UserId;
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
             var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
             var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
 
             bool isOpname = request.IsOpname;
+            bool isEdit = request.IsEdit;
 
-            if (!isOpname)
+            if (!isOpname || isEdit)
             {
                 appointment.StatusId = 4; // Update status to Pharmacy
                 FormatUtil.SetDateBaseEntity(appointment, true);
@@ -460,10 +495,31 @@ namespace Application.Services.Implementations
             {
                 var currentTotal = medicalRecords.Total;
 
-                if (isOpname)
+                if (isOpname || isEdit)
                 {
                     var currentPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
                     var currentPresTotal = currentPrescriptions.Sum(x => x.Total);
+
+                    foreach (var pItem in currentPrescriptions)
+                    {
+                        // **Step 1: Kembalikan stok untuk prescription yang akan dihapus**
+                        if (pItem.Type == "Product")
+                        {
+                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
+                            var tuple = StockUtil.CalculateProductStockPlusVolume(productStock, pItem.Quantity);
+                            tuple.Item2.Type = "Reserve Stock";
+                            tuple.Item2.ProfileId = medicalRecords.StaffId;
+
+                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+
+                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                        }
+
+                        // **Step 2: Hapus prescription lama**
+                        await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
+                    }
 
                     currentTotal -= currentPresTotal;
                     await _unitOfWork.MedicalRecordsPrescriptionsRepository.RemoveRange(dbName, currentPrescriptions);
@@ -482,6 +538,21 @@ namespace Application.Services.Implementations
                     var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
                     entity.Id = newId;
                     prescriptionData.Add(entity);
+
+                    //update stock
+                    if (pItem.Type == "Product")
+                    {
+                        var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
+                        var tuple = StockUtil.CalculateProductStockMinVolume(productStock, pItem.Quantity);
+                        tuple.Item2.Type = "Add MedicalService";
+                        tuple.Item2.ProfileId = medicalRecords.StaffId;
+
+                        FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                        FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+
+                        await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                        await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                    }
                 }
             }
 
@@ -490,7 +561,7 @@ namespace Application.Services.Implementations
 
             if (request.Notes != null)
             {
-                if (isOpname)
+                if (isOpname || isEdit)
                 {
                     var currentNotes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
                     await _unitOfWork.MedicalRecordsNotesRepository.RemoveRange(dbName, currentNotes);
@@ -508,7 +579,7 @@ namespace Application.Services.Implementations
 
             var notes = await _unitOfWork.MedicalRecordsNotesRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
 
-            if (isOpname)
+            if (isOpname || isEdit)
             {
                 var currentDiagnoses = await _unitOfWork.MedicalRecordsDiagnosesRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
                 await _unitOfWork.MedicalRecordsDiagnosesRepository.RemoveRange(dbName, currentDiagnoses);
@@ -556,6 +627,13 @@ namespace Application.Services.Implementations
 
             await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, response.Id, "PostAllMedicalRecords", MethodType.Update, nameof(MedicalRecordsDetailResponse), JsonConvert.SerializeObject(response));
             return response;
+            }
+            catch (Exception e)
+            {
+                e.Source = $"MedicalRecordService.PostAllMedicalRecords";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(MedicalRecordsDetailResponse), e);
+                throw;
+            }
         }
 
         public async Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName)
@@ -807,22 +885,23 @@ namespace Application.Services.Implementations
 
                     var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
 
-                    foreach (var item in prescriptions)
-                    {
-                        if (item.Type == "Product")
-                        {
-                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
-                            var tuple = StockUtil.CalculateProductStockMinVolume(productStock, item.PrescriptionAmount);
-                            tuple.Item2.Type = "MedicalRecord";
-                            tuple.Item2.ProfileId = medicalRecord.StaffId;
+                    //TODO:dipindah saat update presc
+                    //foreach (var item in prescriptions)
+                    //{
+                    //    if (item.Type == "Product")
+                    //    {
+                    //        var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {item.ProductId}");
+                    //        var tuple = StockUtil.CalculateProductStockMinVolume(productStock, item.Quantity);
+                    //        tuple.Item2.Type = "MedicalRecord";
+                    //        tuple.Item2.ProfileId = medicalRecord.StaffId;
 
-                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
-                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
+                    //        FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
+                    //        FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
 
-                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
-                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
-                        }
-                    }
+                    //        await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
+                    //        await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                    //    }
+                    //}
                 }
                 else
                 {
@@ -958,32 +1037,38 @@ namespace Application.Services.Implementations
             FormatUtil.SetDateBaseEntity(dataOpnamePatients, true);
             await _unitOfWork.OpnamePatientsRepository.Update(dbName, dataOpnamePatients);
 
-            //add opname as prescription
-            var newPrescription = new MedicalRecordsPrescriptions()
+            //check sudah ada opname yg sama atau belum
+            var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, getMedical.Id);
+            var checkOpnameService = prescriptions.Where(x => x.ProductId == 0 && x.ProductName == getOpname.Name).FirstOrDefault();
+            if (checkOpnameService == null)
             {
-                MedicalRecordsId = getMedical.Id,
-                PrescriptionAmount = duration, //duration
-                PrescriptionFrequency = "",
-                ProductId = 0,
-                Type = "Service",
-                ProductName = getOpname.Name,
-                Price = dataOpnamePatients.Price,
-                Total = dataOpnamePatients.TotalPrice,
-                Quantity = duration //duration
-            };
+                //add opname as prescription
+                var newPrescription = new MedicalRecordsPrescriptions()
+                {
+                    MedicalRecordsId = getMedical.Id,
+                    PrescriptionAmount = duration, //duration
+                    PrescriptionFrequency = "",
+                    ProductId = 0,
+                    Type = "Service",
+                    ProductName = getOpname.Name,
+                    Price = dataOpnamePatients.Price,
+                    Total = dataOpnamePatients.TotalPrice,
+                    Quantity = duration //duration
+                };
 
-            FormatUtil.TrimObjectProperties(newPrescription);
-            var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(newPrescription);
-            FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
-            FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
-            var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
-            entity.Id = newId;
+                FormatUtil.TrimObjectProperties(newPrescription);
+                var entity = Mapping.Mapper.Map<MedicalRecordsPrescriptions>(newPrescription);
+                FormatUtil.SetIsActive<MedicalRecordsPrescriptions>(entity, true);
+                FormatUtil.SetDateBaseEntity<MedicalRecordsPrescriptions>(entity);
+                var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+                entity.Id = newId;
 
-            //update medicalRecords total
-            var totalNow = getMedical.Total + newPrescription.Total;
-            getMedical.Total = totalNow;
-            FormatUtil.SetDateBaseEntity(getMedical, true);
-            await _unitOfWork.MedicalRecordsRepository.Update(dbName, getMedical);
+                //update medicalRecords total
+                var totalNow = getMedical.Total + newPrescription.Total;
+                getMedical.Total = totalNow;
+                FormatUtil.SetDateBaseEntity(getMedical, true);
+                await _unitOfWork.MedicalRecordsRepository.Update(dbName, getMedical);
+            }
 
             //update appointment status to pharmacy (4)
             getAppointment.StatusId = 4; // Update status to Pharmacy

@@ -167,78 +167,122 @@ namespace Application.Services.Implementations
 
         public async Task ChangeAppointmentStatus(AppointmentsRequestChangeStatus request, string dbName)
         {
-            var currentUserId = await _currentUser.UserId;
-            var data = await _repository.GetById(dbName, request.Id.Value);
-            if (data == null)
-                throw new Exception("Appointment not found");
-            var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.StaffId.Value);
-            if (staff == null)
-                throw new Exception("Staff not found");
-            var statusId = request.StatusId.Value;
-            data.StatusId = statusId;
-            FormatUtil.SetDateBaseEntity<Appointments>(data, true);
-            await _repository.Update(dbName, data);
-
-            //add event log
-            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, data.Id, "ChangeAppointmentStatus", MethodType.Update, nameof(Appointments),"Update Status to: " + statusId);
-
-            var now = DateTime.Now;
-
-            if (statusId == 3) //buat medical record
+            try
             {
-                double initPrice = 0;
-                if(data.ServiceId != null && data.ServiceId != 0)
-                {
-                    var getService = await _unitOfWork.ServicesRepository.GetById(dbName, data.ServiceId);
-                    initPrice = getService.Price;
-                }
-                var getLatestCode = await _unitOfWork.MedicalRecordsRepository.GetLatestCode(dbName);
-                var newMedicalRecord = new MedicalRecords
-                {
-                    Code = FormatUtil.GenerateMedicalRecordCode(getLatestCode),
-                    AppointmentId = data.Id,
-                    IsActive = true,
-                    StartDate = now,
-                    EndDate = null,
-                    PatientId = data.PatientsId,
-                    PaymentStatus = "Unpaid",
-                    StaffId = staff.Id,
-                    Total = initPrice
-                };
+                var currentUserId = await _currentUser.UserId;
+                var data = await _repository.GetById(dbName, request.Id.Value);
+                if (data == null)
+                    throw new Exception("Appointment not found");
+                var currentStatus = data.StatusId;
+                var staff = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, request.StaffId.Value);
+                if (staff == null)
+                    throw new Exception("Staff not found");
+                var statusId = request.StatusId.Value;
+                data.StatusId = statusId;
+                FormatUtil.SetDateBaseEntity<Appointments>(data, true);
+                await _repository.Update(dbName, data);
 
-                FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
-                var newId = await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
-                    
                 //add event log
-                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "ChangeAppointmentStatus", MethodType.Create, nameof(MedicalRecords));
-            }
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, data.Id, "ChangeAppointmentStatus", MethodType.Update, nameof(Appointments),"Update Status to: " + statusId);
 
-            // add appointment activity
-            var newAppointment = new AppointmentsActivity()
+
+                var now = DateTime.Now;
+
+                if (statusId == 3) //buat medical record
+                {
+                    if (currentStatus <= 3)
+                    {
+                        double initPrice = 0;
+                        if(data.ServiceId != null && data.ServiceId != 0)
+                        {
+                            var getService = await _unitOfWork.ServicesRepository.GetById(dbName, data.ServiceId);
+                            initPrice = getService.Price;
+                        }
+                        var getLatestCode = await _unitOfWork.MedicalRecordsRepository.GetLatestCode(dbName);
+                        var newMedicalRecord = new MedicalRecords
+                        {
+                            Code = FormatUtil.GenerateMedicalRecordCode(getLatestCode),
+                            AppointmentId = data.Id,
+                            IsActive = true,
+                            StartDate = now,
+                            EndDate = null,
+                            PatientId = data.PatientsId,
+                            PaymentStatus = "Unpaid",
+                            StaffId = staff.Id,
+                            Total = initPrice
+                        };
+
+                        FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
+                        var newId = await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
+                    
+                        //add event log
+                        await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "ChangeAppointmentStatus", MethodType.Create, nameof(MedicalRecords));
+                    }
+                    else
+                    {
+                        //check opname
+                        var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetByAppointmentId(dbName, data.Id);
+                        if (medicalRecords != null)
+                        {
+                            var opnamePatients = await _unitOfWork.OpnamePatientsRepository.GetByMedId(dbName, medicalRecords.Id);
+                            if (opnamePatients?.Data != null && opnamePatients.Data.Any())  // Ensure null safety
+                            {
+                                foreach (var item in opnamePatients.Data)
+                                {
+                                    if (item.Status == "Done")
+                                    {
+                                        item.Status = "Active";
+                                        FormatUtil.SetDateBaseEntity<OpnamePatients>(item, true);
+                                        await _unitOfWork.OpnamePatientsRepository.Update(dbName, item);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // add appointment activity
+                var newAppointment = new AppointmentsActivity()
+                {
+                    AppointmentId = data.Id,
+                    CurrentDate = now,
+                    CurrentStatusId = statusId,
+                    StaffId = staff.Id,
+                    Note = request.Notes
+                };
+                FormatUtil.SetIsActive<AppointmentsActivity>(newAppointment, true);
+                FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
+                await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
+            }
+            catch (Exception ex)
             {
-                AppointmentId = data.Id,
-                CurrentDate = now,
-                CurrentStatusId = statusId,
-                StaffId = staff.Id,
-                Note = request.Notes
-            };
-            FormatUtil.SetIsActive<AppointmentsActivity>(newAppointment, true);
-            FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
-            await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
+                ex.Source = $"AppointmentService.ChangeAppointmentStatus";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Appointments), ex);
+                throw;
+            }
         }
 
         private async Task SetExpiredBooking(string dbName)
         {
-            var getExpiredBooking = await _unitOfWork.AppointmentRepository.WhereQuery(dbName, $"StatusId = 1 AND Date < CURRENT_DATE");
-            foreach (var item in getExpiredBooking)
+            try
             {
-                item.StatusId = 7; //expired booking
-                FormatUtil.SetDateBaseEntity<Appointments>(item, true);
-                await _unitOfWork.AppointmentRepository.Update(dbName, item);
+                var getExpiredBooking = await _unitOfWork.AppointmentRepository.WhereQuery(dbName, $"StatusId = 1 AND Date < CURRENT_DATE");
+                foreach (var item in getExpiredBooking)
+                {
+                    item.StatusId = 7; //expired booking
+                    FormatUtil.SetDateBaseEntity<Appointments>(item, true);
+                    await _unitOfWork.AppointmentRepository.Update(dbName, item);
 
-                //add event log
-                var currentUserId = await _currentUser.UserId;
-                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, item.Id, "SetExpiredBooking", MethodType.Update, nameof(Appointments), "Update Status to: " + item.StatusId);
+                    //add event log
+                    var currentUserId = await _currentUser.UserId;
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, item.Id, "SetExpiredBooking", MethodType.Update, nameof(Appointments), "Update Status to: " + item.StatusId);
+                }
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AppointmentService.SetExpiredBooking";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Appointments), ex);
+                throw;
             }
         }
 
@@ -326,6 +370,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AppointmentService.UpdateAppointmentsTypeAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(AppointmentsType), ex);
                 throw;
             }
         }
@@ -350,6 +395,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AppointmentService.AddAppointmentsTypeAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(AppointmentsType), ex);
                 throw;
             }
         }
@@ -370,6 +416,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"AppointmentService.DeleteAppointmentsTypeAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(AppointmentsType), ex);
                 throw;
             }
         }

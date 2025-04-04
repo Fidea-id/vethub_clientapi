@@ -31,22 +31,30 @@ namespace Application.Services.Implementations
 
         public async Task<UserProfileResponse> UpdateUserProfileByGlobalIdAsync(string dbName, ProfileRequest request, int id)
         {
+            try
+            {
+                //trim all string
+                FormatUtil.TrimObjectProperties(request);
+                //var entity = Mapping.Mapper.Map<Profile>(request); // cek dulu
 
-            //trim all string
-            FormatUtil.TrimObjectProperties(request);
-            //var entity = Mapping.Mapper.Map<Profile>(request); // cek dulu
+                var checkedEntity = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, id);
+                FormatUtil.ConvertUpdateObject<ProfileRequest, Profile>(request, checkedEntity);
+                FormatUtil.SetDateBaseEntity<Profile>(checkedEntity, true);
+                await _repository.Update(dbName, checkedEntity);
 
-            var checkedEntity = await _unitOfWork.ProfileRepository.GetByGlobalId(dbName, id);
-            FormatUtil.ConvertUpdateObject<ProfileRequest, Profile>(request, checkedEntity);
-            FormatUtil.SetDateBaseEntity<Profile>(checkedEntity, true);
-            await _repository.Update(dbName, checkedEntity);
+                //add event log
+                var currentUserId = await _currentUser.UserId;
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateUserProfileByGlobalIdAsync", MethodType.Update, nameof(Profile));
 
-            //add event log
-            var currentUserId = await _currentUser.UserId;
-            await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateUserProfileByGlobalIdAsync", MethodType.Update, nameof(Profile));
-
-            var result = Mapping.Mapper.Map<UserProfileResponse>(checkedEntity);
-            return result;
+                var result = Mapping.Mapper.Map<UserProfileResponse>(checkedEntity);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = "ProfileService.UpdateUserProfileByGlobalIdAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Profile), ex);
+                throw;
+            }
         }
 
         public async Task TestSendEmail()

@@ -18,7 +18,7 @@ namespace Infrastructure.Repositories
             var _db = _dbFactory.GetDbConnection(dbName);
 
             // Check if the product exists
-            var product = await _db.QueryFirstOrDefaultAsync<ProductStocks>($"SELECT * FROM ProductStocks WHERE ProductId = @productId", new { productId });
+            var product = await _db.QueryFirstOrDefaultAsync<ProductStocks>($"SELECT * FROM ProductStocks WHERE ProductId = @productId AND IsActive = 1", new { productId });
             if (product == null) throw new Exception("Product not found");
             if (product.Stock < quantity) throw new Exception("Insufficient stock");
 

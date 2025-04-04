@@ -21,7 +21,7 @@ namespace Infrastructure.Repositories
         public async Task<T> GetById(string dbName, int id)
         {
             var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<T>($"SELECT * FROM {_tableName} WHERE Id = @Id AND IsActive = true", new { Id = id });
+            return await _db.QueryFirstOrDefaultAsync<T>($"SELECT * FROM {_tableName} WHERE Id = @Id", new { Id = id });
         }
 
         public async Task<IEnumerable<T>> GetAll(string dbName)

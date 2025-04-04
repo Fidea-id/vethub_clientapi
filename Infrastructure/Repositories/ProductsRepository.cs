@@ -33,6 +33,7 @@ namespace Infrastructure.Repositories
                 pc.Name AS Category,
                 p.Price,
 	             p.IsBundle,
+                p.BoughtPrice,
                 p.IsActive,
 	             IF(COUNT(CASE WHEN pd.Id IS NOT NULL AND pd.IsActive = true AND NOW() BETWEEN pd.StartDate AND pd.EndDate THEN pd.Id END) > 0, 1, 0) AS HasDiscount
             FROM
@@ -42,7 +43,7 @@ namespace Infrastructure.Repositories
                 LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
             WHERE
-                p.Id = @ProductId
+                p.Id = @ProductId AND p.IsActive = 1
             GROUP BY
                 p.Id,
                 ps.Volume,
@@ -76,7 +77,7 @@ namespace Infrastructure.Repositories
                 LEFT JOIN
                     ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                 WHERE
-                    pb.BundleId = @ProductId";
+                    pb.BundleId = @ProductId AND pb.IsActive = 1";
                 result.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = id });
             }
 
@@ -136,6 +137,8 @@ namespace Infrastructure.Repositories
                 LEFT JOIN ProductStocks ps ON p.Id = ps.ProductId
                 LEFT JOIN ProductBundles pb ON p.Id = pb.BundleId
                 LEFT JOIN ProductDiscounts pd ON p.Id = pd.ProductId
+            WHERE
+                p.IsActive = 1
             GROUP BY
                 p.Id,
                 ps.Volume,
@@ -170,7 +173,7 @@ namespace Infrastructure.Repositories
                     LEFT JOIN
                         ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                     WHERE
-                        pb.BundleId = @ProductId";
+                        pb.BundleId = @ProductId AND pb.IsActive = 1";
                     product.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = product.Id });
                 }
                 if (product.HasDiscount)
@@ -196,7 +199,7 @@ namespace Infrastructure.Repositories
                     JOIN
                       Products p ON pd.ProductId = p.Id
                     WHERE
-                      pd.ProductId = @ProductId
+                      pd.ProductId = @ProductId AND pd.IsActive = 1
                     AND pd.IsActive = 1
                     AND NOW() BETWEEN pd.StartDate AND pd.EndDate";
                     product.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = product.Id });
@@ -237,24 +240,11 @@ namespace Infrastructure.Repositories
                     listMessage.Add($"Row {item.row}: Description is required!");
                 }
 
-                //categoryId
-                if (item.categoryId == 0)
-                {
-                    listMessage.Add($"Row {item.row}: Category Id is required!");
-                }
-                //check category
-                const string query = @"
-                    SELECT *
-                    FROM
-                        ProductCategories p
-                    Where
-                        p.Id = @CategoryId;";
-                var category = await _db.QueryFirstAsync<ProductCategories>(query, new { CategoryId = item.categoryId });
-
-                if (category == null)
-                {
-                    listMessage.Add($"Row {item.row}: Category is not found!");
-                }
+                ////categoryId
+                //if (item.categoryId == 0)
+                //{
+                //    listMessage.Add($"Row {item.row}: Category Id is required!");
+                //}
 
                 //stock
                 if (item.stock == 0)
@@ -275,7 +265,7 @@ namespace Infrastructure.Repositories
                 }
 
 
-                var checkName = await _db.ExecuteScalarAsync<bool>(@"select count(1) from `Products` where Lower(Name) = @ProductName", new { ProductName = item.productName.ToLower() });
+                var checkName = await _db.ExecuteScalarAsync<bool>(@"select count(1) from `Products` where Lower(Name) = @ProductName AND IsActive = 1", new { ProductName = item.productName.ToLower() });
                 if (checkName)
                 {
                     listMessage.Add($"Row {item.row}: Product Name has been registered!");

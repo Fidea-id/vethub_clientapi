@@ -40,7 +40,7 @@ namespace Infrastructure.Repositories
             LEFT JOIN
                 ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
             WHERE
-                pb.BundleId = @ProductId";
+                pb.BundleId = @ProductId AND pb.IsActive = 1";
             var result = await _db.QueryAsync<ProductBundleDetailResponse>(query, new { ProductId = productId });
             return result;
         }

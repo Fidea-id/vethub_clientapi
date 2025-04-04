@@ -12,6 +12,7 @@ using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.IO.Pipelines;
 
 namespace Application.Services.Implementations
 {
@@ -516,12 +517,29 @@ namespace Application.Services.Implementations
                     {
                         try
                         {
+                            var categoryId = 0;
                             //trim all string
                             FormatUtil.TrimObjectProperties(request);
+                            var category = await _unitOfWork.ProductCategoriesRepository.WhereFirstQuery(dbName, $"Name = '{item.category}'");
+                            if (category != null)
+                            {
+                                categoryId = category.Id;
+                            }
+                            else
+                            {
+                                var newCategory = new ProductCategories()
+                                {
+                                    Name = item.category
+                                };
 
+                                FormatUtil.SetIsActive<ProductCategories>(newCategory, true);
+                                FormatUtil.SetDateBaseEntity<ProductCategories>(newCategory);
+                                var newCatId = await _unitOfWork.ProductCategoriesRepository.Add(dbName, newCategory);
+                                categoryId = newCatId;
+                            }
                             var productData = new Products()
                             {
-                                CategoryId = item.categoryId,
+                                CategoryId = categoryId,
                                 BoughtPrice = item.boughtPrice ?? 0,
                                 Description = item.description,
                                 IsBundle = false,
@@ -579,10 +597,10 @@ namespace Application.Services.Implementations
                             await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProductAsBulk", MethodType.Create, nameof(ProductStockHistorical));
                             counter++;
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
                             checkedGroups.ValidationMessage = new List<string>();
-                            checkedGroups.ValidationMessage.Add($"Row {item.row}: cannot be saved. Please report to our tech for further process");
+                            checkedGroups.ValidationMessage.Add($"Row {item.row}: cannot be saved. Please report to our tech for further process. " + e.Message);
                             checkedGroups.Message = "Fail";
                         }
                     }
@@ -612,28 +630,28 @@ namespace Application.Services.Implementations
 
         public async Task<IEnumerable<ProductStockHistoricalResponse>> GetProductStockHistoricalAsync(string dbName)
         {
-            var getAll = await _unitOfWork.ProductStockHistoricalRepository.GetAll(dbName);
-            var result = new List<ProductStockHistoricalResponse>();
-            foreach (var item in getAll)
-            {
-                var product = await _unitOfWork.ProductsRepository.GetById(dbName, item.ProductId);
-                var profile = await _unitOfWork.ProfileRepository.GetById(dbName, item.ProfileId);
-                var resultItem = new ProductStockHistoricalResponse()
-                {
-                    Stock = item.Stock,
-                    VolumeRemaining = item.VolumeRemaining,
-                    Date = item.CreatedAt,
-                    StockAfter = item.StockAfter,
-                    StockBefore = item.StockBefore,
-                    ProductId = item.ProductId,
-                    ProfileId = item.ProfileId,
-                    Type = item.Type,
-                    ProductName = product.Name,
-                    ProfileName = profile.Name
-                };
-                result.Add(resultItem);
-            }
-            return result;
+            var data = await _unitOfWork.ProductStockHistoricalRepository.GetByProductHistoricalAsync(dbName);
+            //var result = new List<ProductStockHistoricalResponse>();
+            //foreach (var item in getAll)
+            //{
+            //    var product = await _unitOfWork.ProductsRepository.GetById(dbName, item.ProductId);
+            //    var profile = await _unitOfWork.ProfileRepository.GetById(dbName, item.ProfileId);
+            //    var resultItem = new ProductStockHistoricalResponse()
+            //    {
+            //        Stock = item.Stock,
+            //        VolumeRemaining = item.VolumeRemaining,
+            //        Date = item.CreatedAt,
+            //        StockAfter = item.StockAfter,
+            //        StockBefore = item.StockBefore,
+            //        ProductId = item.ProductId,
+            //        ProfileId = item.ProfileId,
+            //        Type = item.Type,
+            //        ProductName = product.Name,
+            //        ProfileName = profile != null ? profile.Name: ""
+            //    };
+            //    result.Add(resultItem);
+            //}
+            return data;
         }
         #endregion
     }

@@ -22,6 +22,24 @@ namespace Application.Services.Implementations
             return await _unitOfWork.PatientsRepository.GetPatientsByOwner(dbName, id);
         }
 
+        public async Task DeletePatientAsync(int patientId, string dbName)
+        {
+            //get appointment data
+            var appointments = await _unitOfWork.AppointmentRepository.GetBookingHistoryPatient(dbName, patientId);
+
+            //delete patient data
+            await _repository.Remove(dbName, patientId);
+
+            //delete appointment data
+            if (appointments.Count() > 0)
+            {
+                foreach (var appointment in appointments)
+                {
+                    await _unitOfWork.AppointmentRepository.Remove(dbName, appointment.AppointmentId);
+                }
+            }
+        }
+
         public async Task<DataResultDTO<PatientsListResponse>> ReadPatientsList(PatientsFilter filter, string dbName)
         {
             return await _unitOfWork.PatientsRepository.GetPatientsList(dbName, filter);
@@ -63,6 +81,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"PatientService.AddPatientStatistic";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(PatientsStatistic), ex);
                 throw;
             }
         }
@@ -184,6 +203,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"PatientsService.CreatePatientsAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Patients), ex);
                 throw;
             }
         }

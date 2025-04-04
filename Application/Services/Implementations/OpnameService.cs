@@ -46,6 +46,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"OpnameService.CreateOpnamePatientsAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(OpnamePatients), ex);
                 throw;
             }
         }
@@ -67,6 +68,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"OpnameService.DeleteOpnamePatientsAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(OpnamePatients), ex);
                 throw;
             }
         }
@@ -190,6 +192,7 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"OpnameService.UpdateOpnamePatientsAsync";
+                await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(OpnamePatients), ex);
                 throw;
             }
         }
