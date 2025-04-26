@@ -420,5 +420,17 @@ namespace Infrastructure.Data
                 return _AppointmentsTypeRepository;
             }
         }
+        private IMixedMedicineRepository _MixedMedicineRepository;
+        public IMixedMedicineRepository MixedMedicineRepository
+        {
+            get
+            {
+                if (_MixedMedicineRepository == null)
+                {
+                    _MixedMedicineRepository = new MixedMedicineRepository(_dbFactory);
+                }
+                return _MixedMedicineRepository;
+            }
+        }
     }
 }

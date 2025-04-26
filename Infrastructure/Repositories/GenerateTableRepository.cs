@@ -143,6 +143,8 @@ namespace Infrastructure.Repositories
                 typeof(EventLogsXPO),
                 typeof(ClinicConfigXPO),
                 typeof(AppointmentsTypeXPO),
+                typeof(MixedMedicineCompositionXPO),
+                typeof(MixedMedicineXPO),
                 // Add more model types here
             };
             using (var updateDataLayer = XpoDefault.GetDataLayer(conn, dict, AutoCreateOption.DatabaseAndSchema))

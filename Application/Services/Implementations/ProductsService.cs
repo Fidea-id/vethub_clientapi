@@ -10,6 +10,7 @@ using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.IO.Pipelines;
@@ -500,7 +501,30 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
-
+        public async Task<ResponseUploadBulk> CheckProductAsBulk(IEnumerable<BulkProduct> request, string dbName, string globalId)
+        {
+            var checkedGroups = new CheckValidDTO();
+            checkedGroups.ValidationMessage = new List<string>();
+            var counter = 0;
+            try
+            {
+                _logger.LogInformation("try check product valid : " + JsonConvert.SerializeObject(request));
+                checkedGroups = await _unitOfWork.ProductsRepository.CheckProductValidList(request, dbName);
+                _logger.LogInformation("check product valid : " + JsonConvert.SerializeObject(checkedGroups));
+            }
+            catch (Exception e)
+            {
+                checkedGroups.ValidationMessage.Add(e.Message + e.Message);
+                checkedGroups.Message = "Fail";
+            }
+            var result = new ResponseUploadBulk()
+            {
+                validationMessage = checkedGroups.ValidationMessage,
+                message = checkedGroups.Message,
+                status = checkedGroups.Status
+            };
+            return result;
+        }
         public async Task<ResponseUploadBulk> AddProductAsBulk(IEnumerable<BulkProduct> request, string dbName, string globalId)
         {
             var checkedGroups = new CheckValidDTO();
@@ -604,19 +628,11 @@ namespace Application.Services.Implementations
                             checkedGroups.Message = "Fail";
                         }
                     }
-                    if (checkedGroups.Message == "Fail")
-                    {
-                        checkedGroups.Message = $"Success upload {counter} products with some data fail.";
-                    }
-                    else
-                    {
-                        checkedGroups.Message = $"Success upload {counter} products.";
-                    }
                 }
             }
             catch (Exception e)
             {
-                checkedGroups.ValidationMessage.Add(e.Message + ". Please report to our tech for further process");
+                checkedGroups.ValidationMessage.Add(e.Message + e.Message);
                 checkedGroups.Message = "Fail";
             }
             var result = new ResponseUploadBulk()
@@ -653,6 +669,37 @@ namespace Application.Services.Implementations
             //}
             return data;
         }
+        #endregion
+        #region MixedMedicine
+        public async Task<DataResultDTO<MixedMedicineDetailResponse>> GetMixedMedicinesAsync(string dbName)
+        {
+            var data = await _unitOfWork.MixedMedicineRepository.GetDetails(dbName);
+            return new DataResultDTO<MixedMedicineDetailResponse>
+            {
+                Data = data.ToList()
+            };
+        }
+
+        public async Task<MixedMedicineDetailResponse> GetMixedMedicineByIdAsync(int id, string dbName)
+        {
+            return await _unitOfWork.MixedMedicineRepository.GetDetailById(dbName, id);
+        }
+
+        public async Task<MixedMedicineDetailResponse> AddMixedMedicineAsync(MixedMedicineDetailRequest request, string dbName)
+        {
+            return await _unitOfWork.MixedMedicineRepository.CreateMixedMedicine(dbName, request);
+        }
+
+        public async Task<MixedMedicineDetailResponse> UpdateMixedMedicineAsync(int id, MixedMedicineDetailRequest request, string dbName)
+        {
+            return await _unitOfWork.MixedMedicineRepository.UpdateMixedMedicine(dbName, id, request);
+        }
+
+        public async Task DeleteMixedMedicineAsync(int id, string dbName)
+        {
+            await _unitOfWork.MixedMedicineRepository.DeleteMixedMedicine(dbName, id);
+        }
+
         #endregion
     }
 }

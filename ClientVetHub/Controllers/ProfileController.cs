@@ -39,6 +39,13 @@ namespace ClientVetHub.Controllers
             var data = await _profileService.GetEntitiesByFilter(filters, dbName);
             return Ok(data);
         }
+        [HttpGet("admin/{entity}")]
+        public async Task<IActionResult> GetByAdmin(string entity, [FromQuery] ProfileFilter filters)
+        {
+            var dbName = entity;
+            var data = await _profileService.GetEntitiesByFilter(filters, dbName);
+            return Ok(data);
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
@@ -92,6 +99,23 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                var profile = Mapping.Mapper.Map<Profile>(request);
+                profile.Entity = dbName;
+                profile.GlobalId = id;
+                var create = await _profileService.CreateAsync(profile, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpPost("admin/{entity}/{id}")]
+        public async Task<IActionResult> PostByAdmin(string entity, int id, [FromBody] ProfileRequest request)
+        {
+            try
+            {
+                var dbName = entity;
                 var profile = Mapping.Mapper.Map<Profile>(request);
                 profile.Entity = dbName;
                 profile.GlobalId = id;

@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using DevExpress.Utils.Filtering.Internal;
 using Domain.Entities;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
@@ -14,6 +15,7 @@ using Newtonsoft.Json;
 using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.ServiceModel.Channels;
+using System.Xml.Linq;
 
 namespace Application.Services.Implementations
 {
@@ -24,6 +26,92 @@ namespace Application.Services.Implementations
         : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<ProductsService>();
+        }
+
+        public async Task<ResponseUploadBulk> CheckOwnersPatientsAsBulk(IEnumerable<BulkOwnerPatient> request, string dbName, string globalId)
+        {
+            var checkedGroups = new CheckValidDTO();
+            checkedGroups.ValidationMessage = new List<string>();
+            var counter = 0;
+            try
+            {
+                _logger.LogInformation("Validating Owner-Patient data: " + JsonConvert.SerializeObject(request));
+                checkedGroups = await _unitOfWork.OwnersRepository.CheckOwnerPatientValidList(request, dbName);
+                _logger.LogInformation("Validation result: " + JsonConvert.SerializeObject(checkedGroups));
+
+                if (checkedGroups.Status == 200)
+                {
+                    foreach (var item in request)
+                    {
+                        try
+                        {
+                            // Trim all string properties
+                            FormatUtil.TrimObjectProperties(item);
+
+                            // Check if Owner exists
+                            var existingOwner = await _unitOfWork.OwnersRepository.WhereFirstQuery(
+                                dbName, $"LOWER(Name) = '{item.ownerName.ToLower()}' AND LOWER(PhoneNumber) = '{item.ownerPhone.ToLower()}'");
+
+                            int ownerId;
+                            if (existingOwner != null)
+                            {
+                                ownerId = existingOwner.Id;
+                                // Check if Patient exists under that Owner
+                                var existingPatient = await _unitOfWork.PatientsRepository.WhereFirstQuery(
+                                    dbName, $"LOWER(Name) = '{item.patientName.ToLower()}' AND LOWER(Species) = '{item.patientSpecies.ToLower()}' AND LOWER(Breed) = '{item.patientBreed.ToLower()}' AND OwnersId = {ownerId}");
+                                if(existingPatient != null)
+                                {
+                                    checkedGroups.Message = $"Row {item.row}: Patient already exists under this Owner.";
+                                }
+                            }
+
+                            DateTime? dateOfBirth = null;
+                            if (!string.IsNullOrEmpty(item.patienDOB))
+                            {
+                                if (DateTime.TryParseExact(item.patienDOB,
+                                    new[] { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy" },
+                                    CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+                                {
+                                    dateOfBirth = parsedDate;
+                                }
+                                else
+                                {
+                                    checkedGroups.Message = $"Row {item.row}: Invalid date format for Patient DOB. Use 'yyyy-MM-dd' or 'MM/dd/yyyy'.";
+                                }
+                            }
+
+                            counter++;
+                        }
+                        catch (Exception e)
+                        {
+                            checkedGroups.ValidationMessage.Add($"Row {item.row}: cannot be saved. " + e.Message);
+                            checkedGroups.Message = "Fail";
+                        }
+                    }
+
+                    if (checkedGroups.Message == "Fail")
+                    {
+                        checkedGroups.Message = $"Success: {counter} records added, some failed.";
+                    }
+                    else
+                    {
+                        checkedGroups.Message = $"Success: {counter} records added.";
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                checkedGroups.ValidationMessage.Add("Error: " + e.Message);
+                checkedGroups.Message = "Fail";
+                checkedGroups.Status = 500;  // Set to 500 for unexpected server error
+            }
+
+            return new ResponseUploadBulk()
+            {
+                validationMessage = checkedGroups.ValidationMessage,
+                message = checkedGroups.Message,
+                status = checkedGroups.Status
+            };
         }
         public async Task<ResponseUploadBulk> AddOwnersPatientsAsBulk(IEnumerable<BulkOwnerPatient> request, string dbName, string globalId)
         {
@@ -167,15 +255,6 @@ namespace Application.Services.Implementations
                             checkedGroups.Message = "Fail";
                         }
                     }
-
-                    if (checkedGroups.Message == "Fail")
-                    {
-                        checkedGroups.Message = $"Success: {counter} records added, some failed.";
-                    }
-                    else
-                    {
-                        checkedGroups.Message = $"Success: {counter} records added.";
-                    }
                 }
             }
             catch (Exception e)
@@ -192,7 +271,6 @@ namespace Application.Services.Implementations
                 status = checkedGroups.Status
             };
         }
-
 
         public async Task<Owners> CreateOwnersPetsAsync(OwnersPetsRequest request, string dbName)
         {

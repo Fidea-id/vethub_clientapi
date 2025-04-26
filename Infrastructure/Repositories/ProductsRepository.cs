@@ -246,10 +246,10 @@ namespace Infrastructure.Repositories
                 //    listMessage.Add($"Row {item.row}: Category Id is required!");
                 //}
 
-                //stock
-                if (item.stock == 0)
+                //price
+                if (item.price == 0)
                 {
-                    listMessage.Add($"Row {item.row}: Stock is required!");
+                    listMessage.Add($"Row {item.row}: Price is required!");
                 }
 
                 //volume

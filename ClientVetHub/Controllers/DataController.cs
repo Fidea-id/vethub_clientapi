@@ -107,6 +107,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Clinics/Admin/{entity}")]
+        public async Task<IActionResult> GetClinicsAdmin(string entity)
+        {
+            try
+            {
+                var dbName = entity;
+                var data = await _additionalDataService.ReadClinicsAsync(dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("ClinicsEntity/{entity}")]
         [Authorize(Roles = "Superadmin")]
         public async Task<IActionResult> PostClinics(string entity, [FromBody] ClinicsRequest request)

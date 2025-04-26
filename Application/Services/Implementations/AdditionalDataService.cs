@@ -18,6 +18,7 @@ using DevExpress.XtraReports.Native;
 using Domain.Entities.Models.Masters;
 using System.Reflection;
 using System;
+using Clinics = Domain.Entities.Models.Clients.Clinics;
 
 namespace Application.Services.Implementations
 {

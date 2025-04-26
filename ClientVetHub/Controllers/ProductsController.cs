@@ -162,6 +162,22 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpPost("bulk/check")]
+        public async Task<IActionResult> CheckProductBulk(BulkProducts request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var idUser = User.FindFirstValue("Id");
+                var entities = await _productsService.CheckProductAsBulk(request.listData, dbName, idUser);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("bulk")]
         public async Task<IActionResult> AddProductBulk(BulkProducts request)
         {
@@ -371,6 +387,82 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 await _productsService.DeactiveDiscountAsync(id, dbName);
                 return Ok(new BaseAPIResponse(200, "Success"));
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
+        #region Mixedmedicine
+        [HttpGet("MixedMedicine")]
+        public async Task<IActionResult> GetMixedMedicines()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _productsService.GetMixedMedicinesAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("MixedMedicine/{id}")]
+        public async Task<IActionResult> GetMixedMedicine(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var data = await _productsService.GetMixedMedicineByIdAsync(id, dbName);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPost("MixedMedicine")]
+        public async Task<IActionResult> PostMixedMedicine([FromBody] MixedMedicineDetailRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _productsService.AddMixedMedicineAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("MixedMedicine/{id}")]
+        public async Task<IActionResult> PutMixedMedicine(int id, [FromBody] MixedMedicineDetailRequest value)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _productsService.UpdateMixedMedicineAsync(id, value, dbName);
+                return Ok(value);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpDelete("MixedMedicine/{id}")]
+        public async Task<IActionResult> DeleteMixedMedicine(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                await _productsService.DeleteMixedMedicineAsync(id, dbName);
+                return Ok(default(Products));
             }
             catch
             {

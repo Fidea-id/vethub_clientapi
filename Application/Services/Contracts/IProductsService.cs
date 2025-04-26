@@ -17,6 +17,7 @@ namespace Application.Services.Contracts
 
         Task<Products> AddProducts(ProductAsBundleRequest request, string dbName, string globalId);
         Task<Products> AddProductAsBundle(ProductAsBundleRequest request, string dbName, string globalId);
+        Task<ResponseUploadBulk> CheckProductAsBulk(IEnumerable<BulkProduct> request, string dbName, string globalId);
         Task<ResponseUploadBulk> AddProductAsBulk(IEnumerable<BulkProduct> request, string dbName, string globalId);
         Task<Products> UpdateBundleAsync(int id, ProductAsBundleRequest request, string dbName, string globalId);
 
@@ -32,5 +33,12 @@ namespace Application.Services.Contracts
         Task<ProductDiscounts> UpdateProductDiscountsAsync(int id, ProductsDiscountsRequest request, string dbName);
         Task DeleteProductDiscountsAsync(int id, string dbName);
         Task DeactiveDiscountAsync(int id, string dbName);
+
+        //mixedmedicine
+        Task<DataResultDTO<MixedMedicineDetailResponse>> GetMixedMedicinesAsync(string dbName);
+        Task<MixedMedicineDetailResponse> GetMixedMedicineByIdAsync(int id, string dbName);
+        Task<MixedMedicineDetailResponse> AddMixedMedicineAsync(MixedMedicineDetailRequest request, string dbName);
+        Task<MixedMedicineDetailResponse> UpdateMixedMedicineAsync(int id, MixedMedicineDetailRequest request, string dbName);
+        Task DeleteMixedMedicineAsync(int id, string dbName);
     }
 }

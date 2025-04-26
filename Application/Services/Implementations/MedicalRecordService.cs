@@ -692,9 +692,13 @@ namespace Application.Services.Implementations
             try
             {
                 var currentUserId = await _currentUser.UserId;
-                var staff = await _unitOfWork.ProfileRepository.GetByEmail(dbName, email);
+                var staff = await _unitOfWork.ProfileRepository.GetByEmail(dbName, email); 
+                if (staff == null) _logger.LogInformation("Staff not found for this medical record.");
 
                 var checkType = await _unitOfWork.MedicalRecordsNotesRepository.CheckRecordType(dbName, request.MedicalRecordsId, request.Type);
+                if (checkType == null) _logger.LogInformation("Note type not found for this medical record.");
+                _logger.LogInformation($"{checkType.Id}");
+
                 var noteId = checkType.Id;
 
 
@@ -703,7 +707,9 @@ namespace Application.Services.Implementations
                 var entity = Mapping.Mapper.Map<MedicalRecordsNotes>(request); // cek dulu
                 FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(entity, true);
 
-                MedicalRecordsNotes checkedEntity = await _unitOfWork.MedicalRecordsNotesRepository.GetById(dbName, id);
+                MedicalRecordsNotes checkedEntity = await _unitOfWork.MedicalRecordsNotesRepository.GetById(dbName, noteId);
+                if (checkedEntity == null) _logger.LogInformation("checkedEntity not found for this medical record.");
+
                 if (checkedEntity.MedicalRecordsId != request.MedicalRecordsId) throw new Exception("Invalid medical records note");
                 FormatUtil.ConvertUpdateObject<MedicalRecordsNotes, MedicalRecordsNotes>(entity, checkedEntity);
                 FormatUtil.SetIsActive<MedicalRecordsNotes>(checkedEntity, true);

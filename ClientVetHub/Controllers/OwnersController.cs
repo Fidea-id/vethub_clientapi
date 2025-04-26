@@ -68,8 +68,24 @@ namespace ClientVetHub.Controllers
         }
 
 
+        [HttpPost("bulk/check")]
+        public async Task<IActionResult> CheckOwnersPatientsAsBulk(BulkOwnerPatients request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var idUser = User.FindFirstValue("Id");
+                var entities = await _ownersService.CheckOwnersPatientsAsBulk(request.listData, dbName, idUser);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("bulk")]
-        public async Task<IActionResult> AddProductBulk(BulkOwnerPatients request)
+        public async Task<IActionResult> AddOwnersPatientsAsBulk(BulkOwnerPatients request)
         {
             try
             {
