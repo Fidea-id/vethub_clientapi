@@ -18,8 +18,9 @@ namespace Infrastructure.Repositories
 
         public async Task<ProductDetailsResponse> GetProductDetails(int id, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            const string query = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
             SELECT
                 p.Id,
                 p.Name,
@@ -49,13 +50,13 @@ namespace Infrastructure.Repositories
                 ps.Volume,
                 ps.VolumeUnit,
                 ps.VolumeRemaining;";
-            var result = await _db.QueryFirstOrDefaultAsync<ProductDetailsResponse>(query, new { ProductId = id });
-            if (result == null)
-                return null;
+                var result = await _db.QueryFirstOrDefaultAsync<ProductDetailsResponse>(query, new { ProductId = id });
+                if (result == null)
+                    return null;
 
-            if (result.IsBundle)
-            {
-                const string bundlesQuery = @"
+                if (result.IsBundle)
+                {
+                    const string bundlesQuery = @"
                 SELECT
                     pb.Id AS BundleId,
                     p_bundle.Name AS BundleName,
@@ -78,12 +79,12 @@ namespace Infrastructure.Repositories
                     ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                 WHERE
                     pb.BundleId = @ProductId AND pb.IsActive = 1";
-                result.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = id });
-            }
+                    result.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = id });
+                }
 
-            if (result.HasDiscount)
-            {
-                const string discountsQuery = @"
+                if (result.HasDiscount)
+                {
+                    const string discountsQuery = @"
                 SELECT
                     pd.Id,
                     pd.ProductId,
@@ -107,14 +108,16 @@ namespace Infrastructure.Repositories
                     pd.ProductId = @ProductId
                     AND pd.IsActive = 1
                     AND NOW() BETWEEN pd.StartDate AND pd.EndDate";
-                result.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = id });
+                    result.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = id });
+                }
+                return result;
             }
-            return result;
         }
         public async Task<IEnumerable<ProductDetailsResponse>> GetListProductDetails(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            const string query = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
             SELECT
                 p.Id,
                 p.Name,
@@ -144,14 +147,14 @@ namespace Infrastructure.Repositories
                 ps.Volume,
                 ps.VolumeUnit,
                 ps.VolumeRemaining;";
-            var results = await _db.QueryAsync<ProductDetailsResponse>(query);
-            var productList = results.ToList();
+                var results = await _db.QueryAsync<ProductDetailsResponse>(query);
+                var productList = results.ToList();
 
-            foreach (var product in productList)
-            {
-                if (product.IsBundle)
+                foreach (var product in productList)
                 {
-                    const string bundlesQuery = @"
+                    if (product.IsBundle)
+                    {
+                        const string bundlesQuery = @"
                     SELECT
                         pb.Id AS BundleId,
                         p_bundle.Name AS BundleName,
@@ -174,11 +177,11 @@ namespace Infrastructure.Repositories
                         ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
                     WHERE
                         pb.BundleId = @ProductId AND pb.IsActive = 1";
-                    product.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = product.Id });
-                }
-                if (product.HasDiscount)
-                {
-                    const string discountsQuery = @"
+                        product.BundlesItems = await _db.QueryAsync<ProductBundleDetailResponse>(bundlesQuery, new { ProductId = product.Id });
+                    }
+                    if (product.HasDiscount)
+                    {
+                        const string discountsQuery = @"
                     SELECT
                       pd.Id,
                       pd.ProductId,
@@ -202,92 +205,95 @@ namespace Infrastructure.Repositories
                       pd.ProductId = @ProductId AND pd.IsActive = 1
                     AND pd.IsActive = 1
                     AND NOW() BETWEEN pd.StartDate AND pd.EndDate";
-                    product.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = product.Id });
+                        product.Discounts = await _db.QueryAsync<ProductDiscountDetailResponse>(discountsQuery, new { ProductId = product.Id });
+                    }
                 }
+                return productList;
             }
-            return productList;
         }
         public async Task<CheckValidDTO> CheckProductValidList(IEnumerable<BulkProduct> data, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var result = new CheckValidDTO();
-            result.ValidationMessage = new List<string>();
-            var listMessage = new List<string>();
-            var dataFix = new List<BulkProduct>();
-            foreach (var item in data)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                //row
-                if (dataFix.Select(x => x.row).Contains(item.row))
+                var result = new CheckValidDTO();
+                result.ValidationMessage = new List<string>();
+                var listMessage = new List<string>();
+                var dataFix = new List<BulkProduct>();
+                foreach (var item in data)
                 {
-                    listMessage.Add($"Row duplicate detected!");
-                    break;
+                    //row
+                    if (dataFix.Select(x => x.row).Contains(item.row))
+                    {
+                        listMessage.Add($"Row duplicate detected!");
+                        break;
+                    }
+
+                    //productname
+                    if (dataFix.Select(x => x.productName).Contains(item.productName))
+                    {
+                        listMessage.Add($"Product Name duplicate in this file. Please make sure use unique Product Name!");
+                        break;
+                    }
+                    if (string.IsNullOrEmpty(item.productName))
+                    {
+                        listMessage.Add($"Row {item.row}: Product Name is required!");
+                    }
+
+                    //description
+                    if (string.IsNullOrEmpty(item.description))
+                    {
+                        listMessage.Add($"Row {item.row}: Description is required!");
+                    }
+
+                    ////categoryId
+                    //if (item.categoryId == 0)
+                    //{
+                    //    listMessage.Add($"Row {item.row}: Category Id is required!");
+                    //}
+
+                    //price
+                    if (item.price == 0)
+                    {
+                        listMessage.Add($"Row {item.row}: Price is required!");
+                    }
+
+                    //volume
+                    if (item.volume == 0)
+                    {
+                        listMessage.Add($"Row {item.row}: Volume is required!");
+                    }
+
+                    //unit
+                    if (string.IsNullOrEmpty(item.unit))
+                    {
+                        listMessage.Add($"Row {item.row}: Unit is required!");
+                    }
+
+
+                    var checkName = await _db.ExecuteScalarAsync<bool>(@"select count(1) from `Products` where Lower(Name) = @ProductName AND IsActive = 1", new { ProductName = item.productName.ToLower() });
+                    if (checkName)
+                    {
+                        listMessage.Add($"Row {item.row}: Product Name has been registered!");
+                    }
+                    dataFix.Add(item);
                 }
 
-                //productname
-                if (dataFix.Select(x => x.productName).Contains(item.productName))
+                if (listMessage.Count > 0)
                 {
-                    listMessage.Add($"Product Name duplicate in this file. Please make sure use unique Product Name!");
-                    break;
+                    result.ValidationMessage = listMessage;
+                    result.Data = null;
+                    result.Status = 400;
+                    result.Message = "One or more field in template is invalid.";
                 }
-                if (string.IsNullOrEmpty(item.productName))
+                else
                 {
-                    listMessage.Add($"Row {item.row}: Product Name is required!");
+                    result.ValidationMessage = null;
+                    result.Data = JsonConvert.SerializeObject(dataFix);
+                    result.Status = 200;
+                    result.Message = "Valid";
                 }
-
-                //description
-                if (string.IsNullOrEmpty(item.description))
-                {
-                    listMessage.Add($"Row {item.row}: Description is required!");
-                }
-
-                ////categoryId
-                //if (item.categoryId == 0)
-                //{
-                //    listMessage.Add($"Row {item.row}: Category Id is required!");
-                //}
-
-                //price
-                if (item.price == 0)
-                {
-                    listMessage.Add($"Row {item.row}: Price is required!");
-                }
-
-                //volume
-                if (item.volume == 0)
-                {
-                    listMessage.Add($"Row {item.row}: Volume is required!");
-                }
-
-                //unit
-                if (string.IsNullOrEmpty(item.unit))
-                {
-                    listMessage.Add($"Row {item.row}: Unit is required!");
-                }
-
-
-                var checkName = await _db.ExecuteScalarAsync<bool>(@"select count(1) from `Products` where Lower(Name) = @ProductName AND IsActive = 1", new { ProductName = item.productName.ToLower() });
-                if (checkName)
-                {
-                    listMessage.Add($"Row {item.row}: Product Name has been registered!");
-                }
-                dataFix.Add(item);
+                return result;
             }
-
-            if (listMessage.Count > 0)
-            {
-                result.ValidationMessage = listMessage;
-                result.Data = null;
-                result.Status = 400;
-                result.Message = "One or more field in template is invalid.";
-            }
-            else
-            {
-                result.ValidationMessage = null;
-                result.Data = JsonConvert.SerializeObject(dataFix);
-                result.Status = 200;
-                result.Message = "Valid";
-            }
-            return result;
         }
     }
 

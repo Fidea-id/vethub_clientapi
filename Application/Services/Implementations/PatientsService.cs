@@ -105,11 +105,18 @@ namespace Application.Services.Implementations
                 }
                 else
                 {
-                    double latestValue = double.Parse(item.Latest);
-                    double beforeValue = double.Parse(item.Before);
-                    double changeValue = latestValue - beforeValue;
-                    double changePercentage = (latestValue / beforeValue) * 100;
-                    change = $"{changeValue} ({changePercentage.ToString("0.00")}%)";
+                    double? latestValue = ParseValueOrAverage(item.Latest);
+                    double? beforeValue = ParseValueOrAverage(item.Before);
+                    if (latestValue != null && beforeValue != null && beforeValue != 0)
+                    {
+                        double changeValue = latestValue.Value - beforeValue.Value;
+                        double changePercentage = (latestValue.Value / beforeValue.Value) * 100;
+                        change = $"{changeValue} ({changePercentage.ToString("0.00")}%)";
+                    }
+                    else
+                    {
+                        change = "";
+                    }
                 }
                 var checkedAt = FormatUtil.GetTimeAgo(item.CreatedAt);
                 var staff = await _unitOfWork.ProfileRepository.GetById(dbName, item.StaffId);
@@ -206,6 +213,24 @@ namespace Application.Services.Implementations
                 await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Patients), ex);
                 throw;
             }
+        }
+        private double? ParseValueOrAverage(string input)
+        {
+            if (double.TryParse(input, out var value))
+                return value;
+
+            if (input.Contains("-"))
+            {
+                var parts = input.Split('-');
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], out var low) &&
+                    double.TryParse(parts[1], out var high))
+                {
+                    return (low + high) / 2;
+                }
+            }
+
+            return null;
         }
     }
 }

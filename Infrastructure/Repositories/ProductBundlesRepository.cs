@@ -17,8 +17,9 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<ProductBundleDetailResponse>> GetProductBundlesByProduct(int productId, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            const string query = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
             SELECT
                 pb.Id AS BundleId,
                 p_bundle.Name AS BundleName,
@@ -41,8 +42,9 @@ namespace Infrastructure.Repositories
                 ProductStocks ps_item ON pb.ItemId = ps_item.ProductId
             WHERE
                 pb.BundleId = @ProductId AND pb.IsActive = 1";
-            var result = await _db.QueryAsync<ProductBundleDetailResponse>(query, new { ProductId = productId });
-            return result;
+                var result = await _db.QueryAsync<ProductBundleDetailResponse>(query, new { ProductId = productId });
+                return result;
+            }
         }
     }
 }

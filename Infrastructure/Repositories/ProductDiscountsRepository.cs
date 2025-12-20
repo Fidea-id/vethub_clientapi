@@ -23,8 +23,9 @@ namespace Infrastructure.Repositories
 
         public async Task<DataResultDTO<ProductDiscountDetailResponse>> GetProductDiscountDetail(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            const string query = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
                 SELECT
                     pd.Id,
                     pd.ProductId,
@@ -47,13 +48,14 @@ namespace Infrastructure.Repositories
                 WHERE
                     pd.IsActive = true
                 ";
-            var data = await _db.QueryAsync<ProductDiscountDetailResponse>(query);
-            var result = new DataResultDTO<ProductDiscountDetailResponse>
-            {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
+                var data = await _db.QueryAsync<ProductDiscountDetailResponse>(query);
+                var result = new DataResultDTO<ProductDiscountDetailResponse>
+                {
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
+            }
         }
     }
 }

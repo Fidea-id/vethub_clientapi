@@ -10,10 +10,8 @@ using Domain.Entities.Responses;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.IO.Pipelines;
 
 namespace Application.Services.Implementations
 {

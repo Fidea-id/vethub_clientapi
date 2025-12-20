@@ -1,27 +1,14 @@
 ﻿using Domain.Interfaces.Clients;
 using Infrastructure.Repositories;
-using System.Data;
 
 namespace Infrastructure.Data
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly IDBFactory _dbFactory;
-        private readonly Dictionary<string, IDbConnection> _connectionCache;
         public UnitOfWork(IDBFactory dBFactory)
         {
             _dbFactory = dBFactory;
-            _connectionCache = _dbFactory.GetConnectionCache();
-        }
-
-        public void Dispose()
-        {
-            // Dispose all the connections in the connection cache
-            foreach (var connection in _connectionCache.Values)
-            {
-                connection.Dispose();
-            }
-            _connectionCache.Clear();
         }
 
         // standard repository variable name

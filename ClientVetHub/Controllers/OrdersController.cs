@@ -1,7 +1,9 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using DevExtreme.AspNet.Mvc;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -140,14 +142,44 @@ namespace ClientVetHub.Controllers
             }
         }
 
-        [HttpGet("RevenueLogs")]
-        public async Task<IActionResult> GetRevenueLogAsync()
+        [HttpGet("RevenueLogsFilter")]
+        public async Task<IActionResult> GetRevenueLogAsync([FromQuery] string filterField)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _orderService.GetRevenueLogAsync(dbName);
-                return Ok(entities);
+                var result = await _orderService.GetRevenueLogsFilterAsync(dbName, filterField);
+                return Ok(result);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("RevenueLogs")]
+        public async Task<IActionResult> GetRevenueLogAsync([FromQuery] DataSourceLoadOptions filterParams)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var result = await _orderService.GetRevenueLogsAsync(dbName, filterParams);
+                return Ok(result);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("RevenueLogsPage")]
+        public async Task<IActionResult> GetRevenueLogPageAsync()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var result = await _orderService.GetRevenuePagedData(dbName);
+                var data = new BaseAPIResponse<int> { Message = "Success", StatusCode = 200, TotalData = result };
+                return Ok(data);
             }
             catch
             {

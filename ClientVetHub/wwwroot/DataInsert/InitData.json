@@ -182,6 +182,10 @@
     {
       "Key": "ShowAliasInvoice",
       "Value": "0"
+    },
+    {
+      "Key": "ShowCurrency",
+      "Value": "Rp"
     }
   ],
   "PaymentMethod": [

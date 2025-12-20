@@ -15,26 +15,30 @@ namespace Infrastructure.Repositories
 
         public async Task<DataResultDTO<OpnamePatients>> GetByMedId(string dbName, int id)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var data = await _db.QueryAsync<OpnamePatients>($"SELECT * FROM OpnamePatients WHERE MedicalRecordId = @Id AND IsActive = 1", new { Id = id });
-            var result = new DataResultDTO<OpnamePatients>
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
+                var data = await _db.QueryAsync<OpnamePatients>($"SELECT * FROM OpnamePatients WHERE MedicalRecordId = @Id AND IsActive = 1", new { Id = id });
+                var result = new DataResultDTO<OpnamePatients>
+                {
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
+            }
         }
 
         public async Task<DataResultDTO<OpnamePatients>> GetByOpnameId(string dbName, int id)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var data = await _db.QueryAsync<OpnamePatients>($"SELECT * FROM OpnamePatients WHERE OpnameId = @Id AND IsActive = 1", new { Id = id });
-            var result = new DataResultDTO<OpnamePatients>
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
+                var data = await _db.QueryAsync<OpnamePatients>($"SELECT * FROM OpnamePatients WHERE OpnameId = @Id AND IsActive = 1", new { Id = id });
+                var result = new DataResultDTO<OpnamePatients>
+                {
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
+            }
         }
     }
 }

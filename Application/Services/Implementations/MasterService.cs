@@ -6,6 +6,7 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Requests.Masters;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Infrastructure.Data;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -14,16 +15,18 @@ namespace Application.Services.Implementations
     public class MasterService : IMasterService
     {
         private readonly IGenerateTableRepository _generateTableRepository;
+        private readonly ITenantProvisioning _tenantProvisioning;
         private ILogger<MasterService> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUser;
 
         public MasterService(IGenerateTableRepository generateTableRepository, IUnitOfWork unitOfWork,
-            ILoggerFactory loggerFactory, ICurrentUserService currentUserService)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUserService, ITenantProvisioning tenantProvisioning)
         {
             _generateTableRepository = generateTableRepository;
             _unitOfWork = unitOfWork;
             _currentUser = currentUserService;
+            _tenantProvisioning = tenantProvisioning;
             _logger = loggerFactory.CreateLogger<MasterService>();
         }
 
@@ -224,59 +227,11 @@ namespace Application.Services.Implementations
             try
             {
                 var checkVersionExist = await _generateTableRepository.CheckSchemaVersion(dbName, version);
-                
+
                 if (!checkVersionExist) //not exist. add it
                 {
-                    await _generateTableRepository.UpdateTable(dbName, version);
-
-                    if (version == 11)
-                    {
-                        var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
-                        // Read the contents of the file
-                        string json = File.ReadAllText(filePath);
-
-                        // Deserialize the JSON data into an object
-                        var jsonData = JsonConvert.DeserializeObject(json);
-                        var deserializedObjects = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-
-                        if (deserializedObjects != null)
-                        {
-                            foreach (var kvp in deserializedObjects)
-                            {
-                                if (kvp.Key == "AppointmentsType")
-                                {
-                                    _logger.LogInformation("Try to map " + kvp.Key);
-                                    var data = JsonConvert.DeserializeObject<IEnumerable<AppointmentsType>>(kvp.Value.ToString());
-                                    //map items
-                                    var map = Mapping.Mapper.Map<IEnumerable<AppointmentsType>>(data);
-                                    foreach (var itm in map)
-                                    {
-                                        FormatUtil.TrimObjectProperties(itm);
-                                        FormatUtil.SetIsActive<AppointmentsType>(itm, true);
-                                        FormatUtil.SetDateBaseEntity<AppointmentsType>(itm);
-                                        // Check if the item already exists in the database
-                                        var existingItem = await _unitOfWork.AppointmentsTypeRepository
-                                            .WhereFirstQuery(dbName, $"Name = '{itm.Name}'");
-
-                                        if (existingItem != null)
-                                        {
-                                            // Update the existing item
-                                            existingItem.Name = itm.Name; // Map fields you need to update
-                                            existingItem.Color = itm.Color; // Adjust based on your model
-                                            FormatUtil.SetDateBaseEntity<AppointmentsType>(existingItem); // Update entity dates, if required
-                                            await _unitOfWork.AppointmentsTypeRepository.Update(dbName, existingItem);
-                                        }
-                                        else
-                                        {
-                                            // Add the new item
-                                            await _unitOfWork.AppointmentsTypeRepository.Add(dbName, itm);
-                                        }
-                                    }
-                                    _logger.LogInformation("Success update " + kvp.Key + " at version 11");
-                                }
-                            }
-                        }
-                    }
+                    await _generateTableRepository.InsertUpdateSchemaVersion(dbName, version);
+                    await _tenantProvisioning.ProvisionTenantAsync(dbName); //update db
                 }
             }
             catch (Exception ex)
@@ -288,7 +243,17 @@ namespace Application.Services.Implementations
         {
             try
             {
-                await _generateTableRepository.GenerateAllTable(dbName);
+                await _tenantProvisioning.ProvisionTenantAsync(dbName);
+                if (version.HasValue)
+                {
+                    // contoh pencatatan manual versi jika masih dipakai
+                    var exist = await _generateTableRepository.CheckSchemaVersion(dbName, version.Value);
+                    if (!exist)
+                    {
+                        await _generateTableRepository.InsertUpdateSchemaVersion(dbName, version.Value);
+                        _logger.LogInformation($"Provisioning tenant {dbName} dengan version {version.Value}");
+                    }
+                }
             }
             catch (Exception ex)
             {

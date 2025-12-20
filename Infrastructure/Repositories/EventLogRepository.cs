@@ -1,22 +1,12 @@
-﻿using DevExpress.XtraReports.Native;
+﻿using Dapper;
 using Domain.Entities;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Infrastructure.Data;
-using Infrastructure.Utils;
-using System.Diagnostics.Eventing.Reader;
-using System.Diagnostics;
-using System.Xml.Linq;
-using Dapper;
-using Domain.Entities.DTOs;
-using FluentEmail.Core;
-using System.Reflection;
 using Newtonsoft.Json;
-using Domain.Entities.Models.Masters;
-using System.Security.AccessControl;
-using Domain.Entities.Responses.Clients;
 
 namespace Infrastructure.Repositories
 {
@@ -66,7 +56,7 @@ namespace Infrastructure.Repositories
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
-            if(objectName != "Notifications")
+            if (objectName != "Notifications")
             {
                 var newId = await base.Add(dbName, entity);
                 entity.Id = newId;
@@ -92,7 +82,7 @@ namespace Infrastructure.Repositories
             {
                 UserId = userId,
                 ObjectName = objectName,
-                MethodName= methodName
+                MethodName = methodName
             };
             var data = await base.GetByFilter(dbName, filter);
             return data;
@@ -100,9 +90,11 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<EventLogs>> GetSendbackLog(string dbName, int recordId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var data = await _db.QueryAsync<EventLogs>($"SELECT * FROM EventLogs WHERE RecordId = @Id AND IsActive = 1 AND MethodName = 'ChangeAppointmentStatus' AND Detail = 'Update Status to: 3'", new { Id = recordId });
-            return data;
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var data = await _db.QueryAsync<EventLogs>($"SELECT * FROM EventLogs WHERE RecordId = @Id AND IsActive = 1 AND MethodName = 'ChangeAppointmentStatus' AND Detail = 'Update Status to: 3'", new { Id = recordId });
+                return data;
+            }
         }
     }
 }

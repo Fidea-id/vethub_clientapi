@@ -2,7 +2,6 @@
 using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.DTOs;
-using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.AspNetCore.Http;

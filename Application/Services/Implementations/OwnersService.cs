@@ -1,6 +1,5 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
-using DevExpress.Utils.Filtering.Internal;
 using Domain.Entities;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
@@ -9,13 +8,9 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Drawing.Drawing2D;
 using System.Globalization;
-using System.ServiceModel.Channels;
-using System.Xml.Linq;
 
 namespace Application.Services.Implementations
 {
@@ -59,7 +54,7 @@ namespace Application.Services.Implementations
                                 // Check if Patient exists under that Owner
                                 var existingPatient = await _unitOfWork.PatientsRepository.WhereFirstQuery(
                                     dbName, $"LOWER(Name) = '{item.patientName.ToLower()}' AND LOWER(Species) = '{item.patientSpecies.ToLower()}' AND LOWER(Breed) = '{item.patientBreed.ToLower()}' AND OwnersId = {ownerId}");
-                                if(existingPatient != null)
+                                if (existingPatient != null)
                                 {
                                     checkedGroups.Message = $"Row {item.row}: Patient already exists under this Owner.";
                                 }
@@ -149,9 +144,9 @@ namespace Application.Services.Implementations
                                 // Add new Owner
                                 var newOwner = new Owners()
                                 {
-                                    Title = item.ownerTitle??"",
+                                    Title = item.ownerTitle ?? "",
                                     Name = item.ownerName,
-                                    Email = item.ownerEmail??"",
+                                    Email = item.ownerEmail ?? "",
                                     PhoneNumber = item.ownerPhone,
                                     Address = item.ownerAddress ?? ""
                                 };
@@ -229,7 +224,7 @@ namespace Application.Services.Implementations
                                     Breed = item.patientBreed,
                                     Gender = item.patientGender,
                                     Color = item.patienColor ?? "",
-                                    DateOfBirth = dateOfBirth??DateTime.MinValue,
+                                    DateOfBirth = dateOfBirth ?? DateTime.MinValue,
                                     IsAlive = item.isAlive ?? true,
                                     Vaccinated = item.isVaccinated ?? false
                                 };
@@ -280,8 +275,16 @@ namespace Application.Services.Implementations
                 var ownerAdd = Mapping.Mapper.Map<Owners>(request.OwnersData);
                 var petsAdd = Mapping.Mapper.Map<IEnumerable<Patients>>(request.PetsData);
                 //validate unique data
-                var checkOwners = await _repository.AnyQuery(dbName, $"Email = '{ownerAdd.Email}' AND IsActive = 1");
-                if (checkOwners) throw new Exception("Owners email already added");
+                if (!string.IsNullOrWhiteSpace(ownerAdd.Email))
+                {
+                    var checkOwners = await _repository.AnyQuery(
+                        dbName,
+                        $"Email = '{ownerAdd.Email}' AND IsActive = 1"
+                    );
+
+                    if (checkOwners)
+                        throw new Exception("Owners email already added");
+                }
 
                 //create owner and return id owner
                 FormatUtil.TrimObjectProperties(ownerAdd);

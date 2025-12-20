@@ -1,5 +1,6 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -146,6 +147,22 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+
+        [HttpGet("Detail/v2/")]
+        public async Task<IActionResult> GetDetailV2List([FromQuery] string? flag = null)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.GetDetailMedicalRecordsV2List(dbName, flag);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Detail/v2/{id}")]
         public async Task<IActionResult> GetDetailv2(int id, [FromQuery] string? flag = null)
         {
@@ -219,7 +236,7 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        
+
         [HttpGet("Detail/History/{medId}")]
         public async Task<IActionResult> GetDetailHistory(int medId)
         {
@@ -386,6 +403,34 @@ namespace ClientVetHub.Controllers
             {
                 throw;
             }
+        }
+        [HttpGet("ServicesReport")]
+        public async Task<ActionResult<List<MedicalRecordServicesReportDto>>> GetMedicalRecordServicesReport(
+        [FromQuery] string? startDate = null,
+        [FromQuery] string? endDate = null)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var report = await _medicalRecordService.GetMedicalRecordServicesReportRawSqlAsync(dbName, startDate, endDate);
+                return Ok(report);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error generating report: {ex.Message}");
+            }
+        }
+
+        [HttpGet("DoctorPerformance")]
+        public async Task<IActionResult> GetDoctorPerformance([FromQuery] int year)
+        {
+            if (year <= 0)
+                year = DateTime.Now.Year;
+
+            var dbName = User.FindFirstValue("Entity");
+            var result = await _medicalRecordService.GetDoctorPerformance(dbName, year);
+
+            return Ok(result);
         }
     }
 }

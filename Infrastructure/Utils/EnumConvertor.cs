@@ -1,10 +1,4 @@
 ﻿using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Utils
 {
@@ -31,7 +25,7 @@ namespace Infrastructure.Utils
             {
                 result = "Create";
             }
-            else if(type == MethodType.Delete) 
+            else if (type == MethodType.Delete)
             {
                 result = "Delete";
             }

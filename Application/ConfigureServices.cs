@@ -4,6 +4,7 @@ using Application.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Text;
 
 namespace Application
@@ -45,6 +46,15 @@ namespace Application
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtUtil.Key))
                 };
             });
+
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var config = ConfigurationOptions.Parse("103.217.145.102:6379,password=BFvnAqcptn");
+                config.ResolveDns = true;
+                return ConnectionMultiplexer.Connect(config);
+            });
+
+            services.AddScoped<ICacheService, RedisCacheService>();
 
             return services;
         }

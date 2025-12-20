@@ -4,6 +4,12 @@ namespace Application.Utils
 {
     public static class StockUtil
     {
+        public static double SafeParseDouble(double value)
+        {
+            if (double.IsInfinity(value) || double.IsNaN(value))
+                return 0;
+            return value;
+        }
         public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockMinVolume(ProductStocks stocksNow, double newVolumeMin)
         {
             var volumeStock = (stocksNow.Stock * stocksNow.Volume) + stocksNow.VolumeRemaining;
@@ -49,6 +55,10 @@ namespace Application.Utils
         }
         public static Tuple<ProductStocks, ProductStockHistorical> CalculateProductStockPlusVolume(ProductStocks stocksNow, double returnVolume)
         {
+            if (stocksNow.Volume == 0)
+            {
+                stocksNow.Volume = 1; // Set default volume to 1 if it's zero
+            }
             var volumeStock = (stocksNow.Stock * stocksNow.Volume) + stocksNow.VolumeRemaining;
             var stockBefore = stocksNow.Stock;
             var volumeNow = volumeStock + returnVolume; // Tambahkan kembali stok

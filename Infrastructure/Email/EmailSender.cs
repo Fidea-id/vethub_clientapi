@@ -34,17 +34,17 @@ namespace Infrastructure.Email
 
         public string TemplatePath(string subject)
         {
-			string path;
-			if (subject == "Appointment Invoice")
-			{
-				path = Path.Combine(defaultpath, $"{Directory.GetCurrentDirectory()}/wwwroot/Template/Email/InvoiceTemplate.cshtml");
-			}
-			else
-			{
-				path = Path.Combine(defaultpath, $"{Directory.GetCurrentDirectory()}/wwwroot/Template/Email/TestTemplate.cshtml");
-			}
+            string path;
+            if (subject == "Appointment Invoice")
+            {
+                path = Path.Combine(defaultpath, $"{Directory.GetCurrentDirectory()}/wwwroot/Template/Email/InvoiceTemplate.cshtml");
+            }
+            else
+            {
+                path = Path.Combine(defaultpath, $"{Directory.GetCurrentDirectory()}/wwwroot/Template/Email/TestTemplate.cshtml");
+            }
 
-			return path;
-		}
-	}
+            return path;
+        }
+    }
 }

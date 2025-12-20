@@ -14,8 +14,10 @@ namespace Infrastructure.Repositories
 
         public async Task<Animals> GetByName(string dbName, string name)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstOrDefaultAsync<Animals>($"SELECT * FROM Animals WHERE Name = @Name AND IsActive = true", new { Name = name });
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryFirstOrDefaultAsync<Animals>($"SELECT * FROM Animals WHERE Name = @Name AND IsActive = true", new { Name = name });
+            }
         }
     }
 }

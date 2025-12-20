@@ -1,13 +1,7 @@
 ﻿using Application.Services.Contracts;
-using Domain.Entities.Models.Masters;
 using Domain.Interfaces.Clients;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services.Implementations
 {
@@ -16,7 +10,7 @@ namespace Application.Services.Implementations
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUnitOfWork _uow;
 
-        public CurrentUserService(IHttpContextAccessor httpContextAccessor, IUnitOfWork uow) 
+        public CurrentUserService(IHttpContextAccessor httpContextAccessor, IUnitOfWork uow)
         {
             _uow = uow;
             _httpContextAccessor = httpContextAccessor;

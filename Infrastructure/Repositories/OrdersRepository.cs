@@ -18,50 +18,57 @@ namespace Infrastructure.Repositories
 
         public async Task<DashboardOrderResponse> GetOrdersDashboard(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            string query = @"SELECT
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                string query = @"SELECT
                 COUNT(CASE WHEN Type = 'Incomes' THEN 1 END) AS IncomesTotal,
                 COUNT(CASE WHEN Type = 'Expenses' THEN 1 END) AS ExpensesTotal,
                 SUM(CASE WHEN Type = 'Incomes' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS IncomesAmount,
                 SUM(CASE WHEN Type = 'Expenses' AND Status = 'Paid' THEN TotalPrice ELSE 0 END) AS ExpensesAmount
             FROM Orders
             WHERE MONTH(Date) = MONTH(CURRENT_DATE) AND IsActive = 1";
-            return await _db.QueryFirstOrDefaultAsync<DashboardOrderResponse>(query);
+                return await _db.QueryFirstOrDefaultAsync<DashboardOrderResponse>(query);
+            }
         }
         public async Task<string> GetLatestCode(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            string query = "SELECT OrderNumber FROM Orders Where IsActive = 1 ORDER BY Id DESC";
-            return await _db.QueryFirstOrDefaultAsync<string>(query);
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                string query = "SELECT OrderNumber FROM Orders Where IsActive = 1 ORDER BY Id DESC";
+                return await _db.QueryFirstOrDefaultAsync<string>(query);
+            }
         }
         public async Task<DataResultDTO<OrdersResponse>> GetOrdersList(string dbName, OrdersFilter filter)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var mainTableName = "Orders";
-            var joinQuery = "LEFT JOIN Owners ON Orders.ClientId = Owners.Id LEFT JOIN Profile ON Profile.Id = Orders.StaffId";
-            var selectColumns = new List<string> { "Orders.*", "Owners.Name as ClientName", "Profile.Name as StaffName" };
-            var filterQuery = QueryGenerator.GenerateFilterQuery(filter, mainTableName, joinQuery, selectColumns);
-            var queryString = filterQuery.Item1;
-            var countQuery = QueryGenerator.GenerateSelectOrCountQuery(filterQuery.Item1, true);
-            var countData = await _db.QueryFirstOrDefaultAsync<int>(countQuery, filterQuery.Item2);
-            if (filter.Take.HasValue || filter.Skip.HasValue)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                queryString = QueryGenerator.GenerateFilteredLimitQuery(queryString, filter.Skip, filter.Take);
+                var mainTableName = "Orders";
+                var joinQuery = "LEFT JOIN Owners ON Orders.ClientId = Owners.Id LEFT JOIN Profile ON Profile.Id = Orders.StaffId";
+                var selectColumns = new List<string> { "Orders.*", "Owners.Name as ClientName", "Profile.Name as StaffName" };
+                var filterQuery = QueryGenerator.GenerateFilterQuery(filter, mainTableName, joinQuery, selectColumns);
+                var queryString = filterQuery.Item1;
+                var countQuery = QueryGenerator.GenerateSelectOrCountQuery(filterQuery.Item1, true);
+                var countData = await _db.QueryFirstOrDefaultAsync<int>(countQuery, filterQuery.Item2);
+                if (filter.Take.HasValue || filter.Skip.HasValue)
+                {
+                    queryString = QueryGenerator.GenerateFilteredLimitQuery(queryString, filter.Skip, filter.Take);
+                }
+                var data = await _db.QueryAsync<OrdersResponse>(queryString, filterQuery.Item2);
+                var result = new DataResultDTO<OrdersResponse>
+                {
+                    Data = data,
+                    TotalData = countData
+                };
+                return result;
             }
-            var data = await _db.QueryAsync<OrdersResponse>(queryString, filterQuery.Item2);
-            var result = new DataResultDTO<OrdersResponse>
-            {
-                Data = data,
-                TotalData = countData
-            };
-            return result;
         }
 
         public async Task<IEnumerable<OrderFullResponse>> GetListOrderFull(string dbName, bool thisMonth = false)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
 
-            string query = @"
+                string query = @"
                 SELECT
                     o.Id AS Id,
                     o.OrderNumber,
@@ -80,20 +87,20 @@ namespace Infrastructure.Repositories
                 FROM Orders o
                 LEFT JOIN Profile p ON o.StaffId = p.Id
                 LEFT JOIN Owners c ON o.ClientId = c.Id";
-            if (thisMonth)
-            {
-                query += " WHERE MONTH(o.Date) = MONTH(CURRENT_DATE()) AND YEAR(o.Date) = YEAR(CURRENT_DATE()) AND o.IsActive = 1;";
-            }
-            else
-            {
-                query += " WHERE o.IsActive = 1;";
-            }
-            var results = await _db.QueryAsync<OrderFullResponse>(query);
+                if (thisMonth)
+                {
+                    query += " WHERE MONTH(o.Date) = MONTH(CURRENT_DATE()) AND YEAR(o.Date) = YEAR(CURRENT_DATE()) AND o.IsActive = 1;";
+                }
+                else
+                {
+                    query += " WHERE o.IsActive = 1;";
+                }
+                var results = await _db.QueryAsync<OrderFullResponse>(query);
 
-            var clinicData = new ClientClinicResponse();
-            foreach (var item in results)
-            {
-                const string productsQuery = @"
+                var clinicData = new ClientClinicResponse();
+                foreach (var item in results)
+                {
+                    const string productsQuery = @"
                     SELECT
                      od.ProductId,
                      pr.Name AS ProductName,
@@ -106,9 +113,9 @@ namespace Infrastructure.Repositories
                     LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                     LEFT JOIN Products pr ON od.ProductId = pr.Id
                     WHERE o.Id = @OrderId AND o.IsActive = 1";
-                item.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = item.Id });
+                    item.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = item.Id });
 
-                const string paymentQuery = @"
+                    const string paymentQuery = @"
                     SELECT
                         o.Id AS OrderId,
                         op.PaymentMethodId,
@@ -120,18 +127,19 @@ namespace Infrastructure.Repositories
                     JOIN OrdersPayment op ON o.Id = op.OrderId
                     JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
                     WHERE o.Id = @OrderId AND op.Type = @PaymentType AND o.IsActive = 1";
-                item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id, PaymentType = "Order" });
+                    item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id, PaymentType = "Order" });
 
-                item.ClinicData = clinicData;
+                    item.ClinicData = clinicData;
+                }
+                return results;
             }
-            return results;
         }
 
         public async Task<OrderFullResponse> GetOrderFull(string dbName, int id)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            const string query = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
                 SELECT
                     o.Id AS Id,
                     o.OrderNumber,
@@ -151,9 +159,9 @@ namespace Infrastructure.Repositories
                 LEFT JOIN Profile p ON o.StaffId = p.Id
                 LEFT JOIN Owners c ON o.ClientId = c.Id
                 WHERE o.Id = @OrderId AND o.IsActive = 1";
-            var results = await _db.QueryFirstAsync<OrderFullResponse>(query, new { OrderId = id });
+                var results = await _db.QueryFirstAsync<OrderFullResponse>(query, new { OrderId = id });
 
-            const string clinicQuery = @"
+                const string clinicQuery = @"
                 SELECT 
                     Id,
                     Name,
@@ -168,9 +176,9 @@ namespace Infrastructure.Repositories
                     MapUrl
                 FROM
                     Clinics";
-            var clinicData = await _db.QueryFirstAsync<ClientClinicResponse>(clinicQuery);
+                var clinicData = await _db.QueryFirstAsync<ClientClinicResponse>(clinicQuery);
 
-            const string productsQuery = @"
+                const string productsQuery = @"
                 SELECT
                  od.ProductId,
                  pr.Name AS ProductName,
@@ -183,9 +191,9 @@ namespace Infrastructure.Repositories
                 LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                 LEFT JOIN Products pr ON od.ProductId = pr.Id
                 WHERE o.Id = @OrderId AND o.IsActive = 1";
-            results.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
+                results.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
 
-            const string paymentQuery = @"
+                const string paymentQuery = @"
                 SELECT
                     o.Id AS OrderId,
                     op.PaymentMethodId,
@@ -197,36 +205,40 @@ namespace Infrastructure.Repositories
                 JOIN OrdersPayment op ON o.Id = op.OrderId
                 JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
                 WHERE o.Id = @OrderId AND op.Type = @PaymentType AND o.IsActive = 1";
-            results.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = id, PaymentType = "Order" });
-            results.ClinicData = clinicData;
-            return results;
+                results.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = id, PaymentType = "Order" });
+                results.ClinicData = clinicData;
+                return results;
+            }
         }
 
         public async Task<CardDashboard> CountInvoiceToCard(string dbName, string query)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var filter = "";
-            if (!string.IsNullOrEmpty(query))
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                filter = $"And {query}";
+                var filter = "";
+                if (!string.IsNullOrEmpty(query))
+                {
+                    filter = $"And {query}";
+                }
+
+                var queryOrder = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Orders WHERE `Status` = 'Paid' AND `IsActive` = 1 AND `Type` = 'Incomes' {filter}";
+                var queryAppointment = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Appointments WHERE `StatusId` = 6 AND `IsActive` = 1 {filter}";
+
+                var resultQuery = $"SELECT SUM(TotalAll) AS `TotalAll`, SUM(Total) AS `Total` FROM ({queryOrder} UNION ALL {queryAppointment}) AS CombinedCounts;";
+                return await _db.QueryFirstAsync<CardDashboard>(resultQuery);
             }
-
-            var queryOrder = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Orders WHERE `Status` = 'Paid' AND `IsActive` = 1 AND `Type` = 'Incomes' {filter}";
-            var queryAppointment = $"SELECT COUNT(Id) AS `TotalAll`, COUNT(Id) AS `Total` FROM Appointments WHERE `StatusId` = 6 AND `IsActive` = 1 {filter}";
-
-            var resultQuery = $"SELECT SUM(TotalAll) AS `TotalAll`, SUM(Total) AS `Total` FROM ({queryOrder} UNION ALL {queryAppointment}) AS CombinedCounts;";
-            return await _db.QueryFirstAsync<CardDashboard>(resultQuery);
         }
 
         public async Task<IEnumerable<MonthlyDataChart>> GetTotalOrderSales(string dbName, string dateFilter)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
-            if (dateFilter != null)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                filterQuery = dateFilter;
-            }
-            string query = @"SELECT
+                var filterQuery = "YEAR(CreatedAt) = YEAR(CURRENT_DATE()) AND CreatedAt <= CURRENT_DATE()";
+                if (dateFilter != null)
+                {
+                    filterQuery = dateFilter;
+                }
+                string query = @"SELECT
                                 DATE_FORMAT(CreatedAt, '%d') AS Date,
                                 DATE_FORMAT(CreatedAt, '%m') AS Month,
                                 DATE_FORMAT(CreatedAt, '%Y') AS Year,
@@ -235,9 +247,10 @@ namespace Infrastructure.Repositories
                                 Orders
                             WHERE Type = 'Incomes' AND `Status` = 'Paid' AND `IsActive` = 1 AND 
             ";
-            query += filterQuery;
-            query += " GROUP BY DATE_FORMAT(CreatedAt, '%d'), DATE_FORMAT(CreatedAt, '%m'), DATE_FORMAT(CreatedAt, '%Y') ORDER BY Date, Year, Month;";
-            return await _db.QueryAsync<MonthlyDataChart>(query);
+                query += filterQuery;
+                query += " GROUP BY DATE_FORMAT(CreatedAt, '%d'), DATE_FORMAT(CreatedAt, '%m'), DATE_FORMAT(CreatedAt, '%Y') ORDER BY Date, Year, Month;";
+                return await _db.QueryAsync<MonthlyDataChart>(query);
+            }
         }
     }
 }

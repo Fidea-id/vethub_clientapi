@@ -14,9 +14,11 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<OrdersPayment>> GetPaidByOrderId(string dbName, int orderId, string type)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            string query = @"SELECT * FROM OrdersPayment WHERE OrderId = @orderId AND Type = @type AND Status = @status AND IsActive = 1";
-            return await _db.QueryAsync<OrdersPayment>(query, new { orderId = orderId, type = type, status = "Paid" });
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                string query = @"SELECT * FROM OrdersPayment WHERE OrderId = @orderId AND Type = @type AND Status = @status AND IsActive = 1";
+                return await _db.QueryAsync<OrdersPayment>(query, new { orderId = orderId, type = type, status = "Paid" });
+            }
         }
     }
 }

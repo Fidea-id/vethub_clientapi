@@ -3,6 +3,7 @@ using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
+using Domain.Entities.Responses.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +25,7 @@ namespace ClientVetHub.Controllers
 
         #region Dashboard
         [HttpGet("DashboardData")]
-        [Authorize(Roles = "Owner, Admin")]
+        [Authorize(Roles = "Owner, Admin, MedicalAdmin")]
         public async Task<IActionResult> GetDashboard(string? date)
         {
             try
@@ -54,6 +55,7 @@ namespace ClientVetHub.Controllers
                 }
 
                 var data = await _additionalDataService.ReadDashboardAsync(dbName, startDate, endDate);
+                data.DoctorPerformance = new DoctorPerformanceResponse();
                 return Ok(data);
             }
             catch
@@ -582,6 +584,22 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
+
+        [HttpPost("ClinicConfig")]
+        public async Task<IActionResult> PostClinicConfig([FromBody] ClinicConfig request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _additionalDataService.CreateClinicConfigAsync(request, dbName);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPut("ClinicConfig/{key}")]
         public async Task<IActionResult> PutClinicConfig(string key, [FromBody] ClinicConfig value)
         {
@@ -590,6 +608,23 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var newData = await _additionalDataService.UpdateClinicConfigAsync(value.Key, value.Value, dbName);
                 return Ok(newData);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        #endregion
+
+        #region ClinicReports
+        [HttpGet("ClinicReports/{entity}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetClinicReports(string entity)
+        {
+            try
+            {
+                var data = await _additionalDataService.ReadClinicReportsAsync(entity);
+                return Ok(data);
             }
             catch
             {

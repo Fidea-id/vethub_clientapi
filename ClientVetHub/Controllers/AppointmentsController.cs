@@ -1,10 +1,10 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using DevExtreme.AspNet.Mvc;
 using Domain.Constants;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
-using Domain.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -237,7 +237,7 @@ namespace ClientVetHub.Controllers
                 throw;
             }
         }
-        
+
         [HttpGet("Detail/Medical")]
         public async Task<IActionResult> GetDetailMedical([FromQuery] AppointmentDetailFilter filter)
         {
@@ -353,6 +353,36 @@ namespace ClientVetHub.Controllers
             {
                 var entities = await _appointmentService.GetDetailMedicalInvoice(d, e);
                 return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("DetailReport")]
+        public async Task<IActionResult> GetDetailReportAsync([FromQuery] DataSourceLoadOptions filterParams)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var result = await _appointmentService.GetDetailReportAsync(dbName, filterParams);
+                return Ok(result);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("DetailReportFilter")]
+        public async Task<IActionResult> GetDetailReportFilterAsync([FromQuery] string filterField)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var result = await _appointmentService.GetDetailReportFilterAsync(dbName, filterField);
+                return Ok(result);
             }
             catch
             {

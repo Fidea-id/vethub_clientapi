@@ -15,8 +15,9 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<OrdersDetailResponse>> GetByOrderId(string dbName, int id)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            string productsQuery = @"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                string productsQuery = @"
                     SELECT
                      od.ProductId,
                      pr.Name AS ProductName,
@@ -29,7 +30,8 @@ namespace Infrastructure.Repositories
                     LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
                     LEFT JOIN Products pr ON od.ProductId = pr.Id
                     WHERE o.Id = @OrderId AND o.IsActive = 1";
-            return await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
+                return await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = id });
+            }
         }
     }
 }

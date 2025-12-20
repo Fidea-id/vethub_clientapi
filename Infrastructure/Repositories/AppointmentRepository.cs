@@ -21,201 +21,208 @@ namespace Infrastructure.Repositories
 
         public async Task AddStatusRange(IEnumerable<AppointmentsStatus> entities, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            foreach (var item in entities)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                var propertyNames = QueryGenerator.GetPropertyNames(item);
-                var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
-                var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
+                foreach (var item in entities)
+                {
+                    var propertyNames = QueryGenerator.GetPropertyNames(item);
+                    var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
+                    var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
 
-                var subquery = $"INSERT INTO {_tableStatus} ({columnNames}) VALUES ({parameterNames}) ";
-                await _db.ExecuteAsync(subquery, item);
+                    var subquery = $"INSERT INTO {_tableStatus} ({columnNames}) VALUES ({parameterNames}) ";
+                    await _db.ExecuteAsync(subquery, item);
+                }
             }
         }
 
         public async Task<IEnumerable<BookingHistoryResponse>> GetBookingHistoryOwner(string dbName, int ownerId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
-                 p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, 
-                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
-                 mr.StartDate AS StartDate, mr.EndDate AS EndDate, COALESCE(mr.Total, 0) AS TotalPrice, mr.Code
-                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
-                 JOIN Patients p ON p.Id = a.PatientsId 
-                 LEFT JOIN Services s ON s.Id = a.ServiceId 
-                 JOIN Profile pr ON pr.Id = a.StaffId 
-                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                 Left JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
-                WHERE a.OwnersId = @ownerId AND a.IsActive = true ", new { ownerId = ownerId });
-            return data;
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
+                     p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, 
+                     st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
+                     mr.StartDate AS StartDate, mr.EndDate AS EndDate, COALESCE(mr.Total, 0) AS TotalPrice, mr.Code
+                     FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                     JOIN Patients p ON p.Id = a.PatientsId 
+                     LEFT JOIN Services s ON s.Id = a.ServiceId 
+                     JOIN Profile pr ON pr.Id = a.StaffId 
+                     JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                     Left JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                    WHERE a.OwnersId = @ownerId AND a.IsActive = true ", new { ownerId = ownerId });
+                return data;
+            }
         }
 
         public async Task<IEnumerable<BookingHistoryResponse>> GetBookingHistoryPatient(string dbName, int patientId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
-                 p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, 
-                 st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
-                 mr.StartDate AS StartDate, mr.EndDate AS EndDate, COALESCE(mr.Total, 0)AS TotalPrice, mr.Code
-                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
-                 JOIN Patients p ON p.Id = a.PatientsId 
-                 Left JOIN Services s ON s.Id = a.ServiceId 
-                 JOIN Profile pr ON pr.Id = a.StaffId 
-                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                 JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
-                WHERE a.PatientsId = @patientId AND a.IsActive = true ", new { patientId = patientId });
-            return data;
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var data = await _db.QueryAsync<BookingHistoryResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId AS OwnerId, o.Name AS OwnerName, o.Title AS OwnerTitle, a.PatientsId AS PatientId, p.Name AS PatientName, 
+                     p.Species AS PatientSpecies, p.Breed AS PatientBreed, mr.Id AS MedicalRecordsId, a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, 
+                     st.Name AS StatusName, mr.PaymentStatus AS StatusPayment, a.Date AS DateAppointment,
+                     mr.StartDate AS StartDate, mr.EndDate AS EndDate, COALESCE(mr.Total, 0)AS TotalPrice, mr.Code
+                     FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                     JOIN Patients p ON p.Id = a.PatientsId 
+                     Left JOIN Services s ON s.Id = a.ServiceId 
+                     JOIN Profile pr ON pr.Id = a.StaffId 
+                     JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                     JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                    WHERE a.PatientsId = @patientId AND a.IsActive = true ", new { patientId = patientId });
+                return data;
+            }
         }
 
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetAllDetailList(string dbName, AppointmentDetailFilter filter)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            // Start building the SQL query
-            var sqlQuery = $@"SELECT a.Id AS AppointmentId, 
-                           COALESCE(mr.Id, 0) AS MedicalRecordId, 
-                           a.OwnersId, 
-                           o.Name AS OwnersName, 
-                           o.Title AS OwnersTitle, 
-                           a.PatientsId, 
-                           p.Name AS PatientsName, 
-                           p.Breed AS PatientsBreed, 
-                           a.ServiceId, 
-                           COALESCE(s.Name, a.Type) AS ServiceName, 
-                           a.StaffId, 
-                           pr.Name AS StaffName, 
-                           a.StatusId, 
-                           st.Name AS StatusName, 
-                           a.Notes, 
-                           a.Date, 
-                           s.Duration AS DurationEstimate, 
-                           s.DurationType AS DurationTypeEstimate, 
-                           CASE 
-                               WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
-                               WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
-                               WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) 
-                               WHEN s.DurationType IS NULL THEN a.Date
-                               ELSE NULL 
-                           END AS EndDateEstimate, 
-                           s.Price AS Total,
-                           CASE 
-                               WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
-                               ELSE FALSE 
-                           END AS IsOpname,
-                           CASE
-                               WHEN a.Type IS NOT NULL THEN a.Type
-                               WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
-                               ELSE NULL
-                           END AS Type,
-                           CASE
-                               WHEN acts.MedicalRecordCount > 1 THEN TRUE 
-                               ELSE FALSE 
-                           END AS IsEdit,
-                           act.InvoiceDate  -- Adding the Invoice Date from AppointmentsActivity table
-
-                    FROM Appointments a 
-                    JOIN Owners o ON o.Id = a.OwnersId 
-                    JOIN Patients p ON p.Id = a.PatientsId 
-                    LEFT JOIN Services s ON s.Id = a.ServiceId 
-                    JOIN Profile pr ON pr.Id = a.StaffId 
-                    JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                    LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
-                    LEFT JOIN (
-                        SELECT DISTINCT MedicalRecordId
-                        FROM OpnamePatients
-                    ) op ON op.MedicalRecordId = mr.Id 
-                    -- Join with AppointmentsActivity to get the latest InvoiceDate where CurrentStatusId = 3
-                    LEFT JOIN (
-                        SELECT AppointmentId, COUNT(*) AS MedicalRecordCount
-                        FROM AppointmentsActivity
-                        WHERE CurrentStatusId = 3
-                        GROUP BY AppointmentId
-                    ) acts ON acts.AppointmentId = a.Id
-                    -- Join with AppointmentsActivity to get the latest InvoiceDate where CurrentStatusId = 6
-                    LEFT JOIN (
-                        SELECT AppointmentId, MAX(CurrentDate) AS InvoiceDate
-                        FROM AppointmentsActivity
-                        WHERE CurrentStatusId = 6
-                        GROUP BY AppointmentId
-                    ) act ON act.AppointmentId = a.Id
-            ";
-            if (filter != null)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                var whereClause = new List<string>();
+                // Start building the SQL query
+                var sqlQuery = $@"SELECT a.Id AS AppointmentId, 
+                               COALESCE(mr.Id, 0) AS MedicalRecordId, 
+                               a.OwnersId, 
+                               o.Name AS OwnersName, 
+                               o.Title AS OwnersTitle, 
+                               a.PatientsId, 
+                               p.Name AS PatientsName, 
+                               p.Breed AS PatientsBreed, 
+                               a.ServiceId, 
+                               COALESCE(s.Name, a.Type) AS ServiceName, 
+                               a.StaffId, 
+                               pr.Name AS StaffName, 
+                               a.StatusId, 
+                               st.Name AS StatusName, 
+                               a.Notes, 
+                               a.Date, 
+                               s.Duration AS DurationEstimate, 
+                               s.DurationType AS DurationTypeEstimate, 
+                               CASE 
+                                   WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
+                                   WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
+                                   WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) 
+                                   WHEN s.DurationType IS NULL THEN a.Date
+                                   ELSE NULL 
+                               END AS EndDateEstimate, 
+                               s.Price AS Total,
+                               CASE 
+                                   WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+                                   ELSE FALSE 
+                               END AS IsOpname,
+                               CASE
+                                   WHEN a.Type IS NOT NULL THEN a.Type
+                                   WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+                                   ELSE NULL
+                               END AS Type,
+                               CASE
+                                   WHEN acts.MedicalRecordCount > 1 THEN TRUE 
+                                   ELSE FALSE 
+                               END AS IsEdit,
+                               act.InvoiceDate  -- Adding the Invoice Date from AppointmentsActivity table
 
-                // Check and add StatusId filter
-                if (filter.StatusId.HasValue)
+                        FROM Appointments a 
+                        JOIN Owners o ON o.Id = a.OwnersId 
+                        JOIN Patients p ON p.Id = a.PatientsId 
+                        LEFT JOIN Services s ON s.Id = a.ServiceId 
+                        JOIN Profile pr ON pr.Id = a.StaffId 
+                        JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                        LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                        LEFT JOIN (
+                            SELECT DISTINCT MedicalRecordId
+                            FROM OpnamePatients
+                        ) op ON op.MedicalRecordId = mr.Id 
+                        -- Join with AppointmentsActivity to get the latest InvoiceDate where CurrentStatusId = 3
+                        LEFT JOIN (
+                            SELECT AppointmentId, COUNT(*) AS MedicalRecordCount
+                            FROM AppointmentsActivity
+                            WHERE CurrentStatusId = 3
+                            GROUP BY AppointmentId
+                        ) acts ON acts.AppointmentId = a.Id
+                        -- Join with AppointmentsActivity to get the latest InvoiceDate where CurrentStatusId = 6
+                        LEFT JOIN (
+                            SELECT AppointmentId, MAX(CurrentDate) AS InvoiceDate
+                            FROM AppointmentsActivity
+                            WHERE CurrentStatusId = 6
+                            GROUP BY AppointmentId
+                        ) act ON act.AppointmentId = a.Id
+                ";
+                if (filter != null)
                 {
-                    whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
-                }
+                    var whereClause = new List<string>();
 
-                // Check and add StaffId filter
-                if (filter.StaffId.HasValue)
-                {
-                    whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
-                }
-
-                // Check and add Date filter
-                if (!string.IsNullOrEmpty(filter.Date))
-                {
-                    var dateVar = "a.Date"; // Default to the Date field in the Appointments table
-                    if(filter.StatusId == 6) // If the status is 'Paid', use the InvoiceDate from the AppointmentsActivity table
+                    // Check and add StatusId filter
+                    if (filter.StatusId.HasValue)
                     {
-                        dateVar = "act.InvoiceDate";
-                    };
+                        whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                    }
 
-                    // Parse the date range if it's in the format '[start] - [end]'
-                    if (filter.Date.Contains("-"))
+                    // Check and add StaffId filter
+                    if (filter.StaffId.HasValue)
                     {
-                        var dateRangeParts = filter.Date.Split('-');
-                        if (dateRangeParts.Length == 2)
+                        whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
+                    }
+
+                    // Check and add Date filter
+                    if (!string.IsNullOrEmpty(filter.Date))
+                    {
+                        var dateVar = "a.Date"; // Default to the Date field in the Appointments table
+                        if (filter.StatusId == 6) // If the status is 'Paid', use the InvoiceDate from the AppointmentsActivity table
                         {
-                            string startDateStr = dateRangeParts[0].Trim();
-                            string endDateStr = dateRangeParts[1].Trim();
+                            dateVar = "act.InvoiceDate";
+                        };
 
-                            DateTime startDate, endDate;
-                            if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
-                                DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                        // Parse the date range if it's in the format '[start] - [end]'
+                        if (filter.Date.Contains("-"))
+                        {
+                            var dateRangeParts = filter.Date.Split('-');
+                            if (dateRangeParts.Length == 2)
                             {
-                                whereClause.Add($"DATE({dateVar}) >= '{startDate:yyyy-MM-dd}' AND DATE({dateVar}) <= '{endDate:yyyy-MM-dd}'");
+                                string startDateStr = dateRangeParts[0].Trim();
+                                string endDateStr = dateRangeParts[1].Trim();
+
+                                DateTime startDate, endDate;
+                                if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
+                                    DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                                {
+                                    whereClause.Add($"DATE({dateVar}) >= '{startDate:yyyy-MM-dd}' AND DATE({dateVar}) <= '{endDate:yyyy-MM-dd}'");
+                                }
+                            }
+                        }
+                        else // Single date case
+                        {
+                            if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                            {
+                                whereClause.Add($"DATE({dateVar}) = '{date:yyyy-MM-dd}'");
                             }
                         }
                     }
-                    else // Single date case
+
+
+
+                    // Combine all where conditions
+                    if (whereClause.Count > 0)
                     {
-                        if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
-                        {
-                            whereClause.Add($"DATE({dateVar}) = '{date:yyyy-MM-dd}'");
-                        }
+                        sqlQuery += " WHERE a.IsActive = true AND " + string.Join(" AND ", whereClause);
                     }
                 }
+                // Execute the SQL query
+                var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
 
-
-
-                // Combine all where conditions
-                if (whereClause.Count > 0)
-                {   
-                    sqlQuery += " WHERE a.IsActive = true AND " + string.Join(" AND ", whereClause);
-                }
+                var result = new DataResultDTO<AppointmentsDetailResponse>
+                {
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
             }
-            // Execute the SQL query
-            var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery);
-
-            var result = new DataResultDTO<AppointmentsDetailResponse>
-            {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
         }
 
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetLastDetailList(string dbName, AppointmentDetailFilter filter, int take)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
 
-            // Start building the SQL query
-            var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+                // Start building the SQL query
+                var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
         a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
         s.DurationType AS DurationTypeEstimate, 
         CASE 
@@ -245,48 +252,50 @@ namespace Infrastructure.Repositories
             FROM OpnamePatients
         ) op ON op.MedicalRecordId = mr.Id ";
 
-            if (filter != null)
-            {
-                var whereClause = new List<string>();
-
-                // Check and add StatusId filter
-                if (filter.StatusId.HasValue)
+                if (filter != null)
                 {
-                    whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                    var whereClause = new List<string>();
+
+                    // Check and add StatusId filter
+                    if (filter.StatusId.HasValue)
+                    {
+                        whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                    }
+
+                    // Check and add StaffId filter
+                    if (filter.StaffId.HasValue)
+                    {
+                        whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
+                    }
+
+                    // Combine all where conditions
+                    if (whereClause.Count > 0)
+                    {
+                        sqlQuery += " WHERE a.IsActive = true AND " + string.Join(" AND ", whereClause);
+                    }
                 }
 
-                // Check and add StaffId filter
-                if (filter.StaffId.HasValue)
-                {
-                    whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
-                }
+                // Add ORDER BY and LIMIT clause
+                sqlQuery += " ORDER BY a.Date DESC LIMIT @Take";
 
-                // Combine all where conditions
-                if (whereClause.Count > 0)
+                // Execute the SQL query
+                var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery, new { Take = take });
+
+                var result = new DataResultDTO<AppointmentsDetailResponse>
                 {
-                    sqlQuery += " WHERE a.IsActive = true AND " + string.Join(" AND ", whereClause);
-                }
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
             }
-
-            // Add ORDER BY and LIMIT clause
-            sqlQuery += " ORDER BY a.Date DESC LIMIT @Take";
-
-            // Execute the SQL query
-            var data = await _db.QueryAsync<AppointmentsDetailResponse>(sqlQuery, new { Take = take });
-
-            var result = new DataResultDTO<AppointmentsDetailResponse>
-            {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
         }
 
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetAllDetailListToday(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            DateTime currentDate = DateTime.Now.Date; // Get the current date with time component set to midnight (00:00:00)
-            return await _db.QueryAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId, COALESCE(mr.Id, 0) AS MedicalRecordId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                DateTime currentDate = DateTime.Now.Date; // Get the current date with time component set to midnight (00:00:00)
+                return await _db.QueryAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId, COALESCE(mr.Id, 0) AS MedicalRecordId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
                 a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE 
@@ -316,12 +325,14 @@ namespace Infrastructure.Repositories
                     FROM OpnamePatients
                 ) op ON op.MedicalRecordId = mr.Id 
                 WHERE DATE(a.Date) = @CurrentDate AND a.IsActive = true", new { CurrentDate = currentDate });
+            }
         }
 
         public async Task<AppointmentsDetailResponse> GetAllDetail(int id, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryFirstAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, 
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryFirstAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, 
                            COALESCE(mr.Id, 0) AS MedicalRecordId, 
                            a.OwnersId, 
                            o.Name AS OwnersName, 
@@ -388,137 +399,145 @@ namespace Infrastructure.Repositories
                         GROUP BY AppointmentId
                     ) act ON act.AppointmentId = a.Id
                 WHERE a.Id = @id AND a.IsActive = true", new { id = id });
+            }
         }
 
         public async Task<IEnumerable<AppointmentsStatus>> GetAllStatus(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<AppointmentsStatus>($"SELECT * FROM AppointmentsStatus Where IsActive = true");
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<AppointmentsStatus>($"SELECT * FROM AppointmentsStatus Where IsActive = true");
+            }
         }
 
         public async Task<int> AddActivity(AppointmentsActivity entity, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
 
-            var propertyNames = QueryGenerator.GetPropertyNames(entity);
+                var propertyNames = QueryGenerator.GetPropertyNames(entity);
 
-            var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
-            var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
+                var columnNames = string.Join(", ", propertyNames.Select(p => p.Name));
+                var parameterNames = string.Join(", ", propertyNames.Select(p => $"@{p.Name}"));
 
-            var query = $"INSERT INTO AppointmentsActivity ({columnNames}) VALUES ({parameterNames}); SELECT LAST_INSERT_ID();";
-            return await _db.ExecuteScalarAsync<int>(query, entity);
+                var query = $"INSERT INTO AppointmentsActivity ({columnNames}) VALUES ({parameterNames}); SELECT LAST_INSERT_ID();";
+                return await _db.ExecuteScalarAsync<int>(query, entity);
+            }
         }
 
         public async Task<IEnumerable<Appointments>> GetAllByStatusId(string dbName, int statusId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<Appointments>($"SELECT * FROM Appointments WHERE StatusId = @Id AND IsActive = true", new { Id = statusId });
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<Appointments>($"SELECT * FROM Appointments WHERE StatusId = @Id AND IsActive = true", new { Id = statusId });
+            }
         }
 
         public async Task<DataResultDTO<AppointmentMedicalDetailResponse>> GetAllDetailMedicalList(string dbName, AppointmentDetailFilter filter)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            // Start building the SQL query
-            var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
-                a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
-                s.DurationType AS DurationTypeEstimate, 
-                CASE 
-        WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
-        WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
-        WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) 
-        WHEN s.DurationType IS NULL THEN a.Date
-        ELSE NULL 
-    END AS EndDateEstimate, s.Price AS Total,
-                CASE 
-                    WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
-                    ELSE FALSE 
-                END AS IsOpname,
-                CASE
-                    WHEN a.Type IS NOT NULL THEN a.Type
-                    WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
-                    ELSE NULL
-                END AS Type
-                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
-                JOIN Patients p ON p.Id = a.PatientsId 
-                LEFT JOIN Services s ON s.Id = a.ServiceId 
-                JOIN Profile pr ON pr.Id = a.StaffId 
-                JOIN AppointmentsStatus st ON st.Id = a.StatusId
-                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
-                LEFT JOIN (
-                    SELECT DISTINCT MedicalRecordId
-                    FROM OpnamePatients
-                ) op ON op.MedicalRecordId = mr.Id 
-                WHERE 
-                    COALESCE(mr.Id, 0) != 0 AND a.IsActive = true ";
-            if (filter != null)
+            using (var _db = _dbFactory.GetDbConnection(dbName))
             {
-                var whereClause = new List<string>();
-
-                // Check and add StatusId filter
-                if (filter.StatusId.HasValue)
+                // Start building the SQL query
+                var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+                    a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
+                    s.DurationType AS DurationTypeEstimate, 
+                    CASE 
+            WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
+            WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
+            WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY) 
+            WHEN s.DurationType IS NULL THEN a.Date
+            ELSE NULL 
+        END AS EndDateEstimate, s.Price AS Total,
+                    CASE 
+                        WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
+                        ELSE FALSE 
+                    END AS IsOpname,
+                    CASE
+                        WHEN a.Type IS NOT NULL THEN a.Type
+                        WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+                        ELSE NULL
+                    END AS Type
+                    FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                    JOIN Patients p ON p.Id = a.PatientsId 
+                    LEFT JOIN Services s ON s.Id = a.ServiceId 
+                    JOIN Profile pr ON pr.Id = a.StaffId 
+                    JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                    LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                    LEFT JOIN (
+                        SELECT DISTINCT MedicalRecordId
+                        FROM OpnamePatients
+                    ) op ON op.MedicalRecordId = mr.Id 
+                    WHERE 
+                        COALESCE(mr.Id, 0) != 0 AND a.IsActive = true ";
+                if (filter != null)
                 {
-                    whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
-                }
+                    var whereClause = new List<string>();
 
-                // Check and add StaffId filter
-                if (filter.StaffId.HasValue)
-                {
-                    whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
-                }
-
-                // Check and add Date filter
-                if (!string.IsNullOrEmpty(filter.Date))
-                {
-                    // Parse the date range if it's in the format '[start] - [end]'
-                    if (filter.Date.Contains("-"))
+                    // Check and add StatusId filter
+                    if (filter.StatusId.HasValue)
                     {
-                        var dateRangeParts = filter.Date.Split('-');
-                        if (dateRangeParts.Length == 2)
-                        {
-                            string startDateStr = dateRangeParts[0].Trim();
-                            string endDateStr = dateRangeParts[1].Trim();
+                        whereClause.Add($"a.StatusId = {filter.StatusId.Value}");
+                    }
 
-                            DateTime startDate, endDate;
-                            if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
-                                DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                    // Check and add StaffId filter
+                    if (filter.StaffId.HasValue)
+                    {
+                        whereClause.Add($"a.StaffId = {filter.StaffId.Value}");
+                    }
+
+                    // Check and add Date filter
+                    if (!string.IsNullOrEmpty(filter.Date))
+                    {
+                        // Parse the date range if it's in the format '[start] - [end]'
+                        if (filter.Date.Contains("-"))
+                        {
+                            var dateRangeParts = filter.Date.Split('-');
+                            if (dateRangeParts.Length == 2)
                             {
-                                whereClause.Add($"DATE(a.Date) >= '{startDate:yyyy-MM-dd}' AND DATE(a.Date) <= '{endDate:yyyy-MM-dd}'");
+                                string startDateStr = dateRangeParts[0].Trim();
+                                string endDateStr = dateRangeParts[1].Trim();
+
+                                DateTime startDate, endDate;
+                                if (DateTime.TryParseExact(startDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) &&
+                                    DateTime.TryParseExact(endDateStr, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                                {
+                                    whereClause.Add($"DATE(a.Date) >= '{startDate:yyyy-MM-dd}' AND DATE(a.Date) <= '{endDate:yyyy-MM-dd}'");
+                                }
+                            }
+                        }
+                        else // Single date case
+                        {
+                            if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                            {
+                                whereClause.Add($"DATE(a.Date) = '{date:yyyy-MM-dd}'");
                             }
                         }
                     }
-                    else // Single date case
+
+                    // Combine all where conditions
+                    if (whereClause.Count > 0)
                     {
-                        if (DateTime.TryParseExact(filter.Date, "dd MMMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
-                        {
-                            whereClause.Add($"DATE(a.Date) = '{date:yyyy-MM-dd}'");
-                        }
+                        sqlQuery += " AND " + string.Join(" AND ", whereClause);
                     }
                 }
+                // Execute the SQL query
+                var data = await _db.QueryAsync<AppointmentMedicalDetailResponse>(sqlQuery);
 
-                // Combine all where conditions
-                if (whereClause.Count > 0)
+                var result = new DataResultDTO<AppointmentMedicalDetailResponse>
                 {
-                    sqlQuery += " AND " + string.Join(" AND ", whereClause);
-                }
+                    Data = data,
+                    TotalData = data.Count()
+                };
+                return result;
             }
-            // Execute the SQL query
-            var data = await _db.QueryAsync<AppointmentMedicalDetailResponse>(sqlQuery);
-
-            var result = new DataResultDTO<AppointmentMedicalDetailResponse>
-            {
-                Data = data,
-                TotalData = data.Count()
-            };
-            return result;
         }
 
         public async Task<IEnumerable<DataPoint>> GetClientWeek(string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            // Modify your query to filter by the current week's start and end
-            string query = $@"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                // Modify your query to filter by the current week's start and end
+                string query = $@"
                         SELECT 
                             DAYOFWEEK(Date) AS W,
                             HOUR(Date) AS X,
@@ -533,8 +552,181 @@ namespace Infrastructure.Repositories
                             W, X;
             ";
 
-            var result = await _db.QueryAsync<DataPoint>(query);
-            return result;
+                var result = await _db.QueryAsync<DataPoint>(query);
+                return result;
+            }
+        }
+
+        public async Task<IEnumerable<AppointmentsDetailReport>> GetDetailReport(string dbName)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var query = $@"SELECT 
+                       a.Id AS AppointmentId, 
+                       COALESCE(mr.Id, 0) AS MedicalRecordId,
+                       a.OwnersId, 
+                       mr.Code, 
+                       o.Name AS OwnersName, 
+                       o.Title AS OwnersTitle, 
+                       a.PatientsId, 
+                       p.Name AS PatientsName, 
+                       p.Breed AS PatientsBreed, 
+                       a.ServiceId, 
+                       COALESCE(s.Name, a.Type) AS ServiceName,
+                       a.StaffId, 
+                       pr.Name AS StaffName, 
+                       a.StatusId, 
+                       st.Name AS StatusName, 
+                       a.Notes, 
+                       a.Date, 
+                       s.Duration AS DurationEstimate, 
+                       s.DurationType AS DurationTypeEstimate, 
+                       CASE
+                           WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE)
+                           WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR)
+                           WHEN s.DurationType = 'Days' THEN DATE_ADD(a.Date, INTERVAL s.Duration DAY)
+                           WHEN s.DurationType IS NULL THEN a.Date
+                           ELSE NULL
+                       END AS EndDateEstimate,
+                       s.Price AS Total,
+                       CASE
+                           WHEN op.MedicalRecordId IS NOT NULL THEN TRUE
+                           ELSE FALSE
+                       END AS IsOpname,
+                       CASE
+                           WHEN a.Type IS NOT NULL THEN a.Type
+                           WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+                           ELSE NULL
+                       END AS Type,
+                       CASE
+                           WHEN acts.MedicalRecordCount > 1 THEN TRUE
+                           ELSE FALSE
+                       END AS IsEdit,
+                       act.InvoiceDate, 
+
+                       mr.DiscountValue,
+                       mr.DiscountTotal,
+                       mr.TotalDiscounted,
+
+                       pm.Name AS PaymentMethod   -- 🔥 ambil payment method terakhir
+                FROM Appointments a
+                JOIN Owners o ON o.Id = a.OwnersId
+                JOIN Patients p ON p.Id = a.PatientsId
+                LEFT JOIN Services s ON s.Id = a.ServiceId
+                JOIN Profile pr ON pr.Id = a.StaffId
+                JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                LEFT JOIN (
+                    SELECT DISTINCT MedicalRecordId
+                    FROM OpnamePatients
+                ) op ON op.MedicalRecordId = mr.Id
+                -- Join dengan AppointmentsActivity buat dapatkan status count
+                LEFT JOIN (
+                    SELECT AppointmentId, COUNT(*) AS MedicalRecordCount
+                    FROM AppointmentsActivity
+                    WHERE CurrentStatusId = 3
+                    GROUP BY AppointmentId
+                ) acts ON acts.AppointmentId = a.Id
+                -- Join dengan AppointmentsActivity buat dapatkan invoice date terakhir
+                LEFT JOIN (
+                    SELECT AppointmentId, MAX(CurrentDate) AS InvoiceDate
+                    FROM AppointmentsActivity
+                    WHERE CurrentStatusId = 6
+                    GROUP BY AppointmentId
+                ) act ON act.AppointmentId = a.Id
+                -- Join dengan payment terakhir untuk medical record
+                LEFT JOIN (
+                    SELECT op.OrderId, op.Type, op.PaymentMethodId
+                    FROM OrdersPayment op
+                    INNER JOIN (
+                        SELECT OrderId, Type, MAX(Date) AS MaxDate
+                        FROM OrdersPayment
+                        WHERE IsActive = 1 AND Type = 'MedicalRecord'
+                        GROUP BY OrderId, Type
+                    ) last_op
+                        ON op.OrderId = last_op.OrderId
+                       AND op.Type = last_op.Type
+                       AND op.Date = last_op.MaxDate
+                ) lastpay ON lastpay.OrderId = mr.Id AND lastpay.Type = 'MedicalRecord'
+                LEFT JOIN PaymentMethod pm ON lastpay.PaymentMethodId = pm.Id
+                WHERE a.IsActive = true;
+                ";
+                return await _db.QueryAsync<AppointmentsDetailReport>(query);
+            }
+        }
+        public async Task<IEnumerable<string>> GetDetailReportFilter(string dbName, string filterField)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                // Mapping field agar aman (hindari SQL Injection)
+                var allowedFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Code", "mr.Code" },
+                { "OwnersName", "o.Name" },
+                { "PatientsName", "p.Name" },
+                { "StaffName", "pr.Name" },
+                { "ServiceName", "s.Name" },
+                { "Date", "a.Date" },
+                { "Total", "s.Price" },
+                { "Type", "a.Type" },
+                { "StatusName", "st.Name" },
+                { "DiscountValue", "mr.DiscountValue" },
+                { "DiscountTotal", "mr.DiscountTotal" },
+                { "TotalDiscounted", "mr.TotalDiscounted" },
+                { "PaymentMethod", "pm.Name" } // 🔥 tambahin filter PaymentMethod
+            };
+
+                if (!allowedFields.ContainsKey(filterField))
+                    throw new ArgumentException("Invalid filter field");
+
+                var column = allowedFields[filterField];
+
+                var sql = $@"
+                    SELECT DISTINCT {column}
+                    FROM Appointments a
+                    JOIN Owners o ON o.Id = a.OwnersId
+                    JOIN Patients p ON p.Id = a.PatientsId
+                    LEFT JOIN Services s ON s.Id = a.ServiceId
+                    JOIN Profile pr ON pr.Id = a.StaffId
+                    JOIN AppointmentsStatus st ON st.Id = a.StatusId
+                    LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
+                    LEFT JOIN (
+                        SELECT DISTINCT MedicalRecordId
+                        FROM OpnamePatients
+                    ) op ON op.MedicalRecordId = mr.Id
+                    LEFT JOIN (
+                        SELECT AppointmentId, COUNT(*) AS MedicalRecordCount
+                        FROM AppointmentsActivity
+                        WHERE CurrentStatusId = 3
+                        GROUP BY AppointmentId
+                    ) acts ON acts.AppointmentId = a.Id
+                    LEFT JOIN (
+                        SELECT AppointmentId, MAX(CurrentDate) AS InvoiceDate
+                        FROM AppointmentsActivity
+                        WHERE CurrentStatusId = 6
+                        GROUP BY AppointmentId
+                    ) act ON act.AppointmentId = a.Id
+                    -- join last payment untuk medical record
+                    LEFT JOIN (
+                        SELECT op.OrderId, op.Type, op.PaymentMethodId
+                        FROM OrdersPayment op
+                        INNER JOIN (
+                            SELECT OrderId, Type, MAX(Date) AS MaxDate
+                            FROM OrdersPayment
+                            WHERE IsActive = 1 AND Type = 'MedicalRecord'
+                            GROUP BY OrderId, Type
+                        ) last_op
+                            ON op.OrderId = last_op.OrderId
+                           AND op.Type = last_op.Type
+                           AND op.Date = last_op.MaxDate
+                    ) lastpay ON lastpay.OrderId = mr.Id AND lastpay.Type = 'MedicalRecord'
+                    LEFT JOIN PaymentMethod pm ON lastpay.PaymentMethodId = pm.Id
+                    WHERE a.IsActive = true
+                      AND {column} IS NOT NULL
+                    ORDER BY {column};
+                ";
+                return await _db.QueryAsync<string>(sql);
+            }
         }
     }
 }

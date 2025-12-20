@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.DTOs;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -55,6 +56,9 @@ namespace Application.Services.Contracts
         //ClinicConfig
         Task<IEnumerable<ClinicConfig>> ReadAllClinicConfigAsync(string dbName);
         Task<ClinicConfig> ReadClinicConfigAsync(string dbName, string key);
+        Task<ClinicConfig> CreateClinicConfigAsync(ClinicConfig request, string dbName);
         Task<ClinicConfig> UpdateClinicConfigAsync(string key, string newValue, string dbName);
+        //ClinicReports
+        Task<ClinicReportsClientDTO> ReadClinicReportsAsync(string dbName);
     }
 }

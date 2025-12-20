@@ -1,4 +1,6 @@
-﻿using Domain.Entities.DTOs;
+﻿using DevExtreme.AspNet.Data.ResponseModel;
+using DevExtreme.AspNet.Mvc;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -9,7 +11,9 @@ namespace Application.Services.Contracts
     public interface IOrdersService : IGenericService<Orders, OrdersRequest, OrdersResponse, OrdersFilter>
     {
         Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName);
-        Task<List<RevenueResponse>> GetRevenueLogAsync(string dbName);
+        Task<LoadResult> GetRevenueLogsAsync(string dbName, DataSourceLoadOptions loadOptions);
+        Task<IEnumerable<string>> GetRevenueLogsFilterAsync(string dbName, string filterField);
+        Task<int> GetRevenuePagedData(string dbName);
         Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName);
 
         //OrderFullResponse

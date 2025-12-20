@@ -1,4 +1,7 @@
 ﻿using Application.Services.Contracts;
+using DevExtreme.AspNet.Data;
+using DevExtreme.AspNet.Data.ResponseModel;
+using DevExtreme.AspNet.Mvc;
 using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Emails;
@@ -12,7 +15,7 @@ using Domain.Utils;
 using FluentEmail.Core.Models;
 using Newtonsoft.Json;
 using System.Web;
-using System.Xml.Linq;
+using static DevExpress.Utils.SafeXml;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Application.Services.Implementations
@@ -20,10 +23,18 @@ namespace Application.Services.Implementations
     public class AppointmentService : GenericService<Appointments, AppointmentsRequest, Appointments, AppointmentsFilter>, IAppointmentService
     {
         private readonly IEmailSender _emailsender;
-        public AppointmentService(IUnitOfWork unitOfWork, IGenericRepository<Appointments, AppointmentsFilter> repository, ICurrentUserService currentUser, IEmailSender emailsender)
+        private readonly ICacheService _cache;
+        //private const string AppointmentCacheKeyAll = "appointment:all";
+        //private const string AppointmentCacheKeyById = "appointment:id:";
+        //private const string AppointmentStatusCacheKeyAll = "appointmentStatus:all";
+        //private const string AppointmentDetailCacheKeyAll = "appointmentDetail:all";
+        //private const string AppointmentDetailCacheKeyById = "appointmentDetail:id:";
+        //private const string MedicalInvoiceCacheKeyById = "medicalInvoiceResponse:id:";
+        public AppointmentService(IUnitOfWork unitOfWork, IGenericRepository<Appointments, AppointmentsFilter> repository, ICurrentUserService currentUser, IEmailSender emailsender, ICacheService cache)
         : base(unitOfWork, repository, currentUser)
         {
             _emailsender = emailsender;
+            _cache = cache;
         }
 
         public async Task SendInvoiceEmail(string dbName, int appointmentId)
@@ -69,32 +80,70 @@ namespace Application.Services.Implementations
 
         public async Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
         {
+            //var cached = await _cache.GetAsync<DataResultDTO<AppointmentsDetailResponse>>(dbName, AppointmentDetailCacheKeyAll);
+            //if (cached != null) return cached;
+
+            //code
             await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailList(dbName, filter);
+
+            //if (result != null)
+            //    await _cache.SetAsync(dbName, AppointmentDetailCacheKeyAll, result, TimeSpan.FromMinutes(30));
+
             return result;
         }
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName)
         {
+            //var cacheKey = $"{AppointmentDetailCacheKeyAll}:today";
+            //var cached = await _cache.GetAsync<IEnumerable<AppointmentsDetailResponse>>(dbName, cacheKey);
+            //if (cached != null) return cached;
+
+            //code
             await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetailListToday(dbName);
+
+            //if (result != null)
+            //    await _cache.SetAsync(dbName, cacheKey, result, TimeSpan.FromMinutes(30));
+
             return result;
         }
 
         public async Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName)
         {
+            //var cacheKey = $"{AppointmentCacheKeyById}{id}";
+            //var cachedItem = await _cache.GetAsync<AppointmentsDetailResponse>(dbName, cacheKey);
+            //if (cachedItem != null) return cachedItem;
+
+            //code
             await SetExpiredBooking(dbName);
             var result = await _unitOfWork.AppointmentRepository.GetAllDetail(id, dbName);
+
+            //if (result != null)
+            //    await _cache.SetAsync(dbName, cacheKey, result, TimeSpan.FromMinutes(30));
+
             return result;
         }
 
         public async Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName)
         {
+            //var cached = await _cache.GetAsync<IEnumerable<AppointmentsStatus>>(dbName, AppointmentStatusCacheKeyAll);
+            //if (cached != null) return cached;
+
+            //code
             var data = await _unitOfWork.AppointmentRepository.GetAllStatus(dbName);
+
+            //if (data != null)
+            //    await _cache.SetAsync(dbName, AppointmentStatusCacheKeyAll, data, TimeSpan.FromMinutes(30));
             return data;
         }
 
         public async Task<InvoiceResponse> GetDetailMedicalInvoice(int medicalId, string dbName)
         {
+            //var cacheKey = $"{MedicalInvoiceCacheKeyById}{medicalId}";
+            //var cachedItem = await _cache.GetAsync<InvoiceResponse>(dbName, cacheKey);
+            //if (cachedItem != null) return cachedItem;
+
+            //code
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalId);
             var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
             var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointments.ServiceId);
@@ -162,6 +211,9 @@ namespace Application.Services.Implementations
                 PaymentMethodData = paymentMethod
             };
 
+            //if (response != null)
+            //    await _cache.SetAsync(dbName, cacheKey, response, TimeSpan.FromMinutes(30));
+
             return response;
         }
 
@@ -178,12 +230,18 @@ namespace Application.Services.Implementations
                 if (staff == null)
                     throw new Exception("Staff not found");
                 var statusId = request.StatusId.Value;
+
+                if (currentStatus == 6)
+                {
+                    throw new Exception("Invalid status transition: cannot change status from Done.");
+                }
+
                 data.StatusId = statusId;
                 FormatUtil.SetDateBaseEntity<Appointments>(data, true);
                 await _repository.Update(dbName, data);
 
                 //add event log
-                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, data.Id, "ChangeAppointmentStatus", MethodType.Update, nameof(Appointments),"Update Status to: " + statusId);
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, data.Id, "ChangeAppointmentStatus", MethodType.Update, nameof(Appointments), "Update Status to: " + statusId);
 
 
                 var now = DateTime.Now;
@@ -193,7 +251,7 @@ namespace Application.Services.Implementations
                     if (currentStatus <= 3)
                     {
                         double initPrice = 0;
-                        if(data.ServiceId != null && data.ServiceId != 0)
+                        if (data.ServiceId != null && data.ServiceId != 0)
                         {
                             var getService = await _unitOfWork.ServicesRepository.GetById(dbName, data.ServiceId);
                             initPrice = getService.Price;
@@ -214,7 +272,7 @@ namespace Application.Services.Implementations
 
                         FormatUtil.SetDateBaseEntity<MedicalRecords>(newMedicalRecord);
                         var newId = await _unitOfWork.MedicalRecordsRepository.Add(dbName, newMedicalRecord);
-                    
+
                         //add event log
                         await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "ChangeAppointmentStatus", MethodType.Create, nameof(MedicalRecords));
                     }
@@ -253,6 +311,14 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<AppointmentsActivity>(newAppointment, true);
                 FormatUtil.SetDateBaseEntity<AppointmentsActivity>(newAppointment);
                 await _unitOfWork.AppointmentRepository.AddActivity(newAppointment, dbName);
+
+                //var cacheKey = $"{AppointmentCacheKeyById}{data.Id}";
+                //var cacheKeyDetail = $"{AppointmentDetailCacheKeyById}{data.Id}";
+                //var cacheKeyInvoice = $"{MedicalInvoiceCacheKeyById}{data.Id}";
+                //await _cache.RemoveAsync(dbName, cacheKey);
+                //await _cache.RemoveAsync(dbName, AppointmentDetailCacheKeyAll);
+                //await _cache.RemoveAsync(dbName, cacheKeyDetail);
+                //await _cache.RemoveAsync(dbName, cacheKeyInvoice);
             }
             catch (Exception ex)
             {
@@ -298,7 +364,7 @@ namespace Application.Services.Implementations
             {
                 var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
                 var existingData = await _unitOfWork.AppointmentsTypeRepository.GetAll(dbName);
-                if(existingData.Count() > 0)
+                if (existingData.Count() > 0)
                 {
                     var results = new DataResultDTO<AppointmentsType>()
                     {
@@ -417,6 +483,32 @@ namespace Application.Services.Implementations
             {
                 ex.Source = $"AppointmentService.DeleteAppointmentsTypeAsync";
                 await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(AppointmentsType), ex);
+                throw;
+            }
+        }
+        public async Task<LoadResult> GetDetailReportAsync(string dbName, DataSourceLoadOptions loadOptions)
+        {
+            try
+            {
+                var data = await _unitOfWork.AppointmentRepository.GetDetailReport(dbName);
+                return DataSourceLoader.Load(data.AsQueryable(), loadOptions);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.GetRevenueLogAsync";
+                throw;
+            }
+        }
+        public async Task<IEnumerable<string>> GetDetailReportFilterAsync(string dbName, string filterField)
+        {
+            try
+            {
+                var data = await _unitOfWork.AppointmentRepository.GetDetailReportFilter(dbName, filterField);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.GetRevenueLogAsync";
                 throw;
             }
         }

@@ -14,6 +14,7 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
             services.AddTransient<IDBFactory, DBFactory>();
+            services.AddScoped<ITenantProvisioning, TenantProvisioning>();
             //Repository
             services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
             services.AddScoped<IGenerateTableRepository, GenerateTableRepository>();
@@ -51,16 +52,16 @@ namespace Infrastructure
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-			//EmailSender
-			services.AddScoped<IEmailSender, EmailSender>();
-			services.AddFluentEmail("info@vethub.id", "VetHub").AddRazorRenderer()
-				.AddSmtpSender(new SmtpClient("live.smtp.mailtrap.io", 587)
-				{
-					UseDefaultCredentials = false,
-					Credentials = new NetworkCredential("api", "eb649b68f5ad386f9ccd1971ba8c04c5"),
-					EnableSsl = true
-				});
-			return services;
+            //EmailSender
+            services.AddScoped<IEmailSender, EmailSender>();
+            services.AddFluentEmail("info@vethub.id", "VetHub").AddRazorRenderer()
+                .AddSmtpSender(new SmtpClient("live.smtp.mailtrap.io", 587)
+                {
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential("api", "eb649b68f5ad386f9ccd1971ba8c04c5"),
+                    EnableSsl = true
+                });
+            return services;
         }
     }
 }

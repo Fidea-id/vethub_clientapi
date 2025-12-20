@@ -1,4 +1,6 @@
-﻿using Domain.Entities.DTOs;
+﻿using DevExtreme.AspNet.Data.ResponseModel;
+using DevExtreme.AspNet.Mvc;
+using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -9,6 +11,8 @@ namespace Application.Services.Contracts
     public interface IAppointmentService : IGenericService<Appointments, AppointmentsRequest, Appointments, AppointmentsFilter>
     {
         Task SendInvoiceEmail(string dbName, int appointmentId);
+        Task<LoadResult> GetDetailReportAsync(string dbName, DataSourceLoadOptions loadOptions);
+        Task<IEnumerable<string>> GetDetailReportFilterAsync(string dbName, string filterField);
         Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName);
         Task<InvoiceResponse> GetDetailMedicalInvoice(int medicalId, string dbName);
         Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName);

@@ -1,6 +1,8 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using Domain.Entities;
 using Domain.Entities.DTOs;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -8,16 +10,10 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
-using Microsoft.Extensions.Logging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Diagnostics.Eventing.Reader;
-using Domain.Entities;
-using Newtonsoft.Json;
 using Infrastructure.Utils;
-using DevExpress.XtraReports.Native;
-using Domain.Entities.Models.Masters;
-using System.Reflection;
-using System;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Clinics = Domain.Entities.Models.Clients.Clinics;
 
 namespace Application.Services.Implementations
@@ -27,17 +23,39 @@ namespace Application.Services.Implementations
         private readonly IUnitOfWork _uow;
         private readonly ILogger<AdditionalDataService> _logger;
         private readonly ICurrentUserService _currentUser;
+        private readonly ICacheService _cache;
+        private const string DashboardCacheKey = "dashboardData:all";
+        private const string ClinicCacheKeyAll = "clinicData:all";
+        private const string ClinicCacheKeyById = "clinicData:id:";
+        private const string AnimalCacheKeyAll = "animalData:all";
+        private const string AnimalCacheKeyById = "animalData:id:";
+        private const string BreedCacheKeyAll = "breedData:all";
+        private const string BreedCacheKeyById = "breedData:id:";
+        private const string DiagnoseCacheKeyAll = "diagnoseData:all";
+        private const string DiagnoseCacheKeyById = "diagnoseData:id:";
+        private const string PaymentMethodCacheKeyAll = "paymentMethodData:all";
+        private const string PaymentMethodCacheKeyById = "paymentMethodData:id:";
+        //private const string PrescriptionFrequentsCacheKeyAll = "prescriptionFrequentsData:all";
+        //private const string PrescriptionFrequentsCacheKeyById = "prescriptionFrequentsData:id:";
+        private const string ClinicConfigCacheKeyAll = "clinicConfigData:all";
+        private const string ClinicConfigCacheKeyByKey = "clinicConfigData:key:";
+        private const string ClinicReportCacheKey = "clinicReportData:all";
 
-        public AdditionalDataService(ICurrentUserService currentUser, IUnitOfWork unitOfWork, ILoggerFactory loggerFactory)
+        //public AdditionalDataService(ICurrentUserService currentUser, IUnitOfWork unitOfWork, ILoggerFactory loggerFactory)
+        public AdditionalDataService(ICurrentUserService currentUser, IUnitOfWork unitOfWork, ILoggerFactory loggerFactory, ICacheService cache)
         {
             _currentUser = currentUser;
             _uow = unitOfWork;
             _logger = loggerFactory.CreateLogger<AdditionalDataService>();
+            _cache = cache;
         }
 
         #region Dashboard
         public async Task<DashboardResponse> ReadDashboardAsync(string dbName, string startDate, string endDate)
         {
+            //var cached = await _cache.GetAsync<DashboardResponse>(dbName, DashboardCacheKey);
+            //if (cached != null) return cached;
+
             var statusPaid = "Paid";
             var defaultFilter = " CreatedAt >= '2023-01-01'";
             var dateFilter = defaultFilter;
@@ -61,7 +79,7 @@ namespace Application.Services.Implementations
             var product = await _uow.ProductsRepository.CountToCard(dbName, null, dateFilter);
             var service = await _uow.ServicesRepository.CountToCard(dbName, null, dateFilter);
             var invoice = await _uow.OrdersRepository.CountInvoiceToCard(dbName, dateFilter);
-            
+
             var weekClientAppointment = await _uow.AppointmentRepository.GetClientWeek(dbName);
 
             var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"{dateFilterMR}");
@@ -148,7 +166,7 @@ namespace Application.Services.Implementations
 
             invoice.Percentage = FormatUtil.CountPercentageMonth(invoice.Total, invoice.TotalAll);
             result.SalesInvoices = invoice;
-            
+
             result.Revenues = new DoubleCardDashboard()
             {
                 Total = revenueMonth,
@@ -237,6 +255,7 @@ namespace Application.Services.Implementations
             result.WeeklyClient = heatmap;
             result.FrequentDiagnoseMeds = topMedFrequency.ToList();
 
+            //await _cache.SetAsync(dbName, DashboardCacheKey, result, TimeSpan.FromMinutes(10));
             return result;
         }
         #endregion
@@ -246,7 +265,6 @@ namespace Application.Services.Implementations
         {
             try
             {
-
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
                 var entity = Mapping.Mapper.Map<Clinics>(request);
@@ -258,6 +276,8 @@ namespace Application.Services.Implementations
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateClinicsAsync", MethodType.Create, nameof(Clinics));
+
+                await _cache.RemoveAsync(dbName, ClinicCacheKeyAll);
                 return entity;
             }
             catch (Exception ex)
@@ -271,7 +291,12 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cached = await _cache.GetAsync<List<Clinics>>(dbName, ClinicCacheKeyAll);
+                if (cached != null) return cached.FirstOrDefault();
+
                 var data = await _uow.ClinicsRepository.GetAll(dbName);
+                if (data != null)
+                    await _cache.SetAsync(dbName, ClinicCacheKeyAll, data, TimeSpan.FromMinutes(60));
                 return data.FirstOrDefault();
             }
             catch (Exception ex)
@@ -293,6 +318,10 @@ namespace Application.Services.Implementations
                 FormatUtil.ConvertUpdateObject<Clinics, Clinics>(entity, checkedEntity);
                 FormatUtil.SetIsActive<Clinics>(checkedEntity, true);
                 await _uow.ClinicsRepository.Update(dbName, checkedEntity);
+
+                var cacheKey = $"{ClinicCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, ClinicCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -326,6 +355,8 @@ namespace Application.Services.Implementations
                 var newId = await _uow.AnimalRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                await _cache.RemoveAsync(dbName, AnimalCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateAnimalAsync", MethodType.Create, nameof(Animals));
@@ -342,7 +373,12 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cached = await _cache.GetAsync<DataResultDTO<Animals>>(dbName, AnimalCacheKeyAll);
+                if (cached != null) return cached;
+
                 var data = await _uow.AnimalRepository.GetByFilter(dbName, filter);
+
+                await _cache.SetAsync(dbName, AnimalCacheKeyAll, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -355,7 +391,14 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{AnimalCacheKeyById}{id}";
+                var cachedItem = await _cache.GetAsync<Animals>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
                 var data = await _uow.AnimalRepository.GetById(dbName, id);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -378,6 +421,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Animals>(checkedEntity, true);
                 await _uow.AnimalRepository.Update(dbName, checkedEntity);
 
+                var cacheKey = $"{AnimalCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, AnimalCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateAnimalAsync", MethodType.Update, nameof(Animals));
@@ -399,6 +446,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.AnimalRepository.Remove(dbName, id);
+
+                var cacheKey = $"{AnimalCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, AnimalCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -431,6 +482,8 @@ namespace Application.Services.Implementations
                 var newId = await _uow.BreedRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                await _cache.RemoveAsync(dbName, BreedCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateBreedAsync", MethodType.Create, nameof(Breeds));
@@ -447,7 +500,13 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cached = await _cache.GetAsync<DataResultDTO<BreedAnimalResponse>>(dbName, BreedCacheKeyAll);
+                if (cached != null) return cached;
+
                 var data = await _uow.BreedRepository.GetBreedAnimalList(filter, dbName);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, BreedCacheKeyAll, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -461,7 +520,15 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{BreedCacheKeyById}{idAnimal}:byAnimal";
+                var cachedItem = await _cache.GetAsync<IEnumerable<BreedAnimalResponse>>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
+                //code
                 var data = await _uow.BreedRepository.GetBreedAnimalListByAnimal(idAnimal, dbName);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -475,7 +542,15 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{BreedCacheKeyById}{id}";
+                var cachedItem = await _cache.GetAsync<BreedAnimalResponse>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
                 var data = await _uow.BreedRepository.GetBreedAnimal(id, dbName);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(360));
+
                 return data;
             }
             catch (Exception ex)
@@ -498,6 +573,12 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Breeds>(checkedEntity, true);
                 await _uow.BreedRepository.Update(dbName, checkedEntity);
 
+                var cacheKey = $"{BreedCacheKeyById}{id}";
+                var cacheKeyAnimal = $"{BreedCacheKeyById}{checkedEntity.AnimalsId}:byAnimal";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, cacheKeyAnimal);
+                await _cache.RemoveAsync(dbName, BreedCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateBreedAsync", MethodType.Update, nameof(Breeds));
@@ -519,6 +600,12 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.BreedRepository.Remove(dbName, id);
+
+                var cacheKey = $"{BreedCacheKeyById}{id}";
+                var cacheKeyAnimal = $"{BreedCacheKeyById}{entity.AnimalsId}:byAnimal";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, cacheKeyAnimal);
+                await _cache.RemoveAsync(dbName, BreedCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -547,6 +634,8 @@ namespace Application.Services.Implementations
                 var newId = await _uow.DiagnoseRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                await _cache.RemoveAsync(dbName, DiagnoseCacheKeyAll);
+                
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreateDiagnoseAsync", MethodType.Create, nameof(Diagnoses));
@@ -563,7 +652,13 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cached = await _cache.GetAsync<DataResultDTO<Diagnoses>>(dbName, DiagnoseCacheKeyAll);
+                if (cached != null) return cached;
+
                 var data = await _uow.DiagnoseRepository.GetByFilter(dbName, filter);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, DiagnoseCacheKeyAll, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -576,7 +671,14 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{DiagnoseCacheKeyById}{id}";
+                var cachedItem = await _cache.GetAsync<Diagnoses>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
                 var data = await _uow.DiagnoseRepository.GetById(dbName, id);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -599,6 +701,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<Diagnoses>(checkedEntity, true);
                 await _uow.DiagnoseRepository.Update(dbName, checkedEntity);
 
+                var cacheKey = $"{DiagnoseCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, DiagnoseCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdateDiagnoseAsync", MethodType.Update, nameof(Diagnoses));
@@ -620,6 +726,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.DiagnoseRepository.Remove(dbName, id);
+
+                var cacheKey = $"{DiagnoseCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, DiagnoseCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -648,6 +758,8 @@ namespace Application.Services.Implementations
                 var newId = await _uow.PaymentMethodRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                await _cache.RemoveAsync(dbName, PaymentMethodCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePaymentMethodAsync", MethodType.Create, nameof(PaymentMethod));
@@ -664,7 +776,13 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cached = await _cache.GetAsync<DataResultDTO<PaymentMethod>>(dbName, PaymentMethodCacheKeyAll);
+                if (cached != null) return cached;
+
                 var data = await _uow.PaymentMethodRepository.GetByFilter(dbName, filter);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, PaymentMethodCacheKeyAll, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -677,7 +795,15 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{PaymentMethodCacheKeyById}{id}";
+                var cachedItem = await _cache.GetAsync<PaymentMethod>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
+                //code
                 var data = await _uow.PaymentMethodRepository.GetById(dbName, id);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -700,6 +826,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<PaymentMethod>(checkedEntity, true);
                 await _uow.PaymentMethodRepository.Update(dbName, checkedEntity);
 
+                var cacheKey = $"{PaymentMethodCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, PaymentMethodCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdatePaymentMethodAsync", MethodType.Update, nameof(PaymentMethod));
@@ -721,6 +851,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.PaymentMethodRepository.Remove(dbName, id);
+
+                var cacheKey = $"{PaymentMethodCacheKeyById}{id}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, PaymentMethodCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -749,6 +883,8 @@ namespace Application.Services.Implementations
                 var newId = await _uow.PrescriptionFrequentsRepository.Add(dbName, entity);
                 entity.Id = newId;
 
+                //await _cache.RemoveAsync(dbName, PrescriptionFrequentsCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePrescriptionFrequentsAsync", MethodType.Create, nameof(PrescriptionFrequents));
@@ -765,7 +901,14 @@ namespace Application.Services.Implementations
         {
             try
             {
+                //var cached = await _cache.GetAsync<DataResultDTO<PrescriptionFrequents>>(dbName, PrescriptionFrequentsCacheKeyAll);
+                //if (cached != null) return cached;
+
+                //code
                 var data = await _uow.PrescriptionFrequentsRepository.GetByFilter(dbName, filter);
+
+                //if (data != null)
+                //    await _cache.SetAsync(dbName, PrescriptionFrequentsCacheKeyAll, data, TimeSpan.FromMinutes(360));
                 return data;
             }
             catch (Exception ex)
@@ -788,6 +931,10 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<PrescriptionFrequents>(checkedEntity, true);
                 await _uow.PrescriptionFrequentsRepository.Update(dbName, checkedEntity);
 
+                //var cacheKey = $"{PrescriptionFrequentsCacheKeyById}{id}";
+                //await _cache.RemoveAsync(dbName, cacheKey);
+                //await _cache.RemoveAsync(dbName, PrescriptionFrequentsCacheKeyAll);
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _uow.EventLogRepository.AddEventLogByParams(dbName, currentUserId, id, "UpdatePrescriptionFrequentsAsync", MethodType.Update, nameof(PrescriptionFrequents));
@@ -809,6 +956,10 @@ namespace Application.Services.Implementations
                 if (entity == null) throw new Exception("Entity not found");
 
                 await _uow.PrescriptionFrequentsRepository.Remove(dbName, id);
+
+                //var cacheKey = $"{PrescriptionFrequentsCacheKeyById}{id}";
+                //await _cache.RemoveAsync(dbName, cacheKey);
+                //await _cache.RemoveAsync(dbName, PrescriptionFrequentsCacheKeyAll);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
@@ -888,12 +1039,42 @@ namespace Application.Services.Implementations
         {
             try
             {
+                var cacheKey = $"{ClinicConfigCacheKeyByKey}{key}";
+                var cachedItem = await _cache.GetAsync<ClinicConfig>(dbName, cacheKey);
+                if (cachedItem != null) return cachedItem;
+
                 var data = await _uow.ClinicConfigRepository.GetConfigByKey(dbName, key);
+
+                if (data != null)
+                    await _cache.SetAsync(dbName, cacheKey, data, TimeSpan.FromMinutes(30));
                 return data;
             }
             catch (Exception ex)
             {
                 ex.Source = $"AdditionalDataService.ReadClinicConfigAsync";
+                throw;
+            }
+        }
+        public async Task<ClinicConfig> CreateClinicConfigAsync(ClinicConfig data, string dbName)
+        {
+            try
+            {
+                ClinicConfig checkedEntity = await _uow.ClinicConfigRepository.GetConfigByKey(dbName, data.Key);
+                if (checkedEntity != null)
+                {
+                    throw new Exception($"ClinicConfig already exist");
+                }
+                else
+                {
+                    await _uow.ClinicConfigRepository.AddConfig(dbName, data);
+
+                    await _cache.RemoveAsync(dbName, ClinicConfigCacheKeyAll);
+                    return data;
+                }
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.UpdateClinicConfigAsync";
                 throw;
             }
         }
@@ -909,6 +1090,11 @@ namespace Application.Services.Implementations
                 }
                 checkedEntity.Value = newValue;
                 await _uow.ClinicConfigRepository.UpdateConfig(dbName, checkedEntity);
+
+                var cacheKey = $"{ClinicConfigCacheKeyByKey}{key}";
+                await _cache.RemoveAsync(dbName, cacheKey);
+                await _cache.RemoveAsync(dbName, ClinicConfigCacheKeyAll);
+
                 return checkedEntity;
             }
             catch (Exception ex)
@@ -918,5 +1104,27 @@ namespace Application.Services.Implementations
             }
         }
         #endregion
+
+        public async Task<ClinicReportsClientDTO> ReadClinicReportsAsync(string dbName)
+        {
+            try
+            {
+                var cached = await _cache.GetAsync<ClinicReportsClientDTO>(dbName, ClinicReportCacheKey);
+                if (cached != null) return cached;
+
+                //code
+                var checkedEntity = await _uow.ClinicsRepository.GetClinicReportsAsync(dbName);
+
+                if (checkedEntity != null)
+                    await _cache.SetAsync(dbName, ClinicReportCacheKey, checkedEntity, TimeSpan.FromMinutes(360));
+
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicReportsAsync";
+                throw;
+            }
+        }
     }
 }

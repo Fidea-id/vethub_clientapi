@@ -14,8 +14,10 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<Notifications>> TakeRecent(string dbName, int profileId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<Notifications>($"SELECT * FROM Notifications WHERE ProfileId = @profile AND IsActive = 1 ORDER BY CreatedAt DESC LIMIT 5", new { profile = profileId });
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<Notifications>($"SELECT * FROM Notifications WHERE ProfileId = @profile AND IsActive = 1 ORDER BY CreatedAt DESC LIMIT 5", new { profile = profileId });
+            }
         }
     }
 }

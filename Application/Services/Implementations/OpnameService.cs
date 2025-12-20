@@ -131,16 +131,18 @@ namespace Application.Services.Implementations
 
         public async Task<DataResultDTO<OpnamePatientsDetailResponse>> ReadOpnamePatientsDetailAsync(OpnamePatientsFilter filter, string dbName)
         {
+            string stopId = "0";
             try
             {
                 var dataResult = new List<OpnamePatientsDetailResponse>();
                 var data = await _unitOfWork.OpnamePatientsRepository.GetByFilter(dbName, filter);
-                foreach(var item in data.Data)
+                foreach (var item in data.Data)
                 {
                     var opname = await _unitOfWork.OpnamesRepository.GetById(dbName, item.OpnameId);
-                    if(opname == null) continue;
+                    if (opname == null) continue;
                     var medical = await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, item.MedicalRecordId, null);
-
+                    if (medical.Patients.IsActive == false) continue;
+                    stopId = item.Id.ToString();
                     var itemResult = new OpnamePatientsDetailResponse();
                     itemResult.Id = item.Id;
                     itemResult.OpnameId = item.OpnameId;
@@ -165,7 +167,7 @@ namespace Application.Services.Implementations
             }
             catch (Exception ex)
             {
-                ex.Source = $"OpnameService.ReadOpnamePatientsDetailAsync";
+                ex.Source = $"OpnameService.ReadOpnamePatientsDetailAsync-" + stopId;
                 throw;
             }
         }

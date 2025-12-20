@@ -1,5 +1,8 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
+using DevExtreme.AspNet.Data;
+using DevExtreme.AspNet.Data.ResponseModel;
+using DevExtreme.AspNet.Mvc;
 using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
@@ -80,7 +83,7 @@ namespace Application.Services.Implementations
                 entity.Status = paymentStatus;
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
-                
+
                 //add event log
                 var currentUserId = await _currentUser.UserId;
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPayment));
@@ -120,10 +123,10 @@ namespace Application.Services.Implementations
                             FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
                             FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
                             await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
-                            
+
                             //add event log
                             await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, tuple.Item1.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(ProductStocks), "Update Product Stock-" + orderDetail.Type);
-                            
+
                             var pshId = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
 
                             //add event log
@@ -165,7 +168,7 @@ namespace Application.Services.Implementations
                     await _unitOfWork.OrdersRepository.Update(dbName, order);
 
                     //add event log
-                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, order.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(Orders),"Update Status Payment to:" + paymentStatus);
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, order.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(Orders), "Update Status Payment to:" + paymentStatus);
                 }
 
 
@@ -317,41 +320,51 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<List<RevenueResponse>> GetRevenueLogAsync(string dbName)
+        public async Task<LoadResult> GetRevenueLogsAsync(string dbName, DataSourceLoadOptions loadOptions)
         {
             try
             {
-                var result = new List<RevenueResponse>();
-
-                var medicalPayment = await _unitOfWork.MedicalRecordsRepository.GetByFilter(dbName, new MedicalRecordsFilter { PaymentStatus = "Paid" });
-                var orderPayment = await _unitOfWork.OrdersRepository.GetByFilter(dbName, new OrdersFilter { Status = "Paid" });
-
-                if (medicalPayment.Data.Count() > 0)
+                var data = await _unitOfWork.MedicalRecordsRepository.GetRevenueData(dbName);
+                foreach (var item in data)
                 {
-                    foreach (var item in medicalPayment.Data)
+                    if (item.Type == "Medical")
                     {
                         var detail = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, item.Id);
-                        var totalDiscounted = item.TotalDiscounted == null ? item.Total - (item.DiscountTotal == null ? 0 : item.DiscountTotal) : item.TotalDiscounted; 
-                        result.Add(new RevenueResponse { Id = item.Id, Code = item.Code, Type = "Medical Record", Status = item.PaymentStatus, Total = item.Total, Discount = item.DiscountTotal, TotalAfterDiscount = totalDiscounted, Date = item.StartDate, Details = JsonConvert.SerializeObject(detail) });
+                        item.Details = JsonConvert.SerializeObject(detail);
                     }
-                }
-                if (orderPayment.Data.Count() > 0)
-                {
-                    foreach (var item in orderPayment.Data)
+                    if (item.Type == "Order")
                     {
                         var detail = await _unitOfWork.OrdersDetailRepository.GetByOrderId(dbName, item.Id);
-                        var totalDiscounted = item.TotalDiscountedPrice == 0 ? item.TotalPrice - (item.TotalDiscount == 0 ? 0 : item.TotalDiscount) : item.TotalDiscountedPrice;
-                        result.Add(new RevenueResponse { Id = item.Id, Code = item.OrderNumber, Type = "Order", Status = item.Status, Total = item.TotalPrice, Discount = item.TotalDiscount, TotalAfterDiscount = totalDiscounted, Date = item.Date, Details = JsonConvert.SerializeObject(detail) });
+                        item.Details = JsonConvert.SerializeObject(detail);
                     }
                 }
-
-                return result;
+                // Apply DevExtreme operations (skip, take, filter, sort, search)
+                return DataSourceLoader.Load(data.AsQueryable(), loadOptions);
             }
             catch (Exception ex)
             {
                 ex.Source = $"OrderService.GetRevenueLogAsync";
                 throw;
+            }
+        }
 
+        public async Task<int> GetRevenuePagedData(string dbName)
+        {
+            var result = await _unitOfWork.MedicalRecordsRepository.GetRevenuePagedData(dbName);
+            return result;
+        }
+
+        public async Task<IEnumerable<string>> GetRevenueLogsFilterAsync(string dbName, string filterField)
+        {
+            try
+            {
+                var data = await _unitOfWork.MedicalRecordsRepository.GetRevenueDataFilter(dbName, filterField);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.GetRevenueLogAsync";
+                throw;
             }
         }
     }

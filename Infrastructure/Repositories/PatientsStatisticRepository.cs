@@ -15,9 +15,9 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<PatientsStatisticDto>> ReadPatientsStatisticAsync(int patientId, string dbName)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            string query = $@"
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                string query = $@"
                 SELECT
                     a.PatientId,
                     MAX(a.StaffId) AS StaffId,
@@ -31,7 +31,8 @@ namespace Infrastructure.Repositories
                 WHERE a.PatientId = @patientId AND a.IsActive = 1
                 GROUP BY a.PatientId, a.Type;";
 
-            return await _db.QueryAsync<PatientsStatisticDto>(query, new { patientId });
+                return await _db.QueryAsync<PatientsStatisticDto>(query, new { patientId });
+            }
         }
     }
 }

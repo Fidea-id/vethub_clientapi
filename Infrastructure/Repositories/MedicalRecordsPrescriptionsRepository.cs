@@ -15,15 +15,17 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<MedicalRecordsPrescriptions>> GetByMedicalRecordId(string dbName, int medicalRecordsId)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-            return await _db.QueryAsync<MedicalRecordsPrescriptions>($"SELECT * FROM MedicalRecordsPrescriptions WHERE MedicalRecordsId = @Id AND IsActive = 1", new { Id = medicalRecordsId });
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<MedicalRecordsPrescriptions>($"SELECT * FROM MedicalRecordsPrescriptions WHERE MedicalRecordsId = @Id AND IsActive = 1", new { Id = medicalRecordsId });
+            }
         }
 
         public async Task<IEnumerable<FrequentDiagnoseMeds>> GetMedsFrequency(string dbName, string date)
         {
-            var _db = _dbFactory.GetDbConnection(dbName);
-
-            var resultQuery = $@"WITH RankedData AS (
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var resultQuery = $@"WITH RankedData AS (
                                 SELECT md.Diagnose AS Name, 'Diagnose' AS Type, COUNT(md.Id) AS Total, ROW_NUMBER() OVER (PARTITION BY 'Diagnose' ORDER BY COUNT(md.Id) DESC) AS RowNum
                                 FROM MedicalRecordsDiagnoses md
                                 JOIN MedicalRecords mr ON md.MedicalRecordsId = mr.Id
@@ -42,7 +44,8 @@ namespace Infrastructure.Repositories
                             FROM RankedData
                             WHERE RowNum <= 5
                             ORDER BY Type, Total DESC;";
-            return await _db.QueryAsync<FrequentDiagnoseMeds>(resultQuery);
+                return await _db.QueryAsync<FrequentDiagnoseMeds>(resultQuery);
+            }
         }
     }
 }
