@@ -617,6 +617,49 @@ namespace ClientVetHub.Controllers
         #endregion
 
         #region ClinicReports
+        [HttpGet("ClinicProductUsageReports/{entity}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetClinicProductUsageReports(string entity)
+        {
+            try
+            {
+                var data = await _additionalDataService.ReadClinicProductUsageReportsAsync(entity);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("ClinicAnimalUsageReports/{entity}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetClinicAnimalUsageReports(string entity)
+        {
+            try
+            {
+                var data = await _additionalDataService.ReadClinicAnimalUsageReportsAsync(entity);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        [HttpGet("ClinicServiceUsageReports/{entity}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetClinicServiceUsageReports(string entity)
+        {
+            try
+            {
+                var data = await _additionalDataService.ReadClinicServiceUsageReportsAsync(entity);
+                return Ok(data);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("ClinicReports/{entity}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetClinicReports(string entity)

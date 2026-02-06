@@ -96,7 +96,7 @@ namespace ClientVetHub.Controllers
                 var ownerData = await _profileService.GetOwnerProfile(dbName);
 
                 //create notif
-                var url = "appointment";
+                var url = "appointment/medicalrecord/"+create.AppointmentId;
                 var notif = NotificationUtil.SetCreateNotifRequest(create.StaffId, "Create Medical Record", $"Medical Record created", url);
                 var notifOwner = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Create Medical Record", $"Medical Record created", url);
                 await _notificationService.CreateRequestAsync(notif, dbName);

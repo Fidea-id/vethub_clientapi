@@ -93,6 +93,7 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                var currentUserId = User.FindFirstValue("Id");
                 var create = await _appointmentService.CreateRequestAsync(request, dbName);
 
                 //map to detail

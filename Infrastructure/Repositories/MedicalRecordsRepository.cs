@@ -526,6 +526,73 @@ namespace Infrastructure.Repositories
                 return await conn.QueryAsync<RevenueResponse>(sql);
             }
         }
+        public async Task<RevenueSummaryResponse> GetRevenueDataSummary(string dbName, DateTime? startDate, DateTime? endDate)
+        {
+            using (var conn = _dbFactory.GetDbConnection(dbName))
+            {
+                var sql = @"
+            WITH LastPayment AS (
+                SELECT
+                    op.OrderId,
+                    op.Type,
+                    op.PaymentMethodId,
+                    ROW_NUMBER() OVER (PARTITION BY op.OrderId, op.Type ORDER BY op.Date DESC) AS rn
+                FROM OrdersPayment op
+                WHERE op.IsActive = 1
+            ),
+            RevenueData AS (
+
+                -- MedicalRecords
+                SELECT 
+                    COALESCE(
+                        mr.TotalDiscounted,
+                        (mr.Total - IFNULL(mr.DiscountTotal, 0))
+                    ) AS TotalAfterDiscount
+                FROM MedicalRecords mr
+                LEFT JOIN LastPayment lp 
+                       ON lp.OrderId = mr.Id 
+                      AND lp.Type = 'MedicalRecord' 
+                      AND lp.rn = 1
+                WHERE mr.PaymentStatus = 'Paid'
+                  AND mr.Total > 0
+                  AND (@StartDate IS NULL OR mr.StartDate >= @StartDate)
+                  AND (@EndDate   IS NULL OR mr.StartDate <=  @EndDate)
+
+                UNION ALL
+
+                -- Orders
+                SELECT 
+                    COALESCE(
+                        o.TotalDiscountedPrice,
+                        (o.TotalPrice - IFNULL(o.TotalDiscount, 0))
+                    ) AS TotalAfterDiscount
+                FROM Orders o
+                LEFT JOIN LastPayment lp 
+                       ON lp.OrderId = o.Id 
+                      AND lp.Type = 'Order' 
+                      AND lp.rn = 1
+                WHERE o.Status = 'Paid'
+                  AND o.TotalPrice > 0
+                  AND (@StartDate IS NULL OR o.Date >= @StartDate)
+                  AND (@EndDate   IS NULL OR o.Date <=  @EndDate)
+
+            )
+
+            SELECT 
+                COALESCE(SUM(TotalAfterDiscount), 0) AS TotalRevenue
+            FROM RevenueData;
+        ";
+
+                return await conn.QueryFirstAsync<RevenueSummaryResponse>(
+                    sql,
+                    new
+                    {
+                        StartDate = startDate,
+                        EndDate = endDate
+                    }
+                );
+            }
+        }
 
         public async Task<IEnumerable<string>> GetRevenueDataFilter(string dbName, string filterField)
         {

@@ -59,6 +59,9 @@ namespace Application.Services.Contracts
         Task<ClinicConfig> CreateClinicConfigAsync(ClinicConfig request, string dbName);
         Task<ClinicConfig> UpdateClinicConfigAsync(string key, string newValue, string dbName);
         //ClinicReports
+        Task<IEnumerable<ClinicAnimalUsageDTO>> ReadClinicAnimalUsageReportsAsync(string dbName);
+        Task<IEnumerable<ClinicProductUsageDTO>> ReadClinicProductUsageReportsAsync(string dbName);
+        Task<IEnumerable<ClinicServiceUsageDTO>> ReadClinicServiceUsageReportsAsync(string dbName);
         Task<ClinicReportsClientDTO> ReadClinicReportsAsync(string dbName);
     }
 }

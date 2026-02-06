@@ -13,6 +13,7 @@ using Domain.Utils;
 using Infrastructure.Utils;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Globalization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Clinics = Domain.Entities.Models.Clients.Clinics;
 
@@ -55,6 +56,28 @@ namespace Application.Services.Implementations
         {
             //var cached = await _cache.GetAsync<DashboardResponse>(dbName, DashboardCacheKey);
             //if (cached != null) return cached;
+            DateTime? start = null;
+            DateTime? end = null;
+
+            if (!string.IsNullOrWhiteSpace(startDate))
+            {
+                start = DateTime.ParseExact(
+                    startDate,
+                    new[] { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss" },
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(endDate))
+            {
+                end = DateTime.ParseExact(
+                    endDate,
+                    new[] { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss" },
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None
+                ).AddDays(1);
+            }
 
             var statusPaid = "Paid";
             var defaultFilter = " CreatedAt >= '2023-01-01'";
@@ -82,7 +105,8 @@ namespace Application.Services.Implementations
 
             var weekClientAppointment = await _uow.AppointmentRepository.GetClientWeek(dbName);
 
-            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"{dateFilterMR}");
+            //var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetSalesDetail(dbName, $"{dateFilterMR}");//lama
+            var revenueAppointmentMonth = await _uow.MedicalRecordsRepository.GetRevenueDataSummary(dbName, start, end);//baru
             var revenueOrderMonth = await _uow.OrdersRepository.SumDoubleWithQuery(dbName, "TotalPrice", $"{dateFilter} AND Status = '{statusPaid}' AND Type = 'Incomes'");
             var visitYearly = await _uow.MedicalRecordsRepository.GetVisitYearly(dbName, dateFilter);
             var ownerTotal = await _uow.OwnersRepository.GetOwnerChart(dbName, dateFilter);
@@ -145,8 +169,8 @@ namespace Application.Services.Implementations
             });
 
             //var revenueAll = revenueOrderAll + revenueAppointmentAll;
-            var revenueAppointmentTotal = (revenueAppointmentMonth.ProductsTotal + revenueAppointmentMonth.ServicesTotal) - revenueAppointmentMonth.TotalDiscount;
-            var revenueMonth = revenueOrderMonth + revenueAppointmentTotal;
+            var revenueMonth = revenueAppointmentMonth.TotalRevenue;
+            var revenueAppointmentTotal = revenueMonth - revenueOrderMonth;
 
             var result = new DashboardResponse();
             clients.Percentage = FormatUtil.CountPercentageMonth(clients.Total, clients.TotalAll);
@@ -1104,7 +1128,49 @@ namespace Application.Services.Implementations
             }
         }
         #endregion
-
+        public async Task<IEnumerable<ClinicProductUsageDTO>> ReadClinicProductUsageReportsAsync(string dbName)
+        {
+            try
+            {
+                //code
+                var checkedEntity = await _uow.ClinicsRepository.GetClinicProductUsageReportsAsync(dbName);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicProductUsageReportsAsync";
+                throw;
+            }
+        }
+        public async Task<IEnumerable<ClinicServiceUsageDTO>> ReadClinicServiceUsageReportsAsync(string dbName)
+        {
+            try
+            {
+                //code
+                var checkedEntity = await _uow.ClinicsRepository.GetClinicServiceUsageReportsAsync(dbName);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicServiceUsageReportsAsync";
+                throw;
+            }
+        }
+        public async Task<IEnumerable<ClinicAnimalUsageDTO>> ReadClinicAnimalUsageReportsAsync(string dbName)
+        {
+            try
+            {
+                //code
+                var checkedEntity = await _uow.ClinicsRepository.GetClinicAnimalUsageReportsAsync(dbName);
+                return checkedEntity;
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadClinicAnimalUsageReportsAsync";
+                throw;
+            }
+        }
+        
         public async Task<ClinicReportsClientDTO> ReadClinicReportsAsync(string dbName)
         {
             try
