@@ -42,5 +42,23 @@ namespace ClientVetHub.Controllers
             var notif = await _notificationService.GetRecent(dbName, profile.Id);
             return Ok(notif);
         }
+
+        [HttpPost("Read/{id:int}")]
+        public async Task<IActionResult> ReadNotification(int id)
+        {
+            var dbName = User.FindFirstValue("Entity");
+            var profileId = await _currentUserService.UserId;
+            await _notificationService.ReadNotificationById(dbName, profileId, id);
+            return NoContent();
+        }
+
+        [HttpPost("ReadAll")]
+        public async Task<IActionResult> ReadAllNotifications()
+        {
+            var dbName = User.FindFirstValue("Entity");
+            var profileId = await _currentUserService.UserId;
+            await _notificationService.ReadAllNotification(dbName, profileId);
+            return NoContent();
+        }
     }
 }

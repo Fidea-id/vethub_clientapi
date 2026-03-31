@@ -19,5 +19,12 @@ namespace Infrastructure.Repositories
                 return await _db.QueryAsync<Notifications>($"SELECT * FROM Notifications WHERE ProfileId = @profile AND IsActive = 1 ORDER BY CreatedAt DESC LIMIT 5", new { profile = profileId });
             }
         }
+        public async Task<IEnumerable<Notifications>> TakeAllDesc(string dbName, int profileId)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<Notifications>($"SELECT * FROM Notifications WHERE ProfileId = @profile AND IsActive = 1 ORDER BY CreatedAt DESC", new { profile = profileId });
+            }
+        }
     }
 }

@@ -26,7 +26,7 @@ namespace Application.Services.Implementations
             _currentUser = currentUser;
         }
 
-        public async Task<TResponse> CreateAsync(T entity, string dbName)
+        public virtual async Task<TResponse> CreateAsync(T entity, string dbName)
         {
             try
             {
@@ -51,7 +51,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task DeleteAsync(int id, string? dbName)
+        public virtual async Task DeleteAsync(int id, string? dbName)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<T> UpdateAsync(int id, TRequest request, string? dbName)
+        public virtual async Task<T> UpdateAsync(int id, TRequest request, string? dbName)
         {
             try
             {
@@ -258,7 +258,7 @@ namespace Application.Services.Implementations
             }
         }
 
-        public async Task<TResponse> CreateRequestAsync(TRequest request, string dbName)
+        public virtual async Task<TResponse> CreateRequestAsync(TRequest request, string dbName)
         {
             try
             {

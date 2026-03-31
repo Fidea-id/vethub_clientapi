@@ -37,15 +37,11 @@ namespace Application.Services.Implementations
 
         }
 
-        public async Task<DataResultDTO<Notifications>> GetAll(string dbName, int profile)
+        public async Task<IEnumerable<Notifications>> GetAll(string dbName, int profile)
         {
             try
             {
-                var filters = new NotificationsFilter()
-                {
-                    ProfileId = profile,
-                };
-                var data = await _repository.GetByFilter(dbName, filters);
+                var data = await _unitOfWork.NotificationsRepository.TakeAllDesc(dbName, profile);
                 return data;
             }
             catch (Exception ex)

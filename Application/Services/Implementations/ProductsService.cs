@@ -18,10 +18,35 @@ namespace Application.Services.Implementations
     public class ProductsService : GenericService<Products, ProductsRequest, Products, ProductsFilter>, IProductsService
     {
         private ILogger<ProductsService> _logger;
-        public ProductsService(IUnitOfWork unitOfWork, IGenericRepository<Products, ProductsFilter> repository, ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+        private readonly INotificationService _notificationService;
+        public ProductsService(IUnitOfWork unitOfWork, IGenericRepository<Products, ProductsFilter> repository, ILoggerFactory loggerFactory, ICurrentUserService currentUser, INotificationService notificationService)
         : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<ProductsService>();
+            _notificationService = notificationService;
+        }
+        public override async Task<Products> UpdateAsync(int id, ProductsRequest request, string? dbName)
+        {
+            var result = await base.UpdateAsync(id, request, dbName);
+
+            var currentUserId = await _currentUser.UserId;
+
+            //create notif
+            var url = "products/form/" + result.Id;
+            var notif = NotificationUtil.SetUpdateNotifRequest(currentUserId, "Update Product", $"Product updated", url);
+            await _notificationService.CreateRequestAsync(notif, dbName);
+
+            return result;
+        }
+        public override async Task DeleteAsync(int id, string? dbName)
+        {
+            await base.DeleteAsync(id, dbName);
+
+            var currentUserId = await _currentUser.UserId;
+
+            //create notif
+            var notif = NotificationUtil.SetDeleteNotifRequest(currentUserId, "Delete Product", $"Product deleted");
+            await _notificationService.CreateRequestAsync(notif, dbName);
         }
 
         public async Task<IEnumerable<ProductDetailsResponse>> GetProductDetailsAsync(string dbName)
@@ -86,7 +111,7 @@ namespace Application.Services.Implementations
 
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdStock, "AddProducts", MethodType.Create, nameof(ProductStocks));
-
+                var staffId = profile != null ? profile.Id : 0;
                 //create new historical stock
                 var newHistorical = new ProductStockHistorical()
                 {
@@ -96,11 +121,16 @@ namespace Application.Services.Implementations
                     StockBefore = 0,
                     VolumeRemaining = 0,
                     Type = "AddProduct",
-                    ProfileId = profile != null ? profile.Id : 0
+                    ProfileId = staffId
                 };
                 FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                 FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
                 var newIdPSH = await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, newHistorical);
+
+                //create notif
+                var url = "products/form/" + newId;
+                var notif = NotificationUtil.SetCreateNotifRequest(staffId, "Create New Product", $"Product created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
 
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProducts", MethodType.Create, nameof(ProductStockHistorical));
@@ -173,7 +203,7 @@ namespace Application.Services.Implementations
 
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPS, "AddProductAsBundle", MethodType.Create, nameof(ProductStocks));
-
+                var staffId = profile != null ? profile.Id : 0;
                 //create new historical stock
                 var newHistorical = new ProductStockHistorical()
                 {
@@ -183,7 +213,7 @@ namespace Application.Services.Implementations
                     StockBefore = 0,
                     VolumeRemaining = 0,
                     Type = "AddProduct",
-                    ProfileId = profile != null ? profile.Id : 0
+                    ProfileId = staffId
                 };
                 FormatUtil.SetIsActive<ProductStockHistorical>(newHistorical, true);
                 FormatUtil.SetDateBaseEntity<ProductStockHistorical>(newHistorical);
@@ -191,6 +221,11 @@ namespace Application.Services.Implementations
 
                 //add event log
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newIdPSH, "AddProductAsBundle", MethodType.Create, nameof(ProductStockHistorical));
+
+                //create notif
+                var url = "products/form/" + newId;
+                var notif = NotificationUtil.SetCreateNotifRequest(staffId, "Create New Product", $"Product created", url);
+                await _notificationService.CreateRequestAsync(notif, dbName);
 
                 return newProducts;
             }
