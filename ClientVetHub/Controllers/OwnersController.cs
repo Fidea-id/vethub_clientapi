@@ -36,6 +36,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("OwnerSpending")]
+        public async Task<IActionResult> GetWithTotalSpending([FromQuery] OwnersSpendingFilter filters)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _ownersService.GetWithSpending(filters, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {

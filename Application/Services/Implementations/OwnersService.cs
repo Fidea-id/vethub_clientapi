@@ -1,6 +1,7 @@
 ﻿using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities;
+using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -366,6 +367,12 @@ namespace Application.Services.Implementations
                 ex.Source = "OwnersService.GetOwnerStatisticAsync";
                 throw;
             }
+        }
+
+        public async Task<DataResultDTO<OwnerListSpending>> GetWithSpending(OwnersSpendingFilter filters, string dbName)
+        {
+            var result = await _unitOfWork.OwnersRepository.GetOwnerWithSpending(filters, dbName);
+            return result;
         }
     }
 }

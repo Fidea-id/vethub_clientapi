@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -58,6 +58,130 @@ namespace Infrastructure.Repositories
                 {
                     Data = data,
                     TotalData = countData
+                };
+                return result;
+            }
+        }
+
+        public async Task<DataResultDTO<OrderFullResponse>> GetListOrderFull(string dbName, OrderFilterRequest filter)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var conditions = new List<string>();
+                var parameters = new DynamicParameters();
+
+                conditions.Add("o.IsActive = 1");
+
+                if (filter.Month.HasValue)
+                {
+                    conditions.Add("MONTH(o.Date) = @Month");
+                    parameters.Add("Month", filter.Month.Value);
+                }
+                if (filter.Year.HasValue)
+                {
+                    conditions.Add("YEAR(o.Date) = @Year");
+                    parameters.Add("Year", filter.Year.Value);
+                }
+                if (!string.IsNullOrEmpty(filter.Type))
+                {
+                    conditions.Add("o.Type = @Type");
+                    parameters.Add("Type", filter.Type);
+                }
+                if (!string.IsNullOrEmpty(filter.Status))
+                {
+                    conditions.Add("o.Status = @Status");
+                    parameters.Add("Status", filter.Status);
+                }
+                if (filter.MinPrice.HasValue)
+                {
+                    conditions.Add("o.TotalPrice >= @MinPrice");
+                    parameters.Add("MinPrice", filter.MinPrice.Value);
+                }
+                if (filter.MaxPrice.HasValue)
+                {
+                    conditions.Add("o.TotalPrice <= @MaxPrice");
+                    parameters.Add("MaxPrice", filter.MaxPrice.Value);
+                }
+
+                string whereClause = conditions.Count > 0 ? " WHERE " + string.Join(" AND ", conditions) : "";
+
+                string countQuery = @"
+                    SELECT COUNT(1)
+                    FROM Orders o
+                    LEFT JOIN Profile p ON o.StaffId = p.Id
+                    LEFT JOIN Owners c ON o.ClientId = c.Id" + whereClause;
+
+                int totalCount = await _db.ExecuteScalarAsync<int>(countQuery, parameters);
+
+                int offset = (filter.PageNumber - 1) * filter.PageSize;
+
+                string query = $@"
+                SELECT
+                    o.Id AS Id,
+                    o.OrderNumber,
+                    o.Date,
+                    o.DueDate,
+                    o.ClientId,
+                    c.Name AS ClientName,
+                    o.StaffId,
+                    p.Name AS StaffName,
+                    o.Type,
+                    o.TotalQuantity,
+                    o.Status,
+                    o.TotalPrice,
+                    o.TotalDiscountedPrice,
+                    o.TotalDiscount
+                FROM Orders o
+                LEFT JOIN Profile p ON o.StaffId = p.Id
+                LEFT JOIN Owners c ON o.ClientId = c.Id
+                {whereClause}
+                ORDER BY o.Id DESC
+                LIMIT @Limit OFFSET @Offset;";
+
+                parameters.Add("Limit", filter.PageSize);
+                parameters.Add("Offset", offset);
+
+                var results = (await _db.QueryAsync<OrderFullResponse>(query, parameters)).ToList();
+
+                var clinicData = new ClientClinicResponse();
+                foreach (var item in results)
+                {
+                    const string productsQuery = @"
+                    SELECT
+                     od.ProductId,
+                     pr.Name AS ProductName,
+                     od.Quantity AS Quantity,
+                     pr.Price AS Price,
+                     od.Discount AS Discount,
+                     od.DiscountType AS DiscountType,
+                     od.TotalPrice AS TotalPrice
+                    FROM Orders o
+                    LEFT JOIN OrdersDetail od ON o.Id = od.OrderId
+                    LEFT JOIN Products pr ON od.ProductId = pr.Id
+                    WHERE o.Id = @OrderId AND o.IsActive = 1";
+                    item.OrderProducts = await _db.QueryAsync<OrdersDetailResponse>(productsQuery, new { OrderId = item.Id });
+
+                    const string paymentQuery = @"
+                    SELECT
+                        o.Id AS OrderId,
+                        op.PaymentMethodId,
+                        pm.Name,
+                        op.Date,
+                        op.Total,
+                        op.Status
+                    FROM Orders o
+                    JOIN OrdersPayment op ON o.Id = op.OrderId
+                    JOIN PaymentMethod pm ON pm.Id = op.PaymentMethodId
+                    WHERE o.Id = @OrderId AND op.Type = @PaymentType AND o.IsActive = 1";
+                    item.OrderPayments = await _db.QueryAsync<OrdersPaymentResponse>(paymentQuery, new { OrderId = item.Id, PaymentType = "Order" });
+
+                    item.ClinicData = clinicData;
+                }
+
+                var result = new DataResultDTO<OrderFullResponse>
+                {
+                    Data = results,
+                    TotalData = totalCount
                 };
                 return result;
             }

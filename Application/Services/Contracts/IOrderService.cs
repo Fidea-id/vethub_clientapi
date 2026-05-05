@@ -1,4 +1,4 @@
-﻿using DevExtreme.AspNet.Data.ResponseModel;
+using DevExtreme.AspNet.Data.ResponseModel;
 using DevExtreme.AspNet.Mvc;
 using Domain.Entities.DTOs;
 using Domain.Entities.Filters.Clients;
@@ -17,6 +17,7 @@ namespace Application.Services.Contracts
         Task<DataResultDTO<OrdersResponse>> GetOrdersList(OrdersFilter filters, string dbName);
 
         //OrderFullResponse
+        Task<DataResultDTO<OrderFullResponse>> GetOrderFullAsync(string dbName, OrderFilterRequest filter);
         Task<IEnumerable<OrderFullResponse>> GetOrderFullAsync(string dbName, bool thisMonth = false);
         Task<OrderFullResponse> GetOrderFullByIdAsync(int id, string dbName);
         Task<OrderFullResponse> CreateOrderFullAsync(OrderFullRequest request, string dbName);

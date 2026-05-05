@@ -1,6 +1,7 @@
-﻿using Application.Services.Contracts;
+using Application.Services.Contracts;
 using Application.Utils;
 using DevExtreme.AspNet.Mvc;
+using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
@@ -42,12 +43,12 @@ namespace ClientVetHub.Controllers
             }
         }
         [HttpGet("Full")]
-        public async Task<IActionResult> GetOrderFullAsync()
+        public async Task<IActionResult> GetOrderFullAsync([FromQuery] OrderFilterRequest filter)
         {
             try
             {
                 var dbName = User.FindFirstValue("Entity");
-                var entities = await _orderService.GetOrderFullAsync(dbName);
+                var entities = await _orderService.GetOrderFullAsync(dbName, filter);
                 return Ok(entities);
             }
             catch

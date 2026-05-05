@@ -1,4 +1,4 @@
-﻿using Application.Services.Contracts;
+using Application.Services.Contracts;
 using Application.Utils;
 using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Data.ResponseModel;
@@ -187,6 +187,30 @@ namespace Application.Services.Implementations
             catch (Exception ex)
             {
                 ex.Source = $"OrderService.AddOrdersPaymentAsync";
+                throw;
+            }
+        }
+
+        public async Task<DataResultDTO<OrderFullResponse>> GetOrderFullAsync(string dbName, OrderFilterRequest filter)
+        {
+            try
+            {
+                var dummyFilter = new OrderFilterRequest
+                {
+                    Month = filter.Month,
+                    Year = filter.Year,
+                    Type = filter.Type,
+                    Status = filter.Status,
+                    MinPrice = filter.MinPrice,
+                    MaxPrice = filter.MaxPrice,
+                    PageNumber = filter.PageNumber,
+                    PageSize = filter.PageSize
+                };
+                return await _unitOfWork.OrdersRepository.GetListOrderFull(dbName, dummyFilter);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"OrderService.GetOrderFullAsync";
                 throw;
             }
         }

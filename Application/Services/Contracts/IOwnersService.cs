@@ -1,4 +1,5 @@
-﻿using Domain.Entities.DTOs.Clients;
+﻿using Domain.Entities.DTOs;
+using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
@@ -10,6 +11,7 @@ namespace Application.Services.Contracts
     {
         Task<Owners> CreateOwnersPetsAsync(OwnersPetsRequest request, string dbName);
         Task<OwnerStatistic> GetOwnerStatisticAsync(int ownerId, string dbName);
+        Task<DataResultDTO<OwnerListSpending>> GetWithSpending(OwnersSpendingFilter filters, string dbName);
         Task DeleteOwnerAsync(int ownerId, string dbName);
         Task<ResponseUploadBulk> CheckOwnersPatientsAsBulk(IEnumerable<BulkOwnerPatient> request, string dbName, string globalId);
         Task<ResponseUploadBulk> AddOwnersPatientsAsBulk(IEnumerable<BulkOwnerPatient> request, string dbName, string globalId);
