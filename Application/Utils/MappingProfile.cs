@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Domain.Entities.Models.Clients;
 using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses;
@@ -31,6 +31,7 @@ namespace Application.Utils
             CreateMap<Domain.Entities.Models.Clients.Profile, UserProfileResponse>();
             CreateMap<Orders, OrdersResponse>();
             CreateMap<OrdersDetail, OrdersDetailResponse>();
+            CreateMap<ChartOfAccounts, ChartOfAccountsResponse>();
 
             //model to request
 
@@ -65,6 +66,7 @@ namespace Application.Utils
             CreateMap<NotificationsRequest, Notifications>();
             CreateMap<OpnamesRequest, Opnames>();
             CreateMap<OpnamePatientsRequest, OpnamePatients>();
+            CreateMap<ChartOfAccountsRequest, ChartOfAccounts>();
 
             //DTO to request
 

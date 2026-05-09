@@ -84,6 +84,7 @@ namespace Infrastructure.Data
                 typeof(AppointmentsTypeXPO),
                 typeof(MixedMedicineCompositionXPO),
                 typeof(MixedMedicineXPO),
+                typeof(ChartOfAccountsXPO),
                 // Add more model types here
             };
 

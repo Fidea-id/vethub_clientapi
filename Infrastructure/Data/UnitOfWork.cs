@@ -1,4 +1,4 @@
-﻿using Domain.Interfaces.Clients;
+using Domain.Interfaces.Clients;
 using Infrastructure.Repositories;
 
 namespace Infrastructure.Data
@@ -417,6 +417,19 @@ namespace Infrastructure.Data
                     _MixedMedicineRepository = new MixedMedicineRepository(_dbFactory);
                 }
                 return _MixedMedicineRepository;
+            }
+        }
+
+        private IChartOfAccountsRepository _ChartOfAccountsRepository;
+        public IChartOfAccountsRepository ChartOfAccountsRepository
+        {
+            get
+            {
+                if (_ChartOfAccountsRepository == null)
+                {
+                    _ChartOfAccountsRepository = new ChartOfAccountsRepository(_dbFactory);
+                }
+                return _ChartOfAccountsRepository;
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using Application.Services.Contracts;
+using Application.Services.Contracts;
 using Application.Services.Implementations;
 using Application.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,6 +28,7 @@ namespace Application
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IOpnameService, OpnameService>();
+            services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 

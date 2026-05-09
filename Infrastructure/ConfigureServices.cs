@@ -1,4 +1,4 @@
-﻿using Domain.Interfaces;
+using Domain.Interfaces;
 using Domain.Interfaces.Clients;
 using Infrastructure.Data;
 using Infrastructure.Email;
@@ -48,6 +48,7 @@ namespace Infrastructure
             services.AddScoped<IClinicConfigRepository, ClinicConfigRepository>();
             services.AddScoped<IAppointmentsTypeRepository, AppointmentsTypeRepository>();
             services.AddScoped<IMixedMedicineRepository, MixedMedicineRepository>();
+            services.AddScoped<IChartOfAccountsRepository, ChartOfAccountsRepository>();
 
             //UOW
             services.AddScoped<IUnitOfWork, UnitOfWork>();
