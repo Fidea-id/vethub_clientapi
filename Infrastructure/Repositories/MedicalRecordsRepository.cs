@@ -46,7 +46,7 @@ namespace Infrastructure.Repositories
 
                 -- Staff
                 SELECT * FROM Profile 
-                WHERE Id IN (SELECT StaffId FROM MedicalRecords WHERE IsActive = 1);
+                WHERE Id IN (SELECT StaffId FROM Appointments WHERE IsActive = 1);
 
                 -- Patients
                 SELECT * FROM Patients 
@@ -252,8 +252,13 @@ namespace Infrastructure.Repositories
                 AND IsActive = 1;
 
                 -- Staff
-                SELECT * FROM Profile 
-                WHERE Id = (SELECT StaffId FROM MedicalRecords WHERE Id = @medicalRecordId AND IsActive = 1);
+                SELECT p.*
+                FROM Profile p
+                INNER JOIN Appointments a ON p.Id = a.StaffId
+                INNER JOIN MedicalRecords mr ON a.Id = mr.AppointmentId
+                WHERE mr.Id = @medicalRecordId
+                  AND mr.IsActive = 1
+                  AND a.IsActive = 1;
 
                 -- Patient and Owner
                 SELECT * FROM Patients 
@@ -363,6 +368,119 @@ namespace Infrastructure.Repositories
                     Notes = notes,
                     PaymentMethod = paymentMethodName,
                     OpnameDetail = opnameDetail
+                };
+            }
+        }
+
+        public async Task<PharmacyMedicalRecordDetailResponse> GetPharmacyDetailById(string dbName, int medicalRecordId)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var sql = @"
+                SELECT
+                    mr.Id,
+                    mr.Code,
+                    mr.StartDate,
+                    mr.EndDate,
+                    a.Id AS AppointmentId,
+                    s.Id AS ServiceId,
+                    s.Name AS ServiceName,
+                    s.Price AS ServicePrice,
+                    p.Id AS StaffId,
+                    p.Name AS StaffName,
+                    pat.Id AS PatientId,
+                    pat.Name AS PatientName,
+                    pat.Species,
+                    pat.Breed,
+                    pat.Color,
+                    o.Id AS OwnerId,
+                    o.Name AS OwnerName,
+                    o.Title AS OwnerTitle
+                FROM MedicalRecords mr
+                INNER JOIN Appointments a ON a.Id = mr.AppointmentId AND a.IsActive = 1
+                LEFT JOIN Services s ON s.Id = a.ServiceId AND s.IsActive = 1
+                LEFT JOIN Profile p ON p.Id = a.StaffId AND p.IsActive = 1
+                LEFT JOIN Patients pat ON pat.Id = mr.PatientId AND pat.IsActive = 1
+                LEFT JOIN Owners o ON o.Id = pat.OwnersId AND o.IsActive = 1
+                WHERE mr.Id = @medicalRecordId AND mr.IsActive = 1;
+
+                SELECT
+                    mrp.ProductId,
+                    mrp.ProductName,
+                    mrp.PrescriptionFrequency,
+                    mrp.Type,
+                    mrp.MixId,
+                    mrp.MixName,
+                    mrp.PrescriptionAmount,
+                    mrp.Price,
+                    mrp.Quantity,
+                    mrp.Total,
+                    ps.VolumeUnit AS ProductVolumeUnit
+                FROM MedicalRecordsPrescriptions mrp
+                LEFT JOIN (
+                    SELECT ProductId, MAX(VolumeUnit) AS VolumeUnit
+                    FROM ProductStocks
+                    WHERE IsActive = 1
+                    GROUP BY ProductId
+                ) ps ON ps.ProductId = mrp.ProductId
+                WHERE mrp.MedicalRecordsId = @medicalRecordId AND mrp.IsActive = 1
+                ORDER BY mrp.Id;
+            ";
+
+                using var multi = await _db.QueryMultipleAsync(sql, new { medicalRecordId });
+
+                var detail = await multi.ReadSingleOrDefaultAsync<PharmacyMedicalRecordDetailRow>();
+                if (detail == null)
+                {
+                    return null;
+                }
+
+                var prescriptions = await multi.ReadAsync<PharmacyPrescriptionItemResponse>();
+
+                return new PharmacyMedicalRecordDetailResponse
+                {
+                    Id = detail.Id,
+                    Code = detail.Code,
+                    StartDate = detail.StartDate,
+                    EndDate = detail.EndDate,
+                    Appointments = new PharmacyAppointmentSummaryResponse
+                    {
+                        Id = detail.AppointmentId
+                    },
+                    Services = detail.ServiceId.HasValue
+                        ? new PharmacyServiceSummaryResponse
+                        {
+                            Id = detail.ServiceId.Value,
+                            Name = detail.ServiceName,
+                            Price = detail.ServicePrice
+                        }
+                        : null,
+                    Staff = detail.StaffId.HasValue
+                        ? new PharmacyStaffSummaryResponse
+                        {
+                            Id = detail.StaffId.Value,
+                            Name = detail.StaffName
+                        }
+                        : null,
+                    Patients = detail.PatientId.HasValue
+                        ? new PharmacyPatientSummaryResponse
+                        {
+                            Id = detail.PatientId.Value,
+                            Name = detail.PatientName,
+                            Species = detail.Species,
+                            Breed = detail.Breed,
+                            Color = detail.Color
+                        }
+                        : null,
+                    Owners = detail.OwnerId.HasValue
+                        ? new PharmacyOwnerSummaryResponse
+                        {
+                            Id = detail.OwnerId.Value,
+                            Name = detail.OwnerName,
+                            Title = detail.OwnerTitle
+                        }
+                        : null,
+                    Prescriptions = prescriptions
                 };
             }
         }
@@ -824,5 +942,27 @@ namespace Infrastructure.Repositories
             return await _db.QueryAsync<DoctorPerformanceRawDto>(sql, new { Year = year });
         }
 
+    }
+
+    internal sealed class PharmacyMedicalRecordDetailRow
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int AppointmentId { get; set; }
+        public int? ServiceId { get; set; }
+        public string ServiceName { get; set; }
+        public double ServicePrice { get; set; }
+        public int? StaffId { get; set; }
+        public string StaffName { get; set; }
+        public int? PatientId { get; set; }
+        public string PatientName { get; set; }
+        public string Species { get; set; }
+        public string Breed { get; set; }
+        public string Color { get; set; }
+        public int? OwnerId { get; set; }
+        public string OwnerName { get; set; }
+        public string OwnerTitle { get; set; }
     }
 }

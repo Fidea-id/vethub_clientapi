@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Domain.Entities;
 using Domain.Entities.DTOs;
 using Domain.Entities.Responses.Clients;
@@ -41,7 +41,7 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<DataResultDTO<T>> GetByFilter(string dbName, TFilter filters)
+        public virtual async Task<DataResultDTO<T>> GetByFilter(string dbName, TFilter filters)
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))
             {

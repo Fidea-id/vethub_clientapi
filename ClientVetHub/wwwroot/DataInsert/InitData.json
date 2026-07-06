@@ -355,8 +355,7 @@
     }
   ],
   "ChartOfAccounts": [
-    { "Code": "1-1100", "Name": "Kas Tunai", "Type": "Asset", "SubType": "Current" },
-    { "Code": "1-1200", "Name": "Kas Kecil", "Type": "Asset", "SubType": "Current" },
+    { "Code": "1-1100", "Name": "Kas", "Type": "Asset", "SubType": "Current" },
     { "Code": "1-1300", "Name": "Bank", "Type": "Asset", "SubType": "Current" },
     { "Code": "1-1400", "Name": "Piutang Usaha", "Type": "Asset", "SubType": "Current" },
     { "Code": "1-1500", "Name": "Piutang Karyawan", "Type": "Asset", "SubType": "Current" },
@@ -371,6 +370,7 @@
     { "Code": "3-1200", "Name": "Prive", "Type": "Equity" },
     { "Code": "3-1300", "Name": "Laba Berjalan", "Type": "Equity" },
     { "Code": "4-1100", "Name": "Pendapatan Klinik", "Type": "Revenue" },
+    { "Code": "4-1150", "Name": "Pendapatan Order", "Type": "Revenue" },
     { "Code": "4-1200", "Name": "Pendapatan Petshop", "Type": "Revenue" },
     { "Code": "4-1400", "Name": "Pendapatan Lain-lain", "Type": "Revenue" },
     { "Code": "5-1100", "Name": "Beban Gaji", "Type": "Expense" },

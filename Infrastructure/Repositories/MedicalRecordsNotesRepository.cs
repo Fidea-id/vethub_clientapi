@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
 using Domain.Interfaces.Clients;
@@ -25,6 +25,17 @@ namespace Infrastructure.Repositories
             using (var _db = _dbFactory.GetDbConnection(dbName))
             {
                 return await _db.QueryAsync<MedicalRecordsNotes>($"SELECT * FROM MedicalRecordsNotes WHERE MedicalRecordsId = @Id AND IsActive = 1", new { Id = medicalRecordsId });
+            }
+        }
+
+        public async Task<IEnumerable<MedicalRecordsNotes>> GetNotesForMigration(string dbName, int batchCount)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                return await _db.QueryAsync<MedicalRecordsNotes>(
+                    "SELECT * FROM MedicalRecordsNotes WHERE Value LIKE '%data:image%' AND IsActive = 1 ORDER BY CreatedAt ASC LIMIT @BatchCount",
+                    new { BatchCount = batchCount },
+                    commandTimeout: 600);
             }
         }
     }

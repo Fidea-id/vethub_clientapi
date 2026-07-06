@@ -32,6 +32,8 @@ namespace Application.Utils
             CreateMap<Orders, OrdersResponse>();
             CreateMap<OrdersDetail, OrdersDetailResponse>();
             CreateMap<ChartOfAccounts, ChartOfAccountsResponse>();
+            CreateMap<FinancialTransactions, FinancialTransactionsResponse>();
+            CreateMap<JournalEntries, JournalEntriesResponse>();
 
             //model to request
 
@@ -67,6 +69,8 @@ namespace Application.Utils
             CreateMap<OpnamesRequest, Opnames>();
             CreateMap<OpnamePatientsRequest, OpnamePatients>();
             CreateMap<ChartOfAccountsRequest, ChartOfAccounts>();
+            CreateMap<FinancialTransactionsRequest, FinancialTransactions>();
+            CreateMap<JournalEntriesRequest, JournalEntries>();
 
             //DTO to request
 

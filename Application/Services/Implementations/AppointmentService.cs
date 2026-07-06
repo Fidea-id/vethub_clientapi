@@ -193,7 +193,7 @@ namespace Application.Services.Implementations
                 DiscountTotal = medicalRecords.DiscountTotal,
                 TotalDiscounted = medicalRecords.TotalDiscounted,
                 StartDate = medicalRecords.StartDate,
-                EndDate = medicalRecords.EndDate.Value,
+                EndDate = medicalRecords.EndDate ?? DateTime.MinValue,
                 TotalPrice = medicalRecords.Total,
                 TotalPaid = totalLastPayment,
                 Prescriptions = presciptions,
@@ -364,16 +364,6 @@ namespace Application.Services.Implementations
             {
                 var filePath = $"{Directory.GetCurrentDirectory()}/wwwroot/DataInsert/initData.json";
                 var existingData = await _unitOfWork.AppointmentsTypeRepository.GetAll(dbName);
-                if (existingData.Count() > 0)
-                {
-                    var results = new DataResultDTO<AppointmentsType>()
-                    {
-                        Data = existingData,
-                        TotalData = existingData.Count()
-                    };
-                    return results;
-                }
-
                 if (File.Exists(filePath))
                 {
                     string json = File.ReadAllText(filePath);
@@ -391,13 +381,24 @@ namespace Application.Services.Implementations
                                 var newItem = new AppointmentsType
                                 {
                                     Name = item.Name,
+                                    Color = item.Color,
                                 };
                                 FormatUtil.SetIsActive<AppointmentsType>(newItem, true);
                                 FormatUtil.SetDateBaseEntity<AppointmentsType>(newItem);
 
                                 await _unitOfWork.AppointmentsTypeRepository.Add(dbName, newItem);
+                                continue;
+                            }
+
+                            if (string.IsNullOrWhiteSpace(existingConfig.Color) && !string.IsNullOrWhiteSpace(item.Color))
+                            {
+                                existingConfig.Color = item.Color;
+                                FormatUtil.SetDateBaseEntity<AppointmentsType>(existingConfig, true);
+                                await _unitOfWork.AppointmentsTypeRepository.Update(dbName, existingConfig);
                             }
                         }
+
+                        existingData = await _unitOfWork.AppointmentsTypeRepository.GetAll(dbName);
                     }
                 }
 

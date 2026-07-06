@@ -1,4 +1,4 @@
-﻿using Domain.Entities.DTOs;
+using Domain.Entities.DTOs;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
 using Domain.Entities.Models.Clients;
@@ -13,6 +13,7 @@ namespace Application.Services.Contracts
         Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName);
         Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null);
         Task<MedicalRecordsDetailResponse> GetDetailMedicalRecordsV2(int id, string dbName, string flag = null);
+        Task<PharmacyMedicalRecordDetailResponse> GetPharmacyDetailMedicalRecords(int id, string dbName);
         Task<DataResultDTO<MedicalRecordsDetailResponse>> GetDetailMedicalRecordsV2List(string dbName, string flag = null);
         Task<IEnumerable<PatientDiagnosesResponse>> GetPatientDiagnose(int patientId, string dbName);
         Task<IEnumerable<OrdersPayment>> GetOrdersPaymentAsync(int medicalRecordId, string dbName);
@@ -29,5 +30,7 @@ namespace Application.Services.Contracts
         Task<MedicalRecordsMinResponse> GetMinMedicalRecords(int id, string dbName);
         Task<List<MedicalRecordServicesReportDto>> GetMedicalRecordServicesReportRawSqlAsync(string dbName, string? startDate = null, string? endDate = null);
         Task<DoctorPerformanceResponse> GetDoctorPerformance(string dbName, int year);
+        Task<IEnumerable<MedicalRecordsNotes>> GetNotesForMigration(string dbName, int batchCount);
+        Task UpdateNoteHtml(int id, string updatedHtml, string dbName);
     }
 }

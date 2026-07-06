@@ -29,6 +29,7 @@ namespace Application
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IOpnameService, OpnameService>();
             services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
+            services.AddScoped<IFinancialService, FinancialService>();
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 

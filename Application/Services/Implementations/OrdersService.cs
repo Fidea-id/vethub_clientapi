@@ -21,11 +21,14 @@ namespace Application.Services.Implementations
     {
         private readonly ILogger<OrdersService> _logger;
 
+        private readonly IFinancialService _financialService;
+
         public OrdersService(IUnitOfWork unitOfWork, IGenericRepository<Orders, OrdersFilter> repository,
-            ILoggerFactory loggerFactory, ICurrentUserService currentUser)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser, IFinancialService financialService)
         : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<OrdersService>();
+            _financialService = financialService;
         }
         public async Task<DashboardOrderResponse> GetOrderDashboardAsync(string dbName)
         {
@@ -106,6 +109,10 @@ namespace Application.Services.Implementations
 
                     //add event log
                     await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, order.Id, "AddOrdersPaymentAsync", MethodType.Update, nameof(Orders), "Update Payment Status to: " + paymentStatus);
+
+                    // Trigger Journal Entry
+                    var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetById(dbName, request.PaymentMethodId);
+                    await _financialService.CreateIncomeJournalAsync(dbName, order.OrderNumber, totalMustPay, $"Income from Order {order.OrderNumber}", paymentMethod?.Name, "4-1150");
 
                     //update stock
                     if (orderDetail.Type == "Incomes")

@@ -1,4 +1,4 @@
-﻿using Application.Services.Contracts;
+using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.DTOs;
@@ -20,12 +20,14 @@ namespace Application.Services.Implementations
     {
         private readonly IEmailSender _emailsender;
         private readonly ILogger<MedicalRecordService> _logger;
+        private readonly IFinancialService _financialService;
         public MedicalRecordService(IUnitOfWork unitOfWork, IGenericRepository<MedicalRecords, MedicalRecordsFilter> repository,
-            ILoggerFactory loggerFactory, ICurrentUserService currentUser, IEmailSender emailSender)
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser, IEmailSender emailSender, IFinancialService financialService)
         : base(unitOfWork, repository, currentUser)
         {
             _logger = loggerFactory.CreateLogger<MedicalRecordService>();
             _emailsender = emailSender;
+            _financialService = financialService;
         }
 
         public async Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName)
@@ -55,17 +57,46 @@ namespace Application.Services.Implementations
         public async Task<MedicalRecordsDetailResponse> GetDetailMedicalRecords(int id, string dbName, string flag = null)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, id);
+            if (medicalRecords == null)
+            {
+                return new MedicalRecordsDetailResponse
+                {
+                    Id = id,
+                    Prescriptions = Enumerable.Empty<MedicalRecordsPrescriptions>(),
+                    Diagnoses = Enumerable.Empty<MedicalRecordsDiagnoses>(),
+                    Notes = Enumerable.Empty<MedicalRecordsNotes>(),
+                    StatusPayment = "Unpaid",
+                    PaymentMethod = "No Payment Yet"
+                };
+            }
             var appointments = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
 
             //TODO: coba cek comment ini
             if (appointments == null)
             {
-                return default(MedicalRecordsDetailResponse);
+                return new MedicalRecordsDetailResponse
+                {
+                    Id = medicalRecords.Id,
+                    Code = medicalRecords.Code,
+                    StartDate = medicalRecords.StartDate,
+                    EndDate = medicalRecords.EndDate ?? DateTime.MinValue,
+                    TotalPrice = medicalRecords.Total,
+                    TotalPaid = 0,
+                    DiscountMethod = medicalRecords.DiscountMethod,
+                    DiscountValue = medicalRecords.DiscountValue,
+                    DiscountTotal = medicalRecords.DiscountTotal,
+                    TotalDiscounted = medicalRecords.TotalDiscounted,
+                    Prescriptions = Enumerable.Empty<MedicalRecordsPrescriptions>(),
+                    Diagnoses = Enumerable.Empty<MedicalRecordsDiagnoses>(),
+                    Notes = Enumerable.Empty<MedicalRecordsNotes>(),
+                    StatusPayment = "Unpaid",
+                    PaymentMethod = "No Payment Yet"
+                };
             }
             var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointments.ServiceId);
             var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
             var patient = await _unitOfWork.PatientsRepository.GetById(dbName, medicalRecords.PatientId);
-            var owner = await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId);
+            var owner = patient != null ? await _unitOfWork.OwnersRepository.GetById(dbName, patient.OwnersId) : null;
             IEnumerable<MedicalRecordsNotes> notes = null;
             if (flag != "no_notes")
             {
@@ -122,13 +153,13 @@ namespace Application.Services.Implementations
                 DiscountValue = medicalRecords.DiscountValue,
                 DiscountTotal = medicalRecords.DiscountTotal,
                 TotalDiscounted = medicalRecords.TotalDiscounted,
-                EndDate = medicalRecords.EndDate.Value,
+                EndDate = medicalRecords.EndDate ?? DateTime.MinValue,
                 TotalPrice = medicalRecords.Total,
                 TotalPaid = totalLastPayment,
-                Prescriptions = presciptions,
-                Diagnoses = diagnoses,
+                Prescriptions = presciptions ?? Enumerable.Empty<MedicalRecordsPrescriptions>(),
+                Diagnoses = diagnoses ?? Enumerable.Empty<MedicalRecordsDiagnoses>(),
                 StatusPayment = statusPayment,
-                Notes = notes,
+                Notes = notes ?? Enumerable.Empty<MedicalRecordsNotes>(),
                 OpnameDetail = opnameDetail
             };
             return response;
@@ -138,6 +169,12 @@ namespace Application.Services.Implementations
         {
             return await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, id, flag);
         }
+
+        public async Task<PharmacyMedicalRecordDetailResponse> GetPharmacyDetailMedicalRecords(int id, string dbName)
+        {
+            return await _unitOfWork.MedicalRecordsRepository.GetPharmacyDetailById(dbName, id);
+        }
+
         public async Task<DataResultDTO<MedicalRecordsDetailResponse>> GetDetailMedicalRecordsV2List(string dbName, string flag = null)
         {
             var data = await _unitOfWork.MedicalRecordsRepository.GetDetailList(dbName, flag);
@@ -637,7 +674,7 @@ namespace Application.Services.Implementations
                     DiscountTotal = medicalRecords.DiscountTotal,
                     TotalDiscounted = medicalRecords.TotalDiscounted,
                     StartDate = medicalRecords.StartDate,
-                    EndDate = medicalRecords.EndDate.Value,
+                    EndDate = medicalRecords.EndDate ?? DateTime.MinValue,
                     TotalPrice = medicalRecords.Total,
                     Prescriptions = prescriptionData,
                     Diagnoses = diagnoseData
@@ -907,6 +944,10 @@ namespace Application.Services.Implementations
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
                     await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
 
+                    // Trigger Journal Entry
+                    var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetById(dbName, request.PaymentMethodId);
+                    await _financialService.CreateIncomeJournalAsync(dbName, medicalRecord.Code, totalPrice, $"Income from Medical Record {medicalRecord.Code}", paymentMethod?.Name);
+
                     var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
 
                     //TODO:dipindah saat update presc
@@ -1144,6 +1185,21 @@ namespace Application.Services.Implementations
                 Year = year,
                 Doctors = grouped
             };
+        }
+
+        public async Task<IEnumerable<MedicalRecordsNotes>> GetNotesForMigration(string dbName, int batchCount)
+        {
+            return await _unitOfWork.MedicalRecordsNotesRepository.GetNotesForMigration(dbName, batchCount);
+        }
+
+        public async Task UpdateNoteHtml(int id, string updatedHtml, string dbName)
+        {
+            var note = await _unitOfWork.MedicalRecordsNotesRepository.GetById(dbName, id);
+            if (note == null) throw new Exception("Medical records note not found.");
+
+            note.Value = updatedHtml;
+            FormatUtil.SetDateBaseEntity<MedicalRecordsNotes>(note, true);
+            await _unitOfWork.MedicalRecordsNotesRepository.Update(dbName, note);
         }
     }
 }

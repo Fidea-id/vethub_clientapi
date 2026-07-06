@@ -1,4 +1,4 @@
-﻿using Application.Services.Contracts;
+using Application.Services.Contracts;
 using Application.Utils;
 using Domain.Entities.DTOs.Clients;
 using Domain.Entities.Filters.Clients;
@@ -140,6 +140,21 @@ namespace ClientVetHub.Controllers
             {
                 var dbName = User.FindFirstValue("Entity");
                 var create = await _medicalRecordService.GetDetailMedicalRecords(id, dbName, flag);
+                return Ok(create);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpGet("PharmacyDetail/{id}")]
+        public async Task<IActionResult> GetPharmacyDetail(int id)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var create = await _medicalRecordService.GetPharmacyDetailMedicalRecords(id, dbName);
                 return Ok(create);
             }
             catch
@@ -431,6 +446,46 @@ namespace ClientVetHub.Controllers
             var result = await _medicalRecordService.GetDoctorPerformance(dbName, year);
 
             return Ok(result);
+        }
+
+        [HttpGet("Migration/Notes")]
+        [Authorize(Roles = "Superadmin")]
+        public async Task<IActionResult> GetNotesForMigration([FromQuery] int batchCount = 50)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                if (string.IsNullOrEmpty(dbName))
+                {
+                    return BadRequest("Database name not specified in token claims.");
+                }
+                var notes = await _medicalRecordService.GetNotesForMigration(dbName, batchCount);
+                return Ok(notes);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Migration/Notes/{id}")]
+        [Authorize(Roles = "Superadmin")]
+        public async Task<IActionResult> UpdateNoteHtml(int id, [FromBody] UpdateNoteHtmlRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                if (string.IsNullOrEmpty(dbName))
+                {
+                    return BadRequest("Database name not specified in token claims.");
+                }
+                await _medicalRecordService.UpdateNoteHtml(id, request.HtmlContent, dbName);
+                return Ok();
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }

@@ -432,5 +432,31 @@ namespace Infrastructure.Data
                 return _ChartOfAccountsRepository;
             }
         }
+
+        private IFinancialTransactionsRepository _FinancialTransactionsRepository;
+        public IFinancialTransactionsRepository FinancialTransactionsRepository
+        {
+            get
+            {
+                if (_FinancialTransactionsRepository == null)
+                {
+                    _FinancialTransactionsRepository = new FinancialTransactionsRepository(_dbFactory);
+                }
+                return _FinancialTransactionsRepository;
+            }
+        }
+
+        private IJournalEntriesRepository _JournalEntriesRepository;
+        public IJournalEntriesRepository JournalEntriesRepository
+        {
+            get
+            {
+                if (_JournalEntriesRepository == null)
+                {
+                    _JournalEntriesRepository = new JournalEntriesRepository(_dbFactory);
+                }
+                return _JournalEntriesRepository;
+            }
+        }
     }
 }

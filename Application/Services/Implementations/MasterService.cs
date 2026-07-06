@@ -206,20 +206,25 @@ namespace Application.Services.Implementations
                             }
                             else if (kvp.Key == "ChartOfAccounts")
                             {
-                                if (await _unitOfWork.ChartOfAccountsRepository.Count(dbName) > 0) continue;
-
-                                _logger.LogInformation("Try to map " + kvp.Key);
+                                // Seed Chart of Accounts - Idempotent check by Code
+                                _logger.LogInformation("Processing " + kvp.Key);
                                 var data = JsonConvert.DeserializeObject<IEnumerable<ChartOfAccountsRequest>>(kvp.Value.ToString());
-                                //map items
                                 var map = Mapping.Mapper.Map<IEnumerable<ChartOfAccounts>>(data);
+                                
                                 foreach (var itm in map)
                                 {
-                                    FormatUtil.TrimObjectProperties(itm);
-                                    FormatUtil.SetIsActive<ChartOfAccounts>(itm, true);
-                                    FormatUtil.SetDateBaseEntity<ChartOfAccounts>(itm);
+                                    // Check if this specific account code already exists
+                                    var existing = await _unitOfWork.ChartOfAccountsRepository.WhereFirstQuery(dbName, $"Code = '{itm.Code}'");
+                                    if (existing == null)
+                                    {
+                                        _logger.LogInformation($"Adding new ChartOfAccount: {itm.Code} - {itm.Name}");
+                                        FormatUtil.TrimObjectProperties(itm);
+                                        FormatUtil.SetIsActive<ChartOfAccounts>(itm, true);
+                                        FormatUtil.SetDateBaseEntity<ChartOfAccounts>(itm);
+                                        await _unitOfWork.ChartOfAccountsRepository.Add(dbName, itm);
+                                    }
                                 }
-                                _logger.LogInformation("Success map " + kvp.Key);
-                                await _unitOfWork.ChartOfAccountsRepository.AddRange(dbName, map);
+                                _logger.LogInformation("Success processing " + kvp.Key);
                             }
                                 //else if (kvp.Key == "PrescriptionFrequents")
                                 //{

@@ -46,6 +46,7 @@ namespace Infrastructure.Repositories
                      FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                      JOIN Patients p ON p.Id = a.PatientsId 
                      LEFT JOIN Services s ON s.Id = a.ServiceId 
+                     LEFT JOIN AppointmentsType at ON at.Name = a.Type
                      JOIN Profile pr ON pr.Id = a.StaffId 
                      JOIN AppointmentsStatus st ON st.Id = a.StatusId
                      Left JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -65,6 +66,7 @@ namespace Infrastructure.Repositories
                      FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                      JOIN Patients p ON p.Id = a.PatientsId 
                      Left JOIN Services s ON s.Id = a.ServiceId 
+                     LEFT JOIN AppointmentsType at ON at.Name = a.Type
                      JOIN Profile pr ON pr.Id = a.StaffId 
                      JOIN AppointmentsStatus st ON st.Id = a.StatusId
                      JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -88,6 +90,7 @@ namespace Infrastructure.Repositories
                                p.Breed AS PatientsBreed, 
                                a.ServiceId, 
                                COALESCE(s.Name, a.Type) AS ServiceName, 
+                               at.Color AS TypeColor,
                                a.StaffId, 
                                pr.Name AS StaffName, 
                                a.StatusId, 
@@ -123,6 +126,7 @@ namespace Infrastructure.Repositories
                         JOIN Owners o ON o.Id = a.OwnersId 
                         JOIN Patients p ON p.Id = a.PatientsId 
                         LEFT JOIN Services s ON s.Id = a.ServiceId 
+                        LEFT JOIN AppointmentsType at ON at.Name = a.Type
                         JOIN Profile pr ON pr.Id = a.StaffId 
                         JOIN AppointmentsStatus st ON st.Id = a.StatusId
                         LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -222,8 +226,8 @@ namespace Infrastructure.Repositories
             {
 
                 // Start building the SQL query
-                var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
-        a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
+        var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
+        a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, at.Color AS TypeColor, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
         s.DurationType AS DurationTypeEstimate, 
         CASE 
             WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
@@ -244,6 +248,7 @@ namespace Infrastructure.Repositories
         FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
         JOIN Patients p ON p.Id = a.PatientsId 
         LEFT JOIN Services s ON s.Id = a.ServiceId 
+        LEFT JOIN AppointmentsType at ON at.Name = a.Type
         JOIN Profile pr ON pr.Id = a.StaffId 
         JOIN AppointmentsStatus st ON st.Id = a.StatusId
         LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -296,7 +301,7 @@ namespace Infrastructure.Repositories
             {
                 DateTime currentDate = DateTime.Now.Date; // Get the current date with time component set to midnight (00:00:00)
                 return await _db.QueryAsync<AppointmentsDetailResponse>($@"SELECT a.Id AS AppointmentId, a.OwnersId, COALESCE(mr.Id, 0) AS MedicalRecordId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
-                a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
+                a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, at.Color AS TypeColor, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
                 s.DurationType AS DurationTypeEstimate, 
                 CASE 
         WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
@@ -317,6 +322,7 @@ namespace Infrastructure.Repositories
                 FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                 JOIN Patients p ON p.Id = a.PatientsId 
                 LEFT JOIN Services s ON s.Id = a.ServiceId 
+                LEFT JOIN AppointmentsType at ON at.Name = a.Type
                 JOIN Profile pr ON pr.Id = a.StaffId 
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId 
                 LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id 
@@ -342,6 +348,7 @@ namespace Infrastructure.Repositories
                            p.Breed AS PatientsBreed, 
                            a.ServiceId, 
                            COALESCE(s.Name, a.Type) AS ServiceName, 
+                           at.Color AS TypeColor,
                            a.StaffId, 
                            pr.Name AS StaffName, 
                            a.StatusId, 
@@ -377,6 +384,7 @@ namespace Infrastructure.Repositories
                     JOIN Owners o ON o.Id = a.OwnersId 
                     JOIN Patients p ON p.Id = a.PatientsId 
                     LEFT JOIN Services s ON s.Id = a.ServiceId 
+                    LEFT JOIN AppointmentsType at ON at.Name = a.Type
                     JOIN Profile pr ON pr.Id = a.StaffId 
                     JOIN AppointmentsStatus st ON st.Id = a.StatusId
                     LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -439,8 +447,8 @@ namespace Infrastructure.Repositories
             {
                 // Start building the SQL query
                 var sqlQuery = $@"SELECT a.Id AS AppointmentId, COALESCE(mr.Id, 0) AS MedicalRecordId, a.OwnersId, o.Name AS OwnersName, o.Title AS OwnersTitle, a.PatientsId, p.Name AS PatientsName, p.Breed AS PatientsBreed, 
-                    a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
-                    s.DurationType AS DurationTypeEstimate, 
+                           a.ServiceId, COALESCE(s.Name, a.Type) AS ServiceName, at.Color AS TypeColor, a.StaffId, pr.Name AS StaffName, a.StatusId, st.Name AS StatusName, a.Notes, a.Date, s.Duration AS DurationEstimate, 
+                           s.DurationType AS DurationTypeEstimate, 
                     CASE 
             WHEN s.DurationType = 'Minutes' THEN DATE_ADD(a.Date, INTERVAL s.Duration MINUTE) 
             WHEN s.DurationType = 'Hours' THEN DATE_ADD(a.Date, INTERVAL s.Duration HOUR) 
@@ -460,6 +468,7 @@ namespace Infrastructure.Repositories
                     FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                     JOIN Patients p ON p.Id = a.PatientsId 
                     LEFT JOIN Services s ON s.Id = a.ServiceId 
+                    LEFT JOIN AppointmentsType at ON at.Name = a.Type
                     JOIN Profile pr ON pr.Id = a.StaffId 
                     JOIN AppointmentsStatus st ON st.Id = a.StatusId
                     LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
@@ -573,6 +582,7 @@ namespace Infrastructure.Repositories
                        p.Breed AS PatientsBreed, 
                        a.ServiceId, 
                        COALESCE(s.Name, a.Type) AS ServiceName,
+                       at.Color AS TypeColor,
                        a.StaffId, 
                        pr.Name AS StaffName, 
                        a.StatusId, 
@@ -613,6 +623,7 @@ namespace Infrastructure.Repositories
                 JOIN Owners o ON o.Id = a.OwnersId
                 JOIN Patients p ON p.Id = a.PatientsId
                 LEFT JOIN Services s ON s.Id = a.ServiceId
+                LEFT JOIN AppointmentsType at ON at.Name = a.Type
                 JOIN Profile pr ON pr.Id = a.StaffId
                 JOIN AppointmentsStatus st ON st.Id = a.StatusId
                 LEFT JOIN MedicalRecords mr ON mr.AppointmentId = a.Id
