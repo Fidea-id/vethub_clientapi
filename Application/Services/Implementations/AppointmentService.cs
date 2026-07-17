@@ -332,7 +332,11 @@ namespace Application.Services.Implementations
         {
             try
             {
-                var getExpiredBooking = await _unitOfWork.AppointmentRepository.WhereQuery(dbName, $"StatusId = 1 AND Date < CURRENT_DATE");
+                // Backdated appointments are intentional, so only expire bookings
+                // whose schedule date is in the past and was not created after that date.
+                var getExpiredBooking = await _unitOfWork.AppointmentRepository.WhereQuery(
+                    dbName,
+                    $"StatusId = 1 AND Date < CURRENT_DATE AND Date >= CreatedAt");
                 foreach (var item in getExpiredBooking)
                 {
                     item.StatusId = 7; //expired booking

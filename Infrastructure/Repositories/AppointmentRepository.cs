@@ -116,6 +116,7 @@ namespace Infrastructure.Repositories
                                    WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
                                    ELSE NULL
                                END AS Type,
+                               a.CreatedAt AS CreatedAt,
                                CASE
                                    WHEN acts.MedicalRecordCount > 1 THEN TRUE 
                                    ELSE FALSE 
@@ -240,12 +241,13 @@ namespace Infrastructure.Repositories
             WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
             ELSE FALSE 
         END AS IsOpname,
-        CASE
-            WHEN a.Type IS NOT NULL THEN a.Type
-            WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
-            ELSE NULL
-        END AS Type
-        FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                               CASE
+                                   WHEN a.Type IS NOT NULL THEN a.Type
+                                   WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+                                   ELSE NULL
+                               END AS Type,
+                               a.CreatedAt AS CreatedAt
+                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
         JOIN Patients p ON p.Id = a.PatientsId 
         LEFT JOIN Services s ON s.Id = a.ServiceId 
         LEFT JOIN AppointmentsType at ON at.Name = a.Type
@@ -318,8 +320,9 @@ namespace Infrastructure.Repositories
                     WHEN a.Type IS NOT NULL THEN a.Type
                     WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
                     ELSE NULL
-                END AS Type
-                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                END AS Type,
+                a.CreatedAt AS CreatedAt
+        FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                 JOIN Patients p ON p.Id = a.PatientsId 
                 LEFT JOIN Services s ON s.Id = a.ServiceId 
                 LEFT JOIN AppointmentsType at ON at.Name = a.Type
@@ -460,12 +463,13 @@ namespace Infrastructure.Repositories
                         WHEN op.MedicalRecordId IS NOT NULL THEN TRUE 
                         ELSE FALSE 
                     END AS IsOpname,
-                    CASE
-                        WHEN a.Type IS NOT NULL THEN a.Type
-                        WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
-                        ELSE NULL
-                    END AS Type
-                    FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
+                CASE
+                    WHEN a.Type IS NOT NULL THEN a.Type
+                    WHEN a.ServiceId IS NOT NULL AND a.Type IS NULL THEN s.Name
+                    ELSE NULL
+                END AS Type,
+                a.CreatedAt AS CreatedAt
+                FROM Appointments a JOIN Owners o ON o.Id = a.OwnersId 
                     JOIN Patients p ON p.Id = a.PatientsId 
                     LEFT JOIN Services s ON s.Id = a.ServiceId 
                     LEFT JOIN AppointmentsType at ON at.Name = a.Type

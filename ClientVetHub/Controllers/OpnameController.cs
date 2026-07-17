@@ -119,6 +119,11 @@ namespace ClientVetHub.Controllers
             try
             {
                 var dbName = User.FindFirstValue("Entity");
+                var rawStatus = Request.Query["Status"].ToString();
+                if (!string.IsNullOrWhiteSpace(rawStatus))
+                {
+                    filter.Status = rawStatus.Trim();
+                }
                 var entities = await _opnameService.ReadOpnamePatientsDetailAsync(filter, dbName);
                 return Ok(entities);
             }

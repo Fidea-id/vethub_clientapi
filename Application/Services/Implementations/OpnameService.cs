@@ -131,43 +131,14 @@ namespace Application.Services.Implementations
 
         public async Task<DataResultDTO<OpnamePatientsDetailResponse>> ReadOpnamePatientsDetailAsync(OpnamePatientsFilter filter, string dbName)
         {
-            string stopId = "0";
             try
             {
-                var dataResult = new List<OpnamePatientsDetailResponse>();
-                var data = await _unitOfWork.OpnamePatientsRepository.GetByFilter(dbName, filter);
-                foreach (var item in data.Data)
-                {
-                    var opname = await _unitOfWork.OpnamesRepository.GetById(dbName, item.OpnameId);
-                    if (opname == null) continue;
-                    var medical = await _unitOfWork.MedicalRecordsRepository.GetDetailById(dbName, item.MedicalRecordId, null);
-                    if (medical.Patients.IsActive == false) continue;
-                    stopId = item.Id.ToString();
-                    var itemResult = new OpnamePatientsDetailResponse();
-                    itemResult.Id = item.Id;
-                    itemResult.OpnameId = item.OpnameId;
-                    itemResult.MedicalRecordId = item.MedicalRecordId;
-                    itemResult.Status = item.Status;
-                    itemResult.StartTime = item.StartTime;
-                    itemResult.EndTime = item.EndTime;
-                    itemResult.EstimatedDays = item.EstimateDays;
-                    itemResult.Price = item.Price;
-                    itemResult.TotalPrice = item.TotalPrice;
-                    itemResult.OpnameName = opname.Name;
-                    itemResult.PatientName = medical.Patients.Name;
-                    itemResult.PatientId = medical.Patients.Id;
-                    dataResult.Add(itemResult);
-                }
-                var result = new DataResultDTO<OpnamePatientsDetailResponse>
-                {
-                    Data = dataResult,
-                    TotalData = dataResult.Count
-                };
-                return result;
+                var data = await _unitOfWork.OpnamePatientsRepository.GetDetailList(dbName, filter);
+                return data;
             }
             catch (Exception ex)
             {
-                ex.Source = $"OpnameService.ReadOpnamePatientsDetailAsync-" + stopId;
+                ex.Source = $"OpnameService.ReadOpnamePatientsDetailAsync";
                 throw;
             }
         }

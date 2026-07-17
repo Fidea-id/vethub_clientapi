@@ -106,12 +106,15 @@ namespace Application.Services.Implementations
             var presciptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecords.Id);
             var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecords.Id, "MedicalRecord");
             var totalLastPayment = lastPayments.Sum(x => x.Total);
+            var prescriptionTotal = presciptions?.Sum(x => x.Total) ?? 0;
+            var baseTotal = services?.Price ?? 0;
+            var recalculatedTotal = baseTotal + prescriptionTotal;
             string statusPayment = "Paid";
             if (lastPayments.Count() < 1)
             {
                 statusPayment = "Unpaid";
             }
-            else if (totalLastPayment < medicalRecords.Total)
+            else if (totalLastPayment < recalculatedTotal)
             {
                 statusPayment = "Paid Less";
             }
@@ -154,7 +157,7 @@ namespace Application.Services.Implementations
                 DiscountTotal = medicalRecords.DiscountTotal,
                 TotalDiscounted = medicalRecords.TotalDiscounted,
                 EndDate = medicalRecords.EndDate ?? DateTime.MinValue,
-                TotalPrice = medicalRecords.Total,
+                TotalPrice = recalculatedTotal,
                 TotalPaid = totalLastPayment,
                 Prescriptions = presciptions ?? Enumerable.Empty<MedicalRecordsPrescriptions>(),
                 Diagnoses = diagnoses ?? Enumerable.Empty<MedicalRecordsDiagnoses>(),
@@ -271,10 +274,12 @@ namespace Application.Services.Implementations
                 if (request.Count() > 0)
                 {
                     var currentUserId = await _currentUser.UserId;
-                    var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
-                    var medicalRecordsPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecordId);
-                    double currentTotal = 0;
-
+                var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
+                var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+                var service = appointment != null
+                    ? await _unitOfWork.ServicesRepository.GetById(dbName, appointment.ServiceId)
+                    : null;
+                var medicalRecordsPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecordId);
                     if (medicalRecordsPrescriptions.Count() > 0)
                     {
                         foreach (var pItem in medicalRecordsPrescriptions)
@@ -301,9 +306,9 @@ namespace Application.Services.Implementations
                             // **Step 2: Hapus prescription lama**
                             await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
                         }
-                        currentTotal = medicalRecordsPrescriptions.Sum(x => x.Total);
                     }
-                    var totalNow = medicalRecords.Total - currentTotal;
+                    var servicePrice = service?.Price ?? 0;
+                    var totalNow = servicePrice;
                     var prescriptionData = new List<MedicalRecordsPrescriptions>();
 
                     foreach (var pItem in request)
@@ -336,7 +341,7 @@ namespace Application.Services.Implementations
                             await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
                             await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
                         }
-                        totalNow = totalNow + pItem.Total;
+                        totalNow += pItem.Total;
                     }
 
                     // **Step 4: Update total harga prescription**
@@ -512,6 +517,7 @@ namespace Application.Services.Implementations
                 var currentUserId = await _currentUser.UserId;
                 var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
                 var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
+                var services = await _unitOfWork.ServicesRepository.GetById(dbName, appointment.ServiceId);
                 var staff = await _unitOfWork.ProfileRepository.GetById(dbName, medicalRecords.StaffId);
 
                 bool isOpname = request.IsOpname;
@@ -545,12 +551,12 @@ namespace Application.Services.Implementations
 
                 if (request.Prescriptions.Any())
                 {
-                    var currentTotal = medicalRecords.Total;
+                    var servicePrice = services?.Price ?? 0;
+                    var currentTotal = servicePrice;
 
                     if (isOpname || isEdit)
                     {
                         var currentPrescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, request.MedicalRecordsId);
-                        var currentPresTotal = currentPrescriptions.Sum(x => x.Total);
 
                         foreach (var pItem in currentPrescriptions)
                         {
@@ -573,7 +579,7 @@ namespace Application.Services.Implementations
                             await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
                         }
 
-                        currentTotal -= currentPresTotal;
+                        currentTotal = servicePrice;
                         await _unitOfWork.MedicalRecordsPrescriptionsRepository.RemoveRange(dbName, currentPrescriptions);
                     }
 
@@ -914,16 +920,23 @@ namespace Application.Services.Implementations
 
                 var medicalRecord = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.OrderId);
                 if (medicalRecord == null) throw new Exception("MedicalRecord not found");
+                var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecord.AppointmentId);
+                var services = appointment != null
+                    ? await _unitOfWork.ServicesRepository.GetById(dbName, appointment.ServiceId)
+                    : null;
+                var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
+                var recalculatedTotal = (services?.Price ?? 0) + (prescriptions?.Sum(x => x.Total) ?? 0);
+                medicalRecord.Total = recalculatedTotal;
 
-                var totalPrice = medicalRecord.Total;
+                var totalPrice = recalculatedTotal;
                 if (request.DiscountTotal.HasValue)
                 {
                     medicalRecord.DiscountMethod = request.DiscountMethod;
                     medicalRecord.DiscountValue = request.DiscountValue;
                     medicalRecord.DiscountTotal = request.DiscountTotal;
-                    medicalRecord.TotalDiscounted = medicalRecord.Total - request.DiscountTotal;
+                    medicalRecord.TotalDiscounted = recalculatedTotal - request.DiscountTotal;
 
-                    totalPrice = medicalRecord.Total - request.DiscountTotal.Value;
+                    totalPrice = recalculatedTotal - request.DiscountTotal.Value;
 
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
                     await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
@@ -947,8 +960,6 @@ namespace Application.Services.Implementations
                     // Trigger Journal Entry
                     var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetById(dbName, request.PaymentMethodId);
                     await _financialService.CreateIncomeJournalAsync(dbName, medicalRecord.Code, totalPrice, $"Income from Medical Record {medicalRecord.Code}", paymentMethod?.Name);
-
-                    var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
 
                     //TODO:dipindah saat update presc
                     //foreach (var item in prescriptions)

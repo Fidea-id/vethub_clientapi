@@ -19,7 +19,9 @@ namespace Application.Utils
                 new Claim (ClaimTypes.Role, profile.Roles),
                 new Claim (ClaimTypes.Email, profile.Email),
                 new Claim (ClaimTypes.NameIdentifier, profile.Entity),
-                new Claim("Id", profile.Id.ToString())
+                new Claim("Id", profile.GlobalId.ToString()),
+                new Claim("GlobalId", profile.GlobalId.ToString()),
+                new Claim("ProfileId", profile.Id.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Key));
