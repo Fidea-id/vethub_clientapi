@@ -815,6 +815,18 @@ namespace Application.Services.Implementations
                 throw;
             }
         }
+        public async Task<DataResultDTO<PaymentMethod>> ReadPaymentMethodAllIncludingInactiveAsync(string dbName)
+        {
+            try
+            {
+                return await _uow.PaymentMethodRepository.GetAllIncludingInactive(dbName);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"AdditionalDataService.ReadPaymentMethodAllIncludingInactiveAsync";
+                throw;
+            }
+        }
         public async Task<PaymentMethod> ReadPaymentMethodByIdAsync(int id, string dbName)
         {
             try

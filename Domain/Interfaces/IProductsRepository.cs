@@ -6,6 +6,7 @@ namespace Domain.Interfaces
 {
     public interface IProductsRepository : IGenericRepository<Products, ProductsFilter>
     {
+        Task<bool> ExistsActiveNameAsync(string dbName, string name, int? excludeId = null);
         Task AddProductDiscounts(ProductDiscounts discount, string dbName);
         Task AddProductCategories(ProductCategories categories, string dbName);
         Task AddProductBundles(ProductBundles bundles, string dbName);

@@ -239,6 +239,36 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("Detail/Paged")]
+        public async Task<IActionResult> GetPagedDetail([FromQuery] AppointmentDetailFilter filter)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                if (User.IsInRole(RoleUserConstant.DOCTOR))
+                {
+                    var id = User.FindFirstValue("Id");
+                    int idglobal = 0;
+                    var tryParseId = int.TryParse(id, out idglobal);
+                    if (tryParseId)
+                    {
+                        var userClient = await _profileService.GetUserProfileByGlobalIdAsync(dbName, idglobal);
+                        if (userClient != null)
+                        {
+                            filter.StaffId = userClient.Id;
+                        }
+                    }
+                }
+
+                var entities = await _appointmentService.GetPagedDetailAppointmentList(filter, dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Detail/Medical")]
         public async Task<IActionResult> GetDetailMedical([FromQuery] AppointmentDetailFilter filter)
         {
@@ -270,7 +300,7 @@ namespace ClientVetHub.Controllers
         }
 
         [HttpGet("Detail/{id}")]
-        public async Task<IActionResult> GetDetail(int id)
+        public async Task<IActionResult> GetDetailById(int id)
         {
             try
             {

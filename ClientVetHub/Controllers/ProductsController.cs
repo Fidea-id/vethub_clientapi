@@ -77,6 +77,20 @@ namespace ClientVetHub.Controllers
                 var create = await _productsService.AddProducts(request, dbName, idUser);
                 return Ok(create);
             }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    errors = new[]
+                    {
+                        new
+                        {
+                            field = "Name",
+                            message = ex.Message
+                        }
+                    }
+                });
+            }
             catch
             {
                 throw;
@@ -92,6 +106,20 @@ namespace ClientVetHub.Controllers
                 var idUser = User.FindFirstValue("Id");
                 var create = await _productsService.UpdateBundleAsync(id, request, dbName, idUser);
                 return Ok(create);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    errors = new[]
+                    {
+                        new
+                        {
+                            field = "Name",
+                            message = ex.Message
+                        }
+                    }
+                });
             }
             catch
             {
@@ -155,6 +183,20 @@ namespace ClientVetHub.Controllers
                 var idUser = User.FindFirstValue("Id");
                 var entities = await _productsService.AddProductAsBundle(request, dbName, idUser);
                 return Ok(entities);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    errors = new[]
+                    {
+                        new
+                        {
+                            field = "Name",
+                            message = ex.Message
+                        }
+                    }
+                });
             }
             catch
             {

@@ -92,6 +92,13 @@ namespace Application.Services.Implementations
 
             return result;
         }
+
+        public async Task<DataResultDTO<AppointmentsDetailResponse>> GetPagedDetailAppointmentList(AppointmentDetailFilter filter, string dbName)
+        {
+            await SetExpiredBooking(dbName);
+            return await _unitOfWork.AppointmentRepository.GetPagedDetailList(dbName, filter);
+        }
+
         public async Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName)
         {
             //var cacheKey = $"{AppointmentDetailCacheKeyAll}:today";
@@ -157,7 +164,7 @@ namespace Application.Services.Implementations
             var totalLastPayment = lastPayments.Sum(x => x.Total);
             var opnamePatients = await _unitOfWork.OpnamePatientsRepository.GetByMedId(dbName, medicalRecords.Id);
             var dataOpnamePatients = opnamePatients.Data.FirstOrDefault();
-            var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetAll(dbName);
+            var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetAllIncludingInactive(dbName);
 
             var opnameDetail = new OpnameDetailResponse();
             if (dataOpnamePatients != null)
@@ -208,7 +215,7 @@ namespace Application.Services.Implementations
                 Detail = medicalDetail,
                 ClinicData = clinicData.FirstOrDefault(),
                 PaymentData = lastPayments,
-                PaymentMethodData = paymentMethod
+                PaymentMethodData = paymentMethod.Data
             };
 
             //if (response != null)

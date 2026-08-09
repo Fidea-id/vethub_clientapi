@@ -30,8 +30,7 @@ namespace Application
             services.AddScoped<IOpnameService, OpnameService>();
             services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
             services.AddScoped<IFinancialService, FinancialService>();
-
-            services.AddSingleton<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

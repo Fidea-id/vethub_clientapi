@@ -16,6 +16,7 @@ namespace Application.Services.Contracts
         Task<IEnumerable<AppointmentsStatus>> GetStatus(string dbName);
         Task<InvoiceResponse> GetDetailMedicalInvoice(int medicalId, string dbName);
         Task<DataResultDTO<AppointmentsDetailResponse>> GetDetailAppointmentList(AppointmentDetailFilter filter, string dbName);
+        Task<DataResultDTO<AppointmentsDetailResponse>> GetPagedDetailAppointmentList(AppointmentDetailFilter filter, string dbName);
         Task<DataResultDTO<AppointmentMedicalDetailResponse>> GetDetailAppointmentMedicalList(AppointmentDetailFilter filter, string dbName);
         Task<IEnumerable<AppointmentsDetailResponse>> GetDetailAppointmentListToday(string dbName);
         Task<AppointmentsDetailResponse> GetDetailAppointment(int id, string dbName);

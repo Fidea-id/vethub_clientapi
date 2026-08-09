@@ -432,6 +432,21 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpGet("PaymentMethod/IncludeInactive")]
+        public async Task<IActionResult> GetPaymentMethodIncludeInactive()
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var entities = await _additionalDataService.ReadPaymentMethodAllIncludingInactiveAsync(dbName);
+                return Ok(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("PaymentMethod/{id}")]
         public async Task<IActionResult> GetPaymentMethod(int id)
         {

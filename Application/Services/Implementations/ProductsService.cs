@@ -83,6 +83,11 @@ namespace Application.Services.Implementations
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
 
+                if (await _unitOfWork.ProductsRepository.ExistsActiveNameAsync(dbName, request.Name ?? string.Empty))
+                {
+                    throw new InvalidOperationException("Product name already exists.");
+                }
+
                 var newProducts = Mapping.Mapper.Map<Products>(request);
                 FormatUtil.SetIsActive<Products>(newProducts, true);
                 FormatUtil.SetDateBaseEntity<Products>(newProducts);
@@ -149,6 +154,11 @@ namespace Application.Services.Implementations
             {
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
+
+                if (await _unitOfWork.ProductsRepository.ExistsActiveNameAsync(dbName, request.Name ?? string.Empty))
+                {
+                    throw new InvalidOperationException("Product name already exists.");
+                }
 
                 var newProducts = Mapping.Mapper.Map<Products>(request);
                 FormatUtil.SetIsActive<Products>(newProducts, true);
@@ -446,6 +456,12 @@ namespace Application.Services.Implementations
                 _logger.LogInformation("Update Product");
                 //trim all string
                 FormatUtil.TrimObjectProperties(request);
+
+                if (await _unitOfWork.ProductsRepository.ExistsActiveNameAsync(dbName, request.Name ?? string.Empty, id))
+                {
+                    throw new InvalidOperationException("Product name already exists.");
+                }
+
                 var entity = Mapping.Mapper.Map<Products>(request); // map dulu
                 FormatUtil.SetDateBaseEntity<Products>(entity, true);
 

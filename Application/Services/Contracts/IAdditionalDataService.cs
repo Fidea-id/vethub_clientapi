@@ -43,6 +43,7 @@ namespace Application.Services.Contracts
         //PaymentMethod
         Task<PaymentMethod> CreatePaymentMethodAsync(PaymentMethodRequest entity, string dbName);
         Task<DataResultDTO<PaymentMethod>> ReadPaymentMethodAllAsync(NameBaseEntityFilter filter, string dbName);
+        Task<DataResultDTO<PaymentMethod>> ReadPaymentMethodAllIncludingInactiveAsync(string dbName);
         Task<PaymentMethod> ReadPaymentMethodByIdAsync(int id, string dbName);
         Task<PaymentMethod> UpdatePaymentMethodAsync(int id, PaymentMethodRequest entity, string dbName);
         Task DeletePaymentMethodAsync(int id, string dbName);

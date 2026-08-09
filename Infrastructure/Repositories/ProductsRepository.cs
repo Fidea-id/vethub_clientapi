@@ -16,6 +16,27 @@ namespace Infrastructure.Repositories
         {
         }
 
+        public async Task<bool> ExistsActiveNameAsync(string dbName, string name, int? excludeId = null)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                const string query = @"
+                    SELECT COUNT(1)
+                    FROM Products
+                    WHERE LOWER(Name) = LOWER(@Name)
+                      AND IsActive = 1
+                      AND (@ExcludeId IS NULL OR Id <> @ExcludeId)";
+
+                var count = await _db.ExecuteScalarAsync<int>(query, new
+                {
+                    Name = name,
+                    ExcludeId = excludeId
+                });
+
+                return count > 0;
+            }
+        }
+
         public async Task<ProductDetailsResponse> GetProductDetails(int id, string dbName)
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))
