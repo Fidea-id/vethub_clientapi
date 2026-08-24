@@ -50,10 +50,7 @@ namespace Infrastructure.Repositories
                 var whereClause = new List<string>
                 {
                     "op.IsActive = 1",
-                    "mr.IsActive = 1",
-                    "a.IsActive = 1",
-                    "p.IsActive = 1",
-                    "o.IsActive = 1"
+                    "a.IsActive = 1"
                 };
 
                 if (filter?.Id.HasValue == true)

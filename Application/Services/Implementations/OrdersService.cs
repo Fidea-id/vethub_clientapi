@@ -12,7 +12,6 @@ using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Globalization;
 
 namespace Application.Services.Implementations
@@ -356,20 +355,9 @@ namespace Application.Services.Implementations
             try
             {
                 var data = await _unitOfWork.MedicalRecordsRepository.GetRevenueData(dbName);
-                foreach (var item in data)
-                {
-                    if (item.Type == "Medical")
-                    {
-                        var detail = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, item.Id);
-                        item.Details = JsonConvert.SerializeObject(detail);
-                    }
-                    if (item.Type == "Order")
-                    {
-                        var detail = await _unitOfWork.OrdersDetailRepository.GetByOrderId(dbName, item.Id);
-                        item.Details = JsonConvert.SerializeObject(detail);
-                    }
-                }
-                // Apply DevExtreme operations (skip, take, filter, sort, search)
+
+                // Revenue log grid only needs the flat reporting fields already returned by GetRevenueData.
+                // Avoid per-row detail lookups here; they turn this endpoint into an N+1 query path.
                 return DataSourceLoader.Load(data.AsQueryable(), loadOptions);
             }
             catch (Exception ex)
