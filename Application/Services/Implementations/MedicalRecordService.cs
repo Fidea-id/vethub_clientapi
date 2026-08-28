@@ -269,11 +269,14 @@ namespace Application.Services.Implementations
         public async Task<IEnumerable<MedicalRecordsPrescriptions>> EditMedicalRecordPrescription(int medicalRecordId, IEnumerable<MedicalRecordsPrescriptionsRequest> request, string dbName)
         {
             var console = "";
+            var stage = "initialize";
             try
             {
                 if (request.Count() > 0)
                 {
                     var currentUserId = await _currentUser.UserId;
+                stage = "before_primary_save";
+                _logger.LogInformation("[PHARMACY_UPDATE] Stage=before_primary_save Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, medicalRecordId);
                 var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
                 var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
                 var service = appointment != null
@@ -348,16 +351,23 @@ namespace Application.Services.Implementations
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecords);
                     medicalRecords.Total = totalNow;
                     await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecords);
+                    _logger.LogInformation("[PHARMACY_UPDATE] Stage=after_primary_save Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, medicalRecordId);
 
                     // **Step 5: Simpan event log**
+                    stage = "before_event_log";
+                    _logger.LogInformation("[PHARMACY_UPDATE] Stage={Stage} Tenant={Tenant} MedicalRecordId={MedicalRecordId} UserId={UserId}", stage, dbName, medicalRecordId, currentUserId);
                     await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, medicalRecords.Id, "EditMedicalRecordPrescription", MethodType.Update, nameof(MedicalRecords), JsonConvert.SerializeObject(request));
+                    _logger.LogInformation("[PHARMACY_UPDATE] Stage=after_event_log Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, medicalRecordId);
 
+                    _logger.LogInformation("[PHARMACY_UPDATE] Stage=success Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, medicalRecordId);
                     return prescriptionData;
                 }
                 return default(List<MedicalRecordsPrescriptions>);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "[PHARMACY_UPDATE] Stage={Stage} Tenant={Tenant} MedicalRecordId={MedicalRecordId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
+                    stage, dbName, medicalRecordId, ex.GetType().FullName, ex.InnerException?.Message);
                 ex.Source = $"MedicalRecordService.EditMedicalRecordPrescription:{console}";
                 throw;
             }
@@ -546,6 +556,7 @@ namespace Application.Services.Implementations
 
                 var prescriptionData = new List<MedicalRecordsPrescriptions>();
                 var diagnoseData = new List<MedicalRecordsDiagnoses>();
+                var stockChanges = new List<MedicalRecordStockChangeRequest>();
 
                 medicalRecords.EndDate = DateTime.Now;
 
@@ -563,24 +574,22 @@ namespace Application.Services.Implementations
                             // **Step 1: Kembalikan stok untuk prescription yang akan dihapus**
                             if (pItem.Type == "Product")
                             {
-                                var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
-                                var tuple = StockUtil.CalculateProductStockPlusVolume(productStock, pItem.Quantity);
-                                tuple.Item2.Type = "Reserve Stock";
-                                tuple.Item2.ProfileId = medicalRecords.StaffId;
-
-                                FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
-                                FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
-
-                                await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
-                                await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                                stockChanges.Add(new MedicalRecordStockChangeRequest
+                                {
+                                    ProductId = pItem.ProductId,
+                                    Quantity = pItem.Quantity,
+                                    RestoreStock = true,
+                                    ProfileId = medicalRecords.StaffId,
+                                    Type = "Reserve Stock"
+                                });
                             }
-
-                            // **Step 2: Hapus prescription lama**
-                            await _unitOfWork.MedicalRecordsPrescriptionsRepository.Remove(dbName, pItem.Id);
                         }
 
+                        await _unitOfWork.ProductStockRepository.ApplyMedicalRecordStockChanges(dbName, stockChanges);
+                        stockChanges.Clear();
+
                         currentTotal = servicePrice;
-                        await _unitOfWork.MedicalRecordsPrescriptionsRepository.RemoveRange(dbName, currentPrescriptions);
+                        await _unitOfWork.MedicalRecordsPrescriptionsRepository.DeactivateByMedicalRecordId(dbName, request.MedicalRecordsId);
                     }
 
                     var totalPrescription = request.Prescriptions.Sum(x => x.Total);
@@ -603,18 +612,18 @@ namespace Application.Services.Implementations
                         //update stock
                         if (pItem.Type == "Product")
                         {
-                            var productStock = await _unitOfWork.ProductStockRepository.WhereFirstQuery(dbName, $"ProductId = {pItem.ProductId}");
-                            var tuple = StockUtil.CalculateProductStockMinVolume(productStock, pItem.Quantity);
-                            tuple.Item2.Type = "Add MedicalService";
-                            tuple.Item2.ProfileId = medicalRecords.StaffId;
-
-                            FormatUtil.SetIsActive<ProductStockHistorical>(tuple.Item2, true);
-                            FormatUtil.SetDateBaseEntity<ProductStockHistorical>(tuple.Item2);
-
-                            await _unitOfWork.ProductStockRepository.Update(dbName, tuple.Item1);
-                            await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
+                            stockChanges.Add(new MedicalRecordStockChangeRequest
+                            {
+                                ProductId = pItem.ProductId,
+                                Quantity = pItem.Quantity,
+                                RestoreStock = false,
+                                ProfileId = medicalRecords.StaffId,
+                                Type = "Add MedicalService"
+                            });
                         }
                     }
+
+                    await _unitOfWork.ProductStockRepository.ApplyMedicalRecordStockChanges(dbName, stockChanges);
                 }
 
                 FormatUtil.SetDateBaseEntity(medicalRecords);
@@ -906,6 +915,8 @@ namespace Application.Services.Implementations
         }
         public async Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName)
         {
+            var stage = "initialize";
+            var paymentId = 0;
             try
             {
                 var currentUserId = await _currentUser.UserId;
@@ -945,14 +956,22 @@ namespace Application.Services.Implementations
                 //update status
                 var paymentStatus = "Paid";
                 entity.Status = paymentStatus;
+                stage = "before_primary_save";
+                _logger.LogInformation("[PAYMENT_CREATE] Stage={Stage} Tenant={Tenant} OrderId={OrderId}", stage, dbName, request.OrderId);
                 var newId = await _unitOfWork.OrdersPaymentRepository.Add(dbName, entity);
                 entity.Id = newId;
+                paymentId = newId;
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=after_primary_save Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", dbName, request.OrderId, paymentId);
 
+                stage = "before_payment_event_log";
+                _logger.LogInformation("[PAYMENT_CREATE] Stage={Stage} Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId} UserId={UserId}", stage, dbName, request.OrderId, paymentId, currentUserId);
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPayment));
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=after_payment_event_log Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", dbName, request.OrderId, paymentId);
 
                 var totalPayments = getTotalLastPayment + request.Total;
                 if ((totalPayments) >= totalPrice)
                 {
+                    stage = "before_payment_status_update";
                     medicalRecord.PaymentStatus = paymentStatus;
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
                     await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
@@ -981,6 +1000,7 @@ namespace Application.Services.Implementations
                 }
                 else
                 {
+                    stage = "before_payment_status_update";
                     paymentStatus = "Paid Less";
                     medicalRecord.PaymentStatus = paymentStatus;
                     FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
@@ -988,7 +1008,10 @@ namespace Application.Services.Implementations
                 }
 
                 //add event log
+                stage = "before_request_event_log";
+                _logger.LogInformation("[PAYMENT_CREATE] Stage={Stage} Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", stage, dbName, request.OrderId, paymentId);
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, request.OrderId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPaymentRequest), JsonConvert.SerializeObject(request));
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=after_request_event_log Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", dbName, request.OrderId, paymentId);
 
                 ////send email to owner pet
                 //var owner = await _unitOfWork.OwnersRepository.ReadByPatientIdAsync(medicalRecord.PatientId, dbName);
@@ -1038,10 +1061,13 @@ namespace Application.Services.Implementations
                     Status = paymentStatus,
                     Type = entity.Type
                 };
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=success Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", dbName, request.OrderId, paymentId);
                 return result;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "[PAYMENT_CREATE] Stage={Stage} Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
+                    stage, dbName, request?.OrderId, paymentId, ex.GetType().FullName, ex.InnerException?.Message);
                 ex.Source = $"MedicalRecordService.AddOrdersPaymentAsync";
                 throw;
             }

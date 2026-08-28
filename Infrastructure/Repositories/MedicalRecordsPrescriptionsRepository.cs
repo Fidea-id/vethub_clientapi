@@ -21,6 +21,16 @@ namespace Infrastructure.Repositories
             }
         }
 
+        public async Task DeactivateByMedicalRecordId(string dbName, int medicalRecordsId)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                await _db.ExecuteAsync(
+                    "UPDATE MedicalRecordsPrescriptions SET IsActive = 0 WHERE MedicalRecordsId = @MedicalRecordsId AND IsActive = 1",
+                    new { MedicalRecordsId = medicalRecordsId });
+            }
+        }
+
         public async Task<IEnumerable<FrequentDiagnoseMeds>> GetMedsFrequency(string dbName, string date)
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))

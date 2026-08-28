@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
+using System.Security.Claims;
 using System.Text;
 
 namespace Application
@@ -31,6 +32,8 @@ namespace Application
             services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
             services.AddScoped<IFinancialService, FinancialService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<ISessionVersionValidator, MasterSessionVersionValidator>();
+            services.AddHttpClient();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -45,6 +48,32 @@ namespace Application
                     ValidAudience = JwtUtil.Audience,
                     ValidIssuer = JwtUtil.Issuer,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtUtil.Key))
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var userId = context.Principal?.FindFirstValue("Id");
+                        var sessionVersion = context.Principal?.FindFirstValue("sv");
+                        if (!int.TryParse(userId, out var parsedUserId) || !int.TryParse(sessionVersion, out var parsedSessionVersion))
+                        {
+                            context.Fail("Session version claim is missing or invalid.");
+                            return;
+                        }
+
+                        var validator = context.HttpContext.RequestServices.GetRequiredService<ISessionVersionValidator>();
+                        try
+                        {
+                            if (!await validator.IsValidAsync(parsedUserId, parsedSessionVersion, context.HttpContext.RequestAborted))
+                            {
+                                context.Fail("Session has been revoked.");
+                            }
+                        }
+                        catch
+                        {
+                            context.Fail("Unable to validate session.");
+                        }
+                    }
                 };
             });
 

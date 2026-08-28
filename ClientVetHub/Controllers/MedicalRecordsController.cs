@@ -7,6 +7,7 @@ using Domain.Entities.Requests.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace ClientVetHub.Controllers
@@ -19,11 +20,14 @@ namespace ClientVetHub.Controllers
         private readonly IMedicalRecordService _medicalRecordService;
         private readonly INotificationService _notificationService;
         private readonly IProfileService _profileService;
-        public MedicalRecordsController(IMedicalRecordService medicalRecordService, INotificationService notificationService, IProfileService profileService)
+        private readonly ILogger<MedicalRecordsController> _logger;
+        public MedicalRecordsController(IMedicalRecordService medicalRecordService, INotificationService notificationService,
+            IProfileService profileService, ILogger<MedicalRecordsController> logger)
         {
             _medicalRecordService = medicalRecordService;
             _notificationService = notificationService;
             _profileService = profileService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -117,6 +121,7 @@ namespace ClientVetHub.Controllers
                 var dbName = User.FindFirstValue("Entity");
                 var id = User.FindFirstValue("Id");
                 var create = await _medicalRecordService.AddOrdersPaymentAsync(request, dbName);
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=before_notification Tenant={Tenant} OrderId={OrderId}", dbName, request.OrderId);
                 var ownerData = await _profileService.GetOwnerProfile(dbName);
 
                 //create notif
@@ -125,10 +130,14 @@ namespace ClientVetHub.Controllers
                 var notifOwner = NotificationUtil.SetCreateNotifRequest(ownerData.Id, "Create Medical Record", $"Medical Record created", url);
                 await _notificationService.CreateRequestAsync(notif, dbName);
                 await _notificationService.CreateRequestAsync(notifOwner, dbName);
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=after_notification Tenant={Tenant} OrderId={OrderId}", dbName, request.OrderId);
+                _logger.LogInformation("[PAYMENT_CREATE] Stage=success_response Tenant={Tenant} OrderId={OrderId}", dbName, request.OrderId);
                 return Ok(create);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "[PAYMENT_CREATE] Stage=notification_or_controller Tenant={Tenant} OrderId={OrderId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
+                    User.FindFirstValue("Entity"), request?.OrderId, ex.GetType().FullName, ex.InnerException?.Message);
                 throw;
             }
         }
@@ -300,11 +309,16 @@ namespace ClientVetHub.Controllers
                 //create notif
                 var url = "";
                 var notif = NotificationUtil.SetUpdateNotifRequest(int.Parse(userId), "Update Medical Record Prescription", $"Medical Record Prescription updated", url);
+                _logger.LogInformation("[PHARMACY_UPDATE] Stage=before_notification Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, id);
                 await _notificationService.CreateRequestAsync(notif, dbName);
+                _logger.LogInformation("[PHARMACY_UPDATE] Stage=after_notification Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, id);
+                _logger.LogInformation("[PHARMACY_UPDATE] Stage=success_response Tenant={Tenant} MedicalRecordId={MedicalRecordId}", dbName, id);
                 return Ok(create);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "[PHARMACY_UPDATE] Stage=notification_or_controller Tenant={Tenant} MedicalRecordId={MedicalRecordId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
+                    User.FindFirstValue("Entity"), id, ex.GetType().FullName, ex.InnerException?.Message);
                 throw;
             }
         }

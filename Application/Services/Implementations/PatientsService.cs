@@ -8,14 +8,20 @@ using Domain.Entities.Requests.Clients;
 using Domain.Entities.Responses.Clients;
 using Domain.Interfaces.Clients;
 using Domain.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Implementations
 {
     public class PatientsService : GenericService<Patients, PatientsRequest, Patients, PatientsFilter>, IPatientsService
     {
-        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository, ICurrentUserService currentUser)
+        private readonly ILogger<PatientsService> _logger;
+
+        public PatientsService(IUnitOfWork unitOfWork, IGenericRepository<Patients, PatientsFilter> repository,
+            ILoggerFactory loggerFactory, ICurrentUserService currentUser)
         : base(unitOfWork, repository, currentUser)
-        { }
+        {
+            _logger = loggerFactory.CreateLogger<PatientsService>();
+        }
 
         public async Task<IEnumerable<Patients>> ReadByOwnerIdAsync(int id, string dbName)
         {
@@ -142,6 +148,7 @@ namespace Application.Services.Implementations
 
         public async Task<Patients> CreatePatientsAsync(Patients entity, string dbName)
         {
+            var stage = "initialize";
             try
             {
                 //trim all string
@@ -150,12 +157,18 @@ namespace Application.Services.Implementations
                 FormatUtil.SetDateBaseEntity<Patients>(entity);
                 entity.IsAlive = true;
 
+                stage = "before_patient_save";
+                _logger.LogInformation("[PATIENT_CREATE] Stage={Stage} Tenant={Tenant}", stage, dbName);
                 var newId = await _repository.Add(dbName, entity);
                 entity.Id = newId;
+                _logger.LogInformation("[PATIENT_CREATE] Stage=after_patient_save Tenant={Tenant} PatientId={PatientId}", dbName, entity.Id);
 
                 //add event log
                 var currentUserId = await _currentUser.UserId;
+                stage = "before_patient_event_log";
+                _logger.LogInformation("[PATIENT_CREATE] Stage={Stage} Tenant={Tenant} PatientId={PatientId} UserId={UserId}", stage, dbName, entity.Id, currentUserId);
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "CreatePatientsAsync", MethodType.Create, nameof(Patients));
+                _logger.LogInformation("[PATIENT_CREATE] Stage=after_patient_event_log Tenant={Tenant} PatientId={PatientId}", dbName, entity.Id);
 
                 var species = await _unitOfWork.AnimalRepository.GetByName(dbName, entity.Species);
                 if (species == null)
@@ -170,7 +183,10 @@ namespace Application.Services.Implementations
                     var newSpeciesId = await _unitOfWork.AnimalRepository.Add(dbName, newSpecies);
 
                     //add event log
+                    stage = "before_species_event_log";
+                    _logger.LogInformation("[PATIENT_CREATE] Stage={Stage} Tenant={Tenant} PatientId={PatientId} SpeciesId={SpeciesId}", stage, dbName, entity.Id, newSpeciesId);
                     await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newSpeciesId, "CreatePatientsAsync", MethodType.Create, nameof(Animals));
+                    _logger.LogInformation("[PATIENT_CREATE] Stage=after_species_event_log Tenant={Tenant} PatientId={PatientId} SpeciesId={SpeciesId}", dbName, entity.Id, newSpeciesId);
 
                     //add breed
                     var newBreed = new Breeds
@@ -183,7 +199,10 @@ namespace Application.Services.Implementations
                     var newBreedId = await _unitOfWork.BreedRepository.Add(dbName, newBreed);
 
                     //add event log
+                    stage = "before_breed_event_log";
+                    _logger.LogInformation("[PATIENT_CREATE] Stage={Stage} Tenant={Tenant} PatientId={PatientId} BreedId={BreedId}", stage, dbName, entity.Id, newBreedId);
                     await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newBreedId, "CreatePatientsAsync", MethodType.Create, nameof(Breeds));
+                    _logger.LogInformation("[PATIENT_CREATE] Stage=after_breed_event_log Tenant={Tenant} PatientId={PatientId} BreedId={BreedId}", dbName, entity.Id, newBreedId);
                 }
                 else
                 {
@@ -201,14 +220,20 @@ namespace Application.Services.Implementations
                         var newBreedId = await _unitOfWork.BreedRepository.Add(dbName, newBreed);
 
                         //add event log
+                        stage = "before_breed_event_log";
+                        _logger.LogInformation("[PATIENT_CREATE] Stage={Stage} Tenant={Tenant} PatientId={PatientId} BreedId={BreedId}", stage, dbName, entity.Id, newBreedId);
                         await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newBreedId, "CreatePatientsAsync", MethodType.Create, nameof(Breeds));
+                        _logger.LogInformation("[PATIENT_CREATE] Stage=after_breed_event_log Tenant={Tenant} PatientId={PatientId} BreedId={BreedId}", dbName, entity.Id, newBreedId);
                     }
                 }
 
+                _logger.LogInformation("[PATIENT_CREATE] Stage=success Tenant={Tenant} PatientId={PatientId}", dbName, entity.Id);
                 return entity;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "[PATIENT_CREATE] Stage={Stage} Tenant={Tenant} PatientId={PatientId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
+                    stage, dbName, entity?.Id, ex.GetType().FullName, ex.InnerException?.Message);
                 ex.Source = $"PatientsService.CreatePatientsAsync";
                 await _unitOfWork.EventLogRepository.AddErrorEventLogByParams(dbName, nameof(Patients), ex);
                 throw;
