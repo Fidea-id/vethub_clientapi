@@ -30,6 +30,104 @@ namespace Application.Services.Implementations
             _financialService = financialService;
         }
 
+        private static List<MedicalRecordsPrescriptionsRequest> RequirePrescriptionData(
+            IEnumerable<MedicalRecordsPrescriptionsRequest>? prescriptions)
+        {
+            if (prescriptions == null)
+            {
+                throw new ArgumentException("At least one prescription is required.", nameof(prescriptions));
+            }
+
+            var prescriptionItems = prescriptions.ToList();
+            if (prescriptionItems.Count == 0)
+            {
+                throw new ArgumentException("At least one prescription is required.", nameof(prescriptions));
+            }
+
+            if (prescriptionItems.Any(item => item == null
+                || string.IsNullOrWhiteSpace(item.ProductName)
+                || string.IsNullOrWhiteSpace(item.Type)))
+            {
+                throw new ArgumentException("Every prescription must contain ProductName and Type.", nameof(prescriptions));
+            }
+
+            return prescriptionItems;
+        }
+
+        private async Task<(MedicalRecords MedicalRecord, double GrossTotal, double NetTotal, IEnumerable<OrdersPayment> PaidPayments)> GetBillingSnapshotAsync(string dbName, int medicalRecordId)
+        {
+            var medicalRecord = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medicalRecordId);
+            if (medicalRecord == null) throw new Exception("MedicalRecord not found");
+
+            var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecord.AppointmentId);
+            var services = appointment != null
+                ? await _unitOfWork.ServicesRepository.GetById(dbName, appointment.ServiceId)
+                : null;
+            var prescriptions = await _unitOfWork.MedicalRecordsPrescriptionsRepository.GetByMedicalRecordId(dbName, medicalRecord.Id);
+            var paidPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, medicalRecord.Id, "MedicalRecord");
+
+            var grossTotal = (services?.Price ?? 0) + (prescriptions?.Sum(x => x.Total) ?? 0);
+            var discountTotal = medicalRecord.DiscountTotal ?? 0;
+            var netTotal = medicalRecord.TotalDiscounted ?? (grossTotal - discountTotal);
+
+            return (medicalRecord, grossTotal, netTotal, paidPayments);
+        }
+
+        private static string NormalizeDiscountMethod(string? discountMethod)
+        {
+            if (string.IsNullOrWhiteSpace(discountMethod)) return "none";
+            return discountMethod.Trim().ToLowerInvariant();
+        }
+
+        private static string ResolvePaymentStatus(double totalPaid, double netTotal)
+        {
+            if (totalPaid <= 0)
+            {
+                return "Unpaid";
+            }
+
+            if (totalPaid < netTotal)
+            {
+                return "Paid Less";
+            }
+
+            return "Paid";
+        }
+
+        private async Task UpdateMedicalRecordPaymentStateAsync(
+            string dbName,
+            MedicalRecords medicalRecord,
+            double grossTotal,
+            double netTotal,
+            double totalPaid,
+            int? paymentMethodId,
+            bool canCreateJournal)
+        {
+            var previousStatus = medicalRecord.PaymentStatus;
+            medicalRecord.Total = grossTotal;
+            medicalRecord.PaymentStatus = ResolvePaymentStatus(totalPaid, netTotal);
+
+            FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
+            await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
+
+            if (canCreateJournal && previousStatus != "Paid" && medicalRecord.PaymentStatus == "Paid")
+            {
+                string? paymentMethodName = null;
+                if (paymentMethodId.HasValue && paymentMethodId.Value > 0)
+                {
+                    var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetById(dbName, paymentMethodId.Value);
+                    paymentMethodName = paymentMethod?.Name;
+                }
+
+                await _financialService.CreateIncomeJournalAsync(
+                    dbName,
+                    medicalRecord.Code,
+                    netTotal,
+                    $"Income from Medical Record {medicalRecord.Code}",
+                    paymentMethodName);
+            }
+        }
+
         public async Task<DataResultDTO<MedicalRecordsHistoryResponse>> GetMedicalRecordHistory(int medId, string dbName)
         {
             var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, medId);
@@ -109,15 +207,8 @@ namespace Application.Services.Implementations
             var prescriptionTotal = presciptions?.Sum(x => x.Total) ?? 0;
             var baseTotal = services?.Price ?? 0;
             var recalculatedTotal = baseTotal + prescriptionTotal;
-            string statusPayment = "Paid";
-            if (lastPayments.Count() < 1)
-            {
-                statusPayment = "Unpaid";
-            }
-            else if (totalLastPayment < recalculatedTotal)
-            {
-                statusPayment = "Paid Less";
-            }
+            var netTotal = medicalRecords.TotalDiscounted ?? (recalculatedTotal - (medicalRecords.DiscountTotal ?? 0));
+            string statusPayment = ResolvePaymentStatus(totalLastPayment, netTotal);
 
             var opnamePatients = await _unitOfWork.OpnamePatientsRepository.GetByMedId(dbName, medicalRecords.Id);
             var dataOpnamePatients = opnamePatients.Data.FirstOrDefault();
@@ -272,6 +363,7 @@ namespace Application.Services.Implementations
             var stage = "initialize";
             try
             {
+                request = RequirePrescriptionData(request);
                 if (request.Count() > 0)
                 {
                     var currentUserId = await _currentUser.UserId;
@@ -327,6 +419,10 @@ namespace Application.Services.Implementations
                         entity.Total = StockUtil.SafeParseDouble(entity.Total);
                         console = $"Price : {entity.Price}, Quantity : {entity.Quantity}, Total : {entity.Total}";
                         var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+                        if (newId <= 0)
+                        {
+                            throw new InvalidOperationException($"Prescription insert returned an invalid id for medical record {medicalRecordId}.");
+                        }
                         entity.Id = newId;
                         prescriptionData.Add(entity);
 
@@ -345,6 +441,14 @@ namespace Application.Services.Implementations
                             await _unitOfWork.ProductStockHistoricalRepository.Add(dbName, tuple.Item2);
                         }
                         totalNow += pItem.Total;
+                    }
+
+                    var savedPrescriptionCount = (await _unitOfWork.MedicalRecordsPrescriptionsRepository
+                        .GetByMedicalRecordId(dbName, medicalRecordId)).Count();
+                    if (savedPrescriptionCount != prescriptionData.Count)
+                    {
+                        throw new InvalidOperationException(
+                            $"Prescription save verification failed for medical record {medicalRecordId}. Expected {prescriptionData.Count}, found {savedPrescriptionCount} active prescription(s).");
                     }
 
                     // **Step 4: Update total harga prescription**
@@ -369,6 +473,117 @@ namespace Application.Services.Implementations
                 _logger.LogError(ex, "[PHARMACY_UPDATE] Stage={Stage} Tenant={Tenant} MedicalRecordId={MedicalRecordId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
                     stage, dbName, medicalRecordId, ex.GetType().FullName, ex.InnerException?.Message);
                 ex.Source = $"MedicalRecordService.EditMedicalRecordPrescription:{console}";
+                throw;
+            }
+        }
+
+        public async Task<MedicalRecordsDetailResponse> UpdateDiscountAsync(int medicalRecordId, MedicalRecordDiscountRequest request, string dbName)
+        {
+            try
+            {
+                var currentUserId = await _currentUser.UserId;
+                var billing = await GetBillingSnapshotAsync(dbName, medicalRecordId);
+                var totalPaid = billing.PaidPayments.Sum(x => x.Total);
+                var currentNetTotal = billing.MedicalRecord.TotalDiscounted ?? billing.GrossTotal;
+
+                if (totalPaid >= currentNetTotal && totalPaid > 0)
+                {
+                    throw new Exception("Discount cannot be changed after the medical record is fully paid.");
+                }
+
+                var normalizedMethod = NormalizeDiscountMethod(request?.DiscountMethod);
+                double? discountValue = null;
+                double? discountTotal = null;
+                double? totalDiscounted = null;
+
+                billing.MedicalRecord.Total = billing.GrossTotal;
+
+                if (normalizedMethod == "none")
+                {
+                    billing.MedicalRecord.DiscountMethod = null;
+                    billing.MedicalRecord.DiscountValue = null;
+                    billing.MedicalRecord.DiscountTotal = null;
+                    billing.MedicalRecord.TotalDiscounted = null;
+                }
+                else
+                {
+                    var rawValue = request?.DiscountValue ?? 0;
+                    if (rawValue < 0)
+                    {
+                        throw new Exception("Discount value cannot be negative.");
+                    }
+
+                    if (normalizedMethod == "percentage")
+                    {
+                        if (rawValue > 100)
+                        {
+                            throw new Exception("Percentage discount cannot exceed 100.");
+                        }
+
+                        discountValue = rawValue;
+                        discountTotal = billing.GrossTotal * rawValue / 100;
+                    }
+                    else if (normalizedMethod == "price")
+                    {
+                        if (rawValue > billing.GrossTotal)
+                        {
+                            throw new Exception("Discount amount cannot exceed total bill.");
+                        }
+
+                        discountValue = rawValue;
+                        discountTotal = rawValue;
+                    }
+                    else
+                    {
+                        throw new Exception("Invalid discount method.");
+                    }
+
+                    totalDiscounted = billing.GrossTotal - discountTotal.Value;
+                    if (totalDiscounted < 0)
+                    {
+                        throw new Exception("Discount cannot produce a negative payable amount.");
+                    }
+
+                    if (totalDiscounted < totalPaid)
+                    {
+                        throw new Exception("Discount cannot be greater than the remaining unpaid amount.");
+                    }
+
+                    billing.MedicalRecord.DiscountMethod = normalizedMethod;
+                    billing.MedicalRecord.DiscountValue = discountValue;
+                    billing.MedicalRecord.DiscountTotal = discountTotal;
+                    billing.MedicalRecord.TotalDiscounted = totalDiscounted;
+                }
+
+                var finalNetTotal = billing.MedicalRecord.TotalDiscounted ?? billing.GrossTotal;
+                if (finalNetTotal < totalPaid)
+                {
+                    throw new Exception("Discount cannot be greater than the remaining unpaid amount.");
+                }
+
+                var latestPayment = billing.PaidPayments.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id).FirstOrDefault();
+                await UpdateMedicalRecordPaymentStateAsync(
+                    dbName,
+                    billing.MedicalRecord,
+                    billing.GrossTotal,
+                    finalNetTotal,
+                    totalPaid,
+                    latestPayment?.PaymentMethodId,
+                    canCreateJournal: true);
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(
+                    dbName,
+                    currentUserId,
+                    billing.MedicalRecord.Id,
+                    "UpdateMedicalRecordDiscount",
+                    MethodType.Update,
+                    nameof(MedicalRecords),
+                    JsonConvert.SerializeObject(request));
+
+                return await GetDetailMedicalRecords(billing.MedicalRecord.Id, dbName);
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"MedicalRecordService.UpdateDiscountAsync";
                 throw;
             }
         }
@@ -524,6 +739,13 @@ namespace Application.Services.Implementations
             try
             {
 
+                if (request == null)
+                {
+                    throw new ArgumentNullException(nameof(request));
+                }
+
+                request.Prescriptions = RequirePrescriptionData(request.Prescriptions);
+
                 var currentUserId = await _currentUser.UserId;
                 var medicalRecords = await _unitOfWork.MedicalRecordsRepository.GetById(dbName, request.MedicalRecordsId);
                 var appointment = await _unitOfWork.AppointmentRepository.GetById(dbName, medicalRecords.AppointmentId);
@@ -532,27 +754,6 @@ namespace Application.Services.Implementations
 
                 bool isOpname = request.IsOpname;
                 bool isEdit = request.IsEdit;
-
-                if (!isOpname || isEdit)
-                {
-                    appointment.StatusId = 4; // Update status to Pharmacy
-                    FormatUtil.SetDateBaseEntity(appointment, true);
-                    await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
-
-                    var newAppointmentActivity = new AppointmentsActivity
-                    {
-                        AppointmentId = appointment.Id,
-                        CurrentDate = DateTime.Now,
-                        CurrentStatusId = appointment.StatusId,
-                        StaffId = medicalRecords.StaffId,
-                        Note = string.Empty
-                    };
-                    FormatUtil.SetIsActive<AppointmentsActivity>(newAppointmentActivity, true);
-                    FormatUtil.SetDateBaseEntity(newAppointmentActivity);
-                    await _unitOfWork.AppointmentRepository.AddActivity(newAppointmentActivity, dbName);
-
-                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, appointment.Id, "PostAllMedicalRecords", MethodType.Update, nameof(Appointments), $"Update status to : {appointment.StatusId}");
-                }
 
                 var prescriptionData = new List<MedicalRecordsPrescriptions>();
                 var diagnoseData = new List<MedicalRecordsDiagnoses>();
@@ -603,6 +804,10 @@ namespace Application.Services.Implementations
                         FormatUtil.SetDateBaseEntity(entity);
                         entity.MedicalRecordsId = medicalRecords.Id;
                         var newId = await _unitOfWork.MedicalRecordsPrescriptionsRepository.Add(dbName, entity);
+                        if (newId <= 0)
+                        {
+                            throw new InvalidOperationException($"Prescription insert returned an invalid id for medical record {medicalRecords.Id}.");
+                        }
                         entity.Id = newId;
                         entity.Total = StockUtil.SafeParseDouble(entity.Total);
                         entity.Quantity = StockUtil.SafeParseDouble(entity.Quantity);
@@ -624,6 +829,35 @@ namespace Application.Services.Implementations
                     }
 
                     await _unitOfWork.ProductStockRepository.ApplyMedicalRecordStockChanges(dbName, stockChanges);
+
+                    var savedPrescriptionCount = (await _unitOfWork.MedicalRecordsPrescriptionsRepository
+                        .GetByMedicalRecordId(dbName, medicalRecords.Id)).Count();
+                    if (savedPrescriptionCount != prescriptionData.Count)
+                    {
+                        throw new InvalidOperationException(
+                            $"Prescription save verification failed for medical record {medicalRecords.Id}. Expected {prescriptionData.Count}, found {savedPrescriptionCount} active prescription(s).");
+                    }
+                }
+
+                if (!isOpname || isEdit)
+                {
+                    appointment.StatusId = 4; // Update status to Pharmacy
+                    FormatUtil.SetDateBaseEntity(appointment, true);
+                    await _unitOfWork.AppointmentRepository.Update(dbName, appointment);
+
+                    var newAppointmentActivity = new AppointmentsActivity
+                    {
+                        AppointmentId = appointment.Id,
+                        CurrentDate = DateTime.Now,
+                        CurrentStatusId = appointment.StatusId,
+                        StaffId = medicalRecords.StaffId,
+                        Note = string.Empty
+                    };
+                    FormatUtil.SetIsActive<AppointmentsActivity>(newAppointmentActivity, true);
+                    FormatUtil.SetDateBaseEntity(newAppointmentActivity);
+                    await _unitOfWork.AppointmentRepository.AddActivity(newAppointmentActivity, dbName);
+
+                    await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, appointment.Id, "PostAllMedicalRecords", MethodType.Update, nameof(Appointments), $"Update status to : {appointment.StatusId}");
                 }
 
                 FormatUtil.SetDateBaseEntity(medicalRecords);
@@ -926,6 +1160,11 @@ namespace Application.Services.Implementations
                 FormatUtil.SetIsActive<OrdersPayment>(entity, true);
                 FormatUtil.SetDateBaseEntity<OrdersPayment>(entity);
                 entity.Type = "MedicalRecord";
+                if (request.Total <= 0)
+                {
+                    throw new Exception("Payment amount must be greater than zero.");
+                }
+
                 var lastPayments = await _unitOfWork.OrdersPaymentRepository.GetPaidByOrderId(dbName, request.OrderId, entity.Type);
                 var getTotalLastPayment = lastPayments.Sum(x => x.Total);
 
@@ -939,18 +1178,17 @@ namespace Application.Services.Implementations
                 var recalculatedTotal = (services?.Price ?? 0) + (prescriptions?.Sum(x => x.Total) ?? 0);
                 medicalRecord.Total = recalculatedTotal;
 
-                var totalPrice = recalculatedTotal;
-                if (request.DiscountTotal.HasValue)
+                var totalPrice = medicalRecord.TotalDiscounted ?? (recalculatedTotal - (medicalRecord.DiscountTotal ?? 0));
+                if (totalPrice < 0)
                 {
-                    medicalRecord.DiscountMethod = request.DiscountMethod;
-                    medicalRecord.DiscountValue = request.DiscountValue;
-                    medicalRecord.DiscountTotal = request.DiscountTotal;
-                    medicalRecord.TotalDiscounted = recalculatedTotal - request.DiscountTotal;
+                    throw new Exception("Medical record total is invalid. Update the discount before taking payment.");
+                }
 
-                    totalPrice = recalculatedTotal - request.DiscountTotal.Value;
-
-                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
-                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
+                var totalPayments = getTotalLastPayment + request.Total;
+                var isDownPayment = request.Note?.Contains("down payment", StringComparison.OrdinalIgnoreCase) == true;
+                if (totalPayments > totalPrice && !isDownPayment)
+                {
+                    throw new Exception("Total payment cannot be greater than the remaining medical record bill.");
                 }
 
                 //update status
@@ -968,18 +1206,18 @@ namespace Application.Services.Implementations
                 await _unitOfWork.EventLogRepository.AddEventLogByParams(dbName, currentUserId, newId, "AddOrdersPaymentAsync", MethodType.Create, nameof(OrdersPayment));
                 _logger.LogInformation("[PAYMENT_CREATE] Stage=after_payment_event_log Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId}", dbName, request.OrderId, paymentId);
 
-                var totalPayments = getTotalLastPayment + request.Total;
+                paymentStatus = ResolvePaymentStatus(totalPayments, totalPrice);
+                await UpdateMedicalRecordPaymentStateAsync(
+                    dbName,
+                    medicalRecord,
+                    recalculatedTotal,
+                    totalPrice,
+                    totalPayments,
+                    request.PaymentMethodId,
+                    canCreateJournal: true);
+
                 if ((totalPayments) >= totalPrice)
                 {
-                    stage = "before_payment_status_update";
-                    medicalRecord.PaymentStatus = paymentStatus;
-                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
-                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
-
-                    // Trigger Journal Entry
-                    var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetById(dbName, request.PaymentMethodId);
-                    await _financialService.CreateIncomeJournalAsync(dbName, medicalRecord.Code, totalPrice, $"Income from Medical Record {medicalRecord.Code}", paymentMethod?.Name);
-
                     //TODO:dipindah saat update presc
                     //foreach (var item in prescriptions)
                     //{
@@ -1000,11 +1238,7 @@ namespace Application.Services.Implementations
                 }
                 else
                 {
-                    stage = "before_payment_status_update";
                     paymentStatus = "Paid Less";
-                    medicalRecord.PaymentStatus = paymentStatus;
-                    FormatUtil.SetDateBaseEntity<MedicalRecords>(medicalRecord, true);
-                    await _unitOfWork.MedicalRecordsRepository.Update(dbName, medicalRecord);
                 }
 
                 //add event log
@@ -1069,6 +1303,98 @@ namespace Application.Services.Implementations
                 _logger.LogError(ex, "[PAYMENT_CREATE] Stage={Stage} Tenant={Tenant} OrderId={OrderId} PaymentId={PaymentId} ExceptionType={ExceptionType} InnerExceptionMessage={InnerExceptionMessage}",
                     stage, dbName, request?.OrderId, paymentId, ex.GetType().FullName, ex.InnerException?.Message);
                 ex.Source = $"MedicalRecordService.AddOrdersPaymentAsync";
+                throw;
+            }
+        }
+
+        public async Task<OrdersPaymentResponse> UpdateOrdersPaymentAsync(int paymentId, OrdersPaymentRequest request, string dbName)
+        {
+            try
+            {
+                var currentUserId = await _currentUser.UserId;
+                FormatUtil.TrimObjectProperties(request);
+
+                if (request.Total <= 0)
+                {
+                    throw new Exception("Payment amount must be greater than zero.");
+                }
+
+                var payment = await _unitOfWork.OrdersPaymentRepository.GetById(dbName, paymentId);
+                if (payment == null || payment.IsActive != true)
+                {
+                    throw new Exception("Medical payment not found.");
+                }
+
+                if (!string.Equals(payment.Type, "MedicalRecord", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception("Payment type is invalid.");
+                }
+
+                if (payment.OrderId != request.OrderId)
+                {
+                    throw new Exception("Payment does not belong to this medical record.");
+                }
+
+                var billing = await GetBillingSnapshotAsync(dbName, payment.OrderId);
+                var totalPaidBefore = billing.PaidPayments.Sum(x => x.Total);
+                var otherPaidTotal = billing.PaidPayments.Where(x => x.Id != paymentId).Sum(x => x.Total);
+                var netTotal = billing.MedicalRecord.TotalDiscounted ?? (billing.GrossTotal - (billing.MedicalRecord.DiscountTotal ?? 0));
+
+                if (totalPaidBefore >= netTotal && !string.Equals(billing.MedicalRecord.PaymentStatus, "Paid Less", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception("Paid medical record payments cannot be edited after the bill is fully settled.");
+                }
+
+                var newTotalPaid = otherPaidTotal + request.Total;
+                if (newTotalPaid > netTotal)
+                {
+                    throw new Exception("Total payment cannot be greater than the remaining medical record bill.");
+                }
+
+                payment.PaymentMethodId = request.PaymentMethodId;
+                payment.Date = request.Date;
+                payment.Total = request.Total;
+                payment.Status = "Paid";
+                payment.Note = string.IsNullOrWhiteSpace(payment.Note) && string.IsNullOrWhiteSpace(request.Note)
+                    ? "Payment"
+                    : request.Note ?? payment.Note;
+
+                FormatUtil.SetDateBaseEntity<OrdersPayment>(payment, true);
+                await _unitOfWork.OrdersPaymentRepository.Update(dbName, payment);
+
+                await UpdateMedicalRecordPaymentStateAsync(
+                    dbName,
+                    billing.MedicalRecord,
+                    billing.GrossTotal,
+                    netTotal,
+                    newTotalPaid,
+                    request.PaymentMethodId,
+                    canCreateJournal: totalPaidBefore < netTotal);
+
+                await _unitOfWork.EventLogRepository.AddEventLogByParams(
+                    dbName,
+                    currentUserId,
+                    payment.Id,
+                    "UpdateOrdersPaymentAsync",
+                    MethodType.Update,
+                    nameof(OrdersPayment),
+                    JsonConvert.SerializeObject(request));
+
+                return new OrdersPaymentResponse
+                {
+                    Date = payment.Date,
+                    OrderId = payment.OrderId,
+                    PaymentMethodId = payment.PaymentMethodId,
+                    Total = payment.Total,
+                    LessTotal = netTotal - newTotalPaid,
+                    Status = ResolvePaymentStatus(newTotalPaid, netTotal),
+                    Type = payment.Type,
+                    Note = payment.Note
+                };
+            }
+            catch (Exception ex)
+            {
+                ex.Source = $"MedicalRecordService.UpdateOrdersPaymentAsync";
                 throw;
             }
         }

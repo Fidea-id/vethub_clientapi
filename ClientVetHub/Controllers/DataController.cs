@@ -45,7 +45,9 @@ namespace ClientVetHub.Controllers
                     else
                     {
                         startDate = DateTime.ParseExact(date.Trim(), "dd MMMM yyyy", null).ToString("yyyy-MM-dd");
-                        endDate = null;
+                        // A single selected day is an inclusive one-day range.
+                        // The service converts the end date to the next day for an exclusive upper bound.
+                        endDate = startDate;
                     }
                 }
                 else

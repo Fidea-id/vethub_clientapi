@@ -142,6 +142,40 @@ namespace ClientVetHub.Controllers
             }
         }
 
+        [HttpPut("Payment/{paymentId}")]
+        public async Task<IActionResult> PutPayment(int paymentId, [FromBody] OrdersPaymentRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var updated = await _medicalRecordService.UpdateOrdersPaymentAsync(paymentId, request, dbName);
+                return Ok(updated);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [HttpPut("Discount/{id}")]
+        public async Task<IActionResult> PutDiscount(int id, [FromBody] MedicalRecordDiscountRequest request)
+        {
+            try
+            {
+                var dbName = User.FindFirstValue("Entity");
+                var userId = User.FindFirstValue("Id");
+                var updated = await _medicalRecordService.UpdateDiscountAsync(id, request, dbName);
+
+                var notif = NotificationUtil.SetUpdateNotifRequest(int.Parse(userId), "Update Medical Discount", "Medical record discount updated", "appointment");
+                await _notificationService.CreateRequestAsync(notif, dbName);
+                return Ok(updated);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> GetDetail(int id, [FromQuery] string? flag = null)
         {

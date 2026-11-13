@@ -35,11 +35,17 @@ namespace Infrastructure.Repositories
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))
             {
+                // This query joins MedicalRecords, which also has a CreatedAt column.
+                // Qualify every CreatedAt occurrence in the incoming filter so a range
+                // such as "CreatedAt >= ... AND CreatedAt < ..." cannot become ambiguous.
+                var diagnoseDateFilter = date.Replace("CreatedAt", "md.CreatedAt", StringComparison.OrdinalIgnoreCase);
+                var productDateFilter = date.Replace("CreatedAt", "mrp.CreatedAt", StringComparison.OrdinalIgnoreCase);
+
                 var resultQuery = $@"WITH RankedData AS (
                                 SELECT md.Diagnose AS Name, 'Diagnose' AS Type, COUNT(md.Id) AS Total, ROW_NUMBER() OVER (PARTITION BY 'Diagnose' ORDER BY COUNT(md.Id) DESC) AS RowNum
                                 FROM MedicalRecordsDiagnoses md
                                 JOIN MedicalRecords mr ON md.MedicalRecordsId = mr.Id
-                                WHERE md.IsActive = 1 AND md.{date}
+                                WHERE md.IsActive = 1 AND {diagnoseDateFilter}
                                 GROUP BY md.Diagnose
 
                                 UNION ALL
@@ -47,7 +53,7 @@ namespace Infrastructure.Repositories
                                 SELECT mrp.ProductName AS Name, 'Products' AS Type, COUNT(mrp.Id) AS Total, ROW_NUMBER() OVER (PARTITION BY 'Products' ORDER BY COUNT(mrp.Id) DESC) AS RowNum
                                 FROM MedicalRecordsPrescriptions mrp
                                 JOIN MedicalRecords mr ON mrp.MedicalRecordsId = mr.Id
-                                WHERE mrp.IsActive = 1 AND mrp.Type = 'Product' AND mrp.{date}
+                                WHERE mrp.IsActive = 1 AND mrp.Type = 'Product' AND {productDateFilter}
                                 GROUP BY mrp.ProductName
                             )
                             SELECT Name, Type, Total

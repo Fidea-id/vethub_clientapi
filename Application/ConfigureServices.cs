@@ -79,7 +79,7 @@ namespace Application
 
             services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
-                var config = ConfigurationOptions.Parse("103.217.145.102:6379,password=BFvnAqcptn");
+                var config = ConfigurationOptions.Parse("31.58.103.244:6379,password=BFvnAqcptn");
                 config.ResolveDns = true;
                 return ConnectionMultiplexer.Connect(config);
             });

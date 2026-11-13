@@ -20,6 +20,8 @@ namespace Application.Services.Contracts
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByOwner(int ownerId, string dbName); //seperti detail medical records, tapi lebih ringkas
         Task<DataResultDTO<BookingHistoryResponse>> GetBookingHistoryByPatient(int patientId, string dbName); //seperti detail medical records, tapi lebih ringkas
         Task<OrdersPaymentResponse> AddOrdersPaymentAsync(OrdersPaymentRequest request, string dbName);
+        Task<OrdersPaymentResponse> UpdateOrdersPaymentAsync(int paymentId, OrdersPaymentRequest request, string dbName);
+        Task<MedicalRecordsDetailResponse> UpdateDiscountAsync(int medicalRecordId, MedicalRecordDiscountRequest request, string dbName);
         Task<MedicalRecordsDetailResponse> PostAllMedicalRecords(MedicalRecordsDetailRequest request, string dbName);
         Task<MedicalRecordsNotesResponse> PostMedicalRecordsNotes(MedicalRecordsNotesRequest request, string email, string dbName);
         Task<MedicalRecordsNotesResponse> PutMedicalRecordsNotes(int id, MedicalRecordsNotesRequest request, string email, string dbName);

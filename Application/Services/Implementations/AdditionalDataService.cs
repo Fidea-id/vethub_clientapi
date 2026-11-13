@@ -87,8 +87,9 @@ namespace Application.Services.Implementations
             // Handle single or range date filtering
             if (!string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
             {
-                dateFilter = $" CreatedAt BETWEEN '{startDate}' AND '{endDate}'";
-                dateFilterMR = $" mr.StartDate BETWEEN '{startDate}' AND '{endDate}'";
+                var endExclusive = end?.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                dateFilter = $" CreatedAt >= '{startDate}' AND CreatedAt < '{endExclusive}'";
+                dateFilterMR = $" mr.StartDate >= '{startDate}' AND mr.StartDate < '{endExclusive}'";
             }
             else if (!string.IsNullOrEmpty(startDate))
             {
@@ -96,11 +97,11 @@ namespace Application.Services.Implementations
                 dateFilterMR = $" mr.StartDate >= '{startDate}'";
             }
 
-            var clients = await _uow.OwnersRepository.CountToCard(dbName, null, dateFilter);
-            var pets = await _uow.PatientsRepository.CountToCard(dbName, null, dateFilter);
+            var clients = await _uow.OwnersRepository.CountActiveToCard(dbName);
+            var pets = await _uow.PatientsRepository.CountActiveToCard(dbName);
             var appointment = await _uow.AppointmentRepository.CountToCard(dbName, null, dateFilter);
-            var product = await _uow.ProductsRepository.CountToCard(dbName, null, dateFilter);
-            var service = await _uow.ServicesRepository.CountToCard(dbName, null, dateFilter);
+            var product = await _uow.ProductsRepository.CountActiveToCard(dbName);
+            var service = await _uow.ServicesRepository.CountActiveToCard(dbName);
             var invoice = await _uow.OrdersRepository.CountInvoiceToCard(dbName, dateFilter);
 
             var weekClientAppointment = await _uow.AppointmentRepository.GetClientWeek(dbName);

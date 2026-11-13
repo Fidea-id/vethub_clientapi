@@ -505,6 +505,7 @@ namespace Infrastructure.Repositories
             {
                 var sql = @"
             SELECT 
+                mr.Id AS MedicalRecordId,
                 mr.Code AS MedicalRecordCode,
                 mr.StartDate AS Date,
                 p.Name AS StaffName,
@@ -591,6 +592,7 @@ namespace Infrastructure.Repositories
                     SELECT 
                         mr.CreatedAt,
                         mr.Id,
+                        mr.Id AS MedicalRecordId,
                         mr.Code AS Code,
                         mr.StartDate AS AppointmentDate,
                         mr.CreatedAt AS InvoiceDate,
@@ -604,6 +606,7 @@ namespace Infrastructure.Repositories
                         pm.Name AS PaymentMethod,
                         '' AS Details
                     FROM MedicalRecords mr
+                    INNER JOIN Appointments a ON a.Id = mr.AppointmentId AND a.IsActive = 1
                     LEFT JOIN Patients p ON mr.PatientId = p.Id
                     LEFT JOIN Owners o ON p.OwnersId = o.Id
                     LEFT JOIN LastPayment lp 
@@ -611,7 +614,8 @@ namespace Infrastructure.Repositories
                           AND lp.Type = 'MedicalRecord' 
                           AND lp.rn = 1
                     LEFT JOIN PaymentMethod pm ON lp.PaymentMethodId = pm.Id
-                    WHERE mr.PaymentStatus = 'Paid'
+                    WHERE mr.IsActive = 1
+                      AND mr.PaymentStatus = 'Paid'
                       AND mr.Total > 0
 
                     UNION ALL
@@ -620,6 +624,7 @@ namespace Infrastructure.Repositories
                     SELECT 
                         o.CreatedAt,
                         o.Id,
+                        NULL AS MedicalRecordId,
                         o.OrderNumber AS Code,
                         NULL AS AppointmentDate,
                         o.CreatedAt AS InvoiceDate,
@@ -638,7 +643,8 @@ namespace Infrastructure.Repositories
                           AND lp.Type = 'Order' 
                           AND lp.rn = 1
                     LEFT JOIN PaymentMethod pm ON lp.PaymentMethodId = pm.Id
-                    WHERE o.Status = 'Paid'
+                    WHERE o.IsActive = 1
+                      AND o.Status = 'Paid'
                       AND o.TotalPrice > 0
 
                     ORDER BY CreatedAt DESC;
@@ -671,14 +677,16 @@ namespace Infrastructure.Repositories
                         (mr.Total - IFNULL(mr.DiscountTotal, 0))
                     ) AS TotalAfterDiscount
                 FROM MedicalRecords mr
+                INNER JOIN Appointments a ON a.Id = mr.AppointmentId AND a.IsActive = 1
                 LEFT JOIN LastPayment lp 
                        ON lp.OrderId = mr.Id 
                       AND lp.Type = 'MedicalRecord' 
                       AND lp.rn = 1
-                WHERE mr.PaymentStatus = 'Paid'
+                WHERE mr.IsActive = 1
+                  AND mr.PaymentStatus = 'Paid'
                   AND mr.Total > 0
                   AND (@StartDate IS NULL OR mr.StartDate >= @StartDate)
-                  AND (@EndDate   IS NULL OR mr.StartDate <=  @EndDate)
+                  AND (@EndDate   IS NULL OR mr.StartDate <  @EndDate)
 
                 UNION ALL
 
@@ -693,10 +701,11 @@ namespace Infrastructure.Repositories
                        ON lp.OrderId = o.Id 
                       AND lp.Type = 'Order' 
                       AND lp.rn = 1
-                WHERE o.Status = 'Paid'
+                WHERE o.IsActive = 1
+                  AND o.Status = 'Paid'
                   AND o.TotalPrice > 0
                   AND (@StartDate IS NULL OR o.Date >= @StartDate)
-                  AND (@EndDate   IS NULL OR o.Date <=  @EndDate)
+                  AND (@EndDate   IS NULL OR o.Date <  @EndDate)
 
             )
 
@@ -760,6 +769,7 @@ namespace Infrastructure.Repositories
                         pm.Name AS PaymentMethod,
                         '' AS Details
                     FROM MedicalRecords mr
+                    INNER JOIN Appointments a ON a.Id = mr.AppointmentId AND a.IsActive = 1
                     LEFT JOIN Patients p ON mr.PatientId = p.Id
                     LEFT JOIN Owners o ON p.OwnersId = o.Id
                     LEFT JOIN (
@@ -776,7 +786,8 @@ namespace Infrastructure.Repositories
                            AND op.Date = last_op.MaxDate
                     ) lastpay ON lastpay.OrderId = mr.Id AND lastpay.Type = 'MedicalRecord'
                     LEFT JOIN PaymentMethod pm ON lastpay.PaymentMethodId = pm.Id
-                    WHERE mr.PaymentStatus = 'Paid'
+                    WHERE mr.IsActive = 1
+                      AND mr.PaymentStatus = 'Paid'
 
                     UNION ALL
 
@@ -808,7 +819,8 @@ namespace Infrastructure.Repositories
                            AND op.Date = last_op.MaxDate
                     ) lastpay ON lastpay.OrderId = o.Id AND lastpay.Type = 'Order'
                     LEFT JOIN PaymentMethod pm ON lastpay.PaymentMethodId = pm.Id
-                    WHERE o.Status = 'Paid'
+                    WHERE o.IsActive = 1
+                      AND o.Status = 'Paid'
                     ORDER BY CreatedAt DESC
                 ) revenue
                 WHERE {column} IS NOT NULL
@@ -826,12 +838,15 @@ namespace Infrastructure.Repositories
                 string queryFinal = @"
                 SELECT COUNT(*) FROM (
                     SELECT CreatedAt
-                    FROM MedicalRecords
-                    WHERE PaymentStatus = 'Paid'
+                    FROM MedicalRecords mr
+                    INNER JOIN Appointments a ON a.Id = mr.AppointmentId AND a.IsActive = 1
+                    WHERE mr.IsActive = 1
+                      AND mr.PaymentStatus = 'Paid'
                     UNION ALL
                     SELECT CreatedAt
                     FROM Orders
-                    WHERE Status = 'Paid'
+                    WHERE IsActive = 1
+                      AND Status = 'Paid'
                 ) AS CombinedData;
             ";
                 var total = await _db.ExecuteScalarAsync<int>(queryFinal);

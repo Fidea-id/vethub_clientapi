@@ -269,6 +269,16 @@ namespace Infrastructure.Repositories
                 return await _db.QueryFirstAsync<CardDashboard>(resultQuery, new { Date = date });
             }
         }
+
+        public async Task<CardDashboard> CountActiveToCard(string dbName)
+        {
+            using (var _db = _dbFactory.GetDbConnection(dbName))
+            {
+                var resultQuery = $"SELECT COUNT(Id) AS TotalAll, COUNT(Id) AS Total FROM {_tableName} WHERE IsActive = 1";
+                return await _db.QueryFirstAsync<CardDashboard>(resultQuery);
+            }
+        }
+
         public async Task<int> Sum(string dbName, string columnName)
         {
             using (var _db = _dbFactory.GetDbConnection(dbName))
